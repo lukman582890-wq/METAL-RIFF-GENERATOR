@@ -358,7 +358,7 @@
 
     <div class="panel tips">
       <strong style="color:var(--text)">Cara dapat riff bagus:</strong>
-      1) Pilih subgenre → preset + teknik genre langsung otomatis tercentang → Generate berkali-kali.
+      1) Pilih subgenre → klik “Terapkan Recommended + Teknik Genre” → preset + teknik genre otomatis tercentang → Generate.
       2) Thrash/Death suka palm-mute + alternate picking.
       3) Djent/Metalcore paling enak di Drop C / 7-string GCGC.
       4) Black metal: matikan power chord (tremolo KS otomatis di Odin).
@@ -367,7 +367,7 @@
          Velocity: 70–109 (picked) / 28–33 (palm mute) sesuai velocity trigger Odin.
     </div>
 
-    <footer>Metal Riff Generator v30 • Genre auto-preset + Odin technique mapping • Client-side</footer>
+    <footer>Metal Riff Generator v30 • Genre recommended preset + Odin technique mapping • Client-side</footer>
   </div>
 
   <script>
@@ -969,11 +969,7 @@
       }
     }
 
-    $('style').addEventListener('change', () => {
-      // Genre selection is the preset selector: immediately load the
-      // genre's recommended key/scale/tempo/tuning, parts and techniques.
-      applyPreset();
-    });
+    $('style').addEventListener('change', updateStyleCard);
     $('btnApplyPreset').addEventListener('click', applyPreset);
 
     // ===================== HELPERS =====================
