@@ -3486,3 +3486,126 @@
 
       const track = [];
       const tname = 'Drums';
+
+      track.push(0x00, 0xFF, 0x03, tname.length);
+      for (let i = 0; i < tname.length; i++) track.push(tname.charCodeAt(i));
+
+      let prev = 0;
+      for (const e of events) {
+        const delta = Math.max(0, e.t - prev);
+        prev = e.t;
+        for (const b of toVarLen(delta)) track.push(b);
+        // channel 10 = 0x9
+        track.push(e.type === 'on' ? 0x99 : 0x89, e.note, e.vel);
+      }
+      track.push(0x00, 0xFF, 0x2F, 0x00);
+      return track;
+    }
+
+    function exportMidi() {
+      if (!hasAnyPart()) { showToast('Generate riff dulu!'); return; }
+      try {
+        const bpm = parseInt($('tempo').value, 10);
+        const useOdin = $('odinKs') && $('odinKs').checked;
+        const useAlt = $('altPicking').checked && !($('downstroke') && $('downstroke').checked);
+        const styleId = $('style').value;
+        const isTremoloStyle = (styleId === 'black');
+        const tpq = 480;
+
+        const tracks = [];
+        // Tempo track (track 0 for format 1)
+        const tempoTrack = [];
+        const uspq = Math.round(60000000 / bpm);
+        tempoTrack.push(0x00, 0xFF, 0x51, 0x03, (uspq>>16)&0xFF, (uspq>>8)&0xFF, uspq&0xFF);
+        tempoTrack.push(0x00, 0xFF, 0x2F, 0x00);
+        tracks.push(tempoTrack);
+
+        const baseOpts = { useOdin, useAlt, isTremoloStyle, styleId };
+
+        if (parts.rhythm) {
+          const ev = buildTrackEvents(parts.rhythm, { ...baseOpts, isGuitar: true });
+          tracks.push(eventsToTrackBytes(ev, 'Rhythm Guitar', useOdin ? null : 30));
+        }
+        if (parts.lead) {
+          const ev = buildTrackEvents(parts.lead, { ...baseOpts, isGuitar: true, isTremoloStyle });
+          tracks.push(eventsToTrackBytes(ev, 'Lead Guitar', useOdin ? null : 29));
+        }
+        if (parts.bass) {
+          const ev = buildTrackEvents(parts.bass, {
+            useOdin, useAlt: false, isTremoloStyle: false, styleId, isGuitar: false, isBass: true
+          });
+          tracks.push(eventsToTrackBytes(ev, 'Bass', useOdin ? null : 36));
+        }
+        if (parts.breakdown) {
+          const ev = buildTrackEvents(parts.breakdown, { ...baseOpts, isGuitar: true });
+          tracks.push(eventsToTrackBytes(ev, 'Breakdown', useOdin ? null : 30));
+        }
+        if (parts.drums) {
+          tracks.push(buildDrumTrackBytes(parts.drums));
+        }
+
+        // Format 1 header
+        const ntrks = tracks.length;
+        const header = [
+          0x4D,0x54,0x68,0x64, 0,0,0,6,
+          0,1, // format 1
+          (ntrks>>8)&0xFF, ntrks&0xFF,
+          (tpq>>8)&0xFF, tpq&0xFF
+        ];
+
+        let totalLen = header.length;
+        const packed = [];
+        for (const tr of tracks) {
+          const th = [0x4D,0x54,0x72,0x6B, (tr.length>>24)&0xFF,(tr.length>>16)&0xFF,(tr.length>>8)&0xFF,tr.length&0xFF];
+          packed.push(th, tr);
+          totalLen += th.length + tr.length;
+        }
+        const all = new Uint8Array(totalLen);
+        let off = 0;
+        all.set(header, 0); off = header.length;
+        for (const chunk of packed) { all.set(chunk, off); off += chunk.length; }
+
+        const blob = new Blob([all], { type: 'audio/midi' });
+        const tag = useOdin ? 'odin' : 'plain';
+        const partsTag = [parts.rhythm&&'r', parts.lead&&'l', parts.bass&&'b', parts.breakdown&&'bd', parts.drums&&'d'].filter(Boolean).join('');
+        const fname = `metal-${partsTag}-${$('key').value}-${$('style').value}-${bpm}bpm-${tag}.mid`;
+        const ok = downloadBlob(blob, fname);
+        showToast(ok ? `✓ MIDI (${ntrks - 1} parts) ready!` : 'MIDI dibuka di tab baru');
+      } catch (err) {
+        console.error(err);
+        showToast('Gagal: ' + err.message);
+      }
+    }
+
+    function copyTab() {
+      const chunks=[];
+      if(parts.rhythm)chunks.push($('tabRhythm').textContent);
+      if(parts.lead)chunks.push($('tabLead').textContent);
+      if(parts.bass)chunks.push($('tabBass').textContent);
+      if(parts.breakdown)chunks.push($('tabBreakdown').textContent);
+      if(parts.drums)chunks.push($('tabDrums').textContent);
+      const text=chunks.join('\n\n')||'No parts';
+      const done=()=>{const b=$('btnCopy'),old=b.textContent;b.textContent='✓ COPIED!';setTimeout(()=>b.textContent=old,1400);};
+      if(navigator.clipboard&&window.isSecureContext)navigator.clipboard.writeText(text).then(done).catch(()=>copyFallback(text,done));
+      else copyFallback(text,done);
+    }
+    function copyFallback(text,done){
+      const ta=document.createElement('textarea');ta.value=text;ta.style.position='fixed';ta.style.left='-9999px';
+      document.body.appendChild(ta);ta.focus();ta.select();
+      try{document.execCommand('copy');done();}catch(e){showToast('Clipboard gagal — copy manual dari TAB');}
+      finally{document.body.removeChild(ta);}
+    }
+
+    // ===================== INIT =====================
+    $('btnGen').addEventListener('click', () => { stopRiff(); generateRiff(); });
+    $('btnPlay').addEventListener('click', playRiff);
+    $('btnStop').addEventListener('click', stopRiff);
+    $('btnCopy').addEventListener('click', copyTab);
+    $('btnMidi').addEventListener('click', exportMidi);
+
+    buildWiki();
+    updateStyleCard();
+    renderFretboard([], 'standard6');
+  </script>
+</body>
+</html>
