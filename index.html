@@ -784,27 +784,39 @@
     // parts: { rhythm, lead, bass } each is array of events or null
     let parts = { rhythm: null, lead: null, bass: null, breakdown: null, drums: null };
 
-    // GM drum map (channel 10)
+    // ===================== CUBASE GM MAP 2 =====================
+    // Synchronized to the supplied odelhom.drm (GM Map 2).
+    // All used entries are channel 10 and I-Note == O-Note.
     const DRUM_MAP = {
-      K: 36,    // Kick
-      S: 38,    // Snare
-      T1: 48,   // High tom
-      T2: 45,   // Mid tom
-      F: 41,    // Floor tom
-      HH: 42,   // Closed hi-hat
-      HO: 46,   // Open hi-hat
-      HP: 44,   // Pedal hi-hat
-      CL: 49,   // Crash left (Crash 1)
-      CR: 57,   // Crash right (Crash 2)
-      CH: 52,   // China
-      RD: 51,   // Ride
-      BL: 53    // Ride bell
+      K:36, S:38, T1:50, T2:45, F:41, HH:42, HO:46, HP:44,
+      CL:49, CR:57, CH:52, RD:51, BL:53
     };
-    const DRUM_ROWS = ['K', 'S', 'T1', 'T2', 'F', 'HH', 'HO', 'CL', 'CR', 'CH', 'RD', 'BL'];
+    const DRUM_ROWS = ['K','S','T1','T2','F','HH','HO','CL','CR','CH','RD','BL'];
     const DRUM_LABELS = {
-      K: 'K ', S: 'S ', T1: 'T1', T2: 'T2', F: 'F ',
-      HH: 'HH', HO: 'HO', CL: 'CL', CR: 'CR', CH: 'CH', RD: 'RD', BL: 'BL'
+      K:'BD', S:'SN', T1:'HT', T2:'LT', F:'FT',
+      HH:'HH', HO:'OH', CL:'C1', CR:'C2', CH:'CH', RD:'RD', BL:'RB'
     };
+    const DRUM_NAMES = {
+      K:'Bass Drum', S:'Acoustic Snare', T1:'High Tom', T2:'Low Tom', F:'Low Floor Tom',
+      HH:'Closed Hi-Hat', HO:'Open Hi-Hat', HP:'Pedal Hi-Hat',
+      CL:'Crash Cymbal 1', CR:'Crash Cymbal 2', CH:'Chinese Cymbal',
+      RD:'Ride Cymbal 1', BL:'Ride Bell'
+    };
+    // Exact named MIDI entries supplied by odelhom.drm.
+    const CUBASE_DRUM_MAP_2 = {
+      35:'Acoustic Bass Drum',36:'Bass Drum',37:'Side Stick',38:'Acoustic Snare',
+      39:'Hand Clap',40:'Electric Snare',41:'Low Floor Tom',42:'Closed Hi-Hat',
+      43:'High Floor Tom',44:'Pedal Hi-Hat',45:'Low Tom',46:'Open Hi-Hat',
+      47:'Low Middle Tom',48:'High Middle Tom',49:'Crash Cymbal 1',50:'High Tom',
+      51:'Ride Cymbal 1',52:'Chinese Cymbal',53:'Ride Bell',54:'Coke Cymbal 1',
+      55:'Coke Cymbal 2',56:'Big Crash',57:'Crash Cymbal 2',58:'Coke Big Crash',
+      59:'Ride Cymbal 2',60:'Coke china',61:'Stack',62:'Bell BIG',63:'China Left',
+      64:'Coke China Left',65:'Splash Left',66:'Coke Splash Left',67:'Splash Right',
+      68:'Coke Splash Right',69:'Cabasa',70:'Maracas',71:'Short Whistle',72:'Long Whistle',
+      73:'Short Guiro',74:'Long Guiro',75:'Claves',76:'High Wood Block',77:'Low Wood Block',
+      78:'Mute Cuica',79:'Open Cuica',80:'Mute Triangle',81:'Open Triangle'
+    };
+
     let audioCtx = null, isPlaying = false, playTimeouts = [];
     const $ = id => document.getElementById(id);
 
