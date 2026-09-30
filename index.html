@@ -367,7 +367,7 @@
          Velocity: 70–109 (picked) / 28–33 (palm mute) sesuai velocity trigger Odin.
     </div>
 
-    <footer>Metal Riff Generator v25 • Genre-aware multi-part engine • Extreme drum vocabulary • Client-side</footer>
+    <footer>Metal Riff Generator v28 • Genre-aware multi-part engine • Extreme drum vocabulary • Client-side</footer>
   </div>
 
   <script>
@@ -1048,155 +1048,353 @@
       return out;
     }
 
-    // RIFF_ENGINE_V23
+    // RIFF_ENGINE_V28 — phrase-first melodic rhythm engine
+    // The previous engine randomized the pitch grammar after selecting a motif,
+    // which destroyed the motif contour. V28 keeps a small musical cell intact,
+    // then applies controlled variation, cadence, pedal-point behavior and
+    // playable fret/string motion.
     function generateRhythm(opts) {
-      const {key,scaleKey,styleId,style,bars,tuningKey,usePower,useAlt,useDown,usePalm,usePinch,useHopo,useSlide,useEconomy,useSlant,useSweep,useSkip,usePanic,useBouncy,durations}=opts;
-      const dna=riffDNA23(styleId), open=TUNINGS[tuningKey], nstr=open.length, root=NOTE_TO_SEMI[key];
-      const scale=SCALES[scaleKey]||SCALES.natural_minor, scalePC=getScaleNotes(key,scaleKey), pools=motifPoolsFor(styleId);
-      const ultraLow=['deathcore','hardcore','modern_hc','thall','brutal','nu'];
-      const events=[]; let step=0, down=true, di=0;
+      const {
+        key, scaleKey, styleId, style, bars, tuningKey,
+        usePower, useAlt, useDown, usePalm, usePinch, useHopo, useSlide,
+        useEconomy, useSlant, useSweep, useSkip, usePanic, useBouncy, durations
+      } = opts;
 
-      const fret=(s,pc,max=17)=>{
-        const hits=[]; for(let f=0;f<=max;f++) if((open[s]+f)%12===pc) hits.push(f);
-        if(!hits.length) return 0;
-        return hits[Math.floor(Math.random()*Math.min(4,hits.length))];
-      };
-      const fifth=(s,f)=>{
-        if(s>=nstr-1)return null; const pc=(open[s]+f+7)%12;
-        for(let x=0;x<=10;x++)if((open[s+1]+x)%12===pc)return{string:s+1,fret:x,midi:open[s+1]+x};
-        return null;
-      };
-      const pickString=()=>{
-        const r=Math.random();
-        if(r<dna.low/(dna.low+dna.up+.35)) return Math.random()<.86?0:Math.min(1,nstr-1);
-        if(r<(dna.low+dna.up)/(dna.low+dna.up+.35)) return Math.min(nstr-1,1+Math.floor(Math.random()*Math.max(1,nstr-2)));
-        return Math.min(nstr-1,Math.floor(nstr/2)+Math.floor(Math.random()*Math.max(1,nstr-Math.floor(nstr/2))));
-      };
-      const makeBar=(count,bar)=>{
-        const pool=randomChoice(pools), a=randomChoice(pool).slice(), b=randomChoice(pool).slice(), out=[];
-        let src=(bar===0||Math.random()<dna.rep)?a:b;
-        while(out.length<count){
-          let m=(Math.random()<dna.mut*.35)?b:src, seq=m.slice();
-          if(Math.random()<dna.mut*.35)seq.reverse();
-          for(const raw of seq){
-            if(out.length>=count)break;
-            let q=raw;
-            if(dna.c<.45 && !scale.includes(q%12)) q=quantizeToScale(q,scale);
-            if(dna.m>0.7 && Math.random()<.20) q=randomChoice(scale.filter(x=>x!==0));
-            if(Math.random()<dna.c*.14) q=randomChoice([1,6,10,11]);
-            if(dna.t>.5 && Math.random()<dna.t*.35) q=6;
-            out.push((root+q+12)%12);
-          }
-          src=(src===a?b:a);
+      const dna = riffDNA23(styleId);
+      const open = TUNINGS[tuningKey];
+      const nstr = open.length;
+      const root = NOTE_TO_SEMI[key];
+      const scale = SCALES[scaleKey] || SCALES.natural_minor;
+      const scalePC = getScaleNotes(key, scaleKey);
+      const grammar = RIFF_INTERVALS_V25[styleId] || RIFF_INTERVALS_V25.thrash;
+      const techProfile = riffTechProfile(styleId);
+      const odinProfile = getOdinGenreProfile(styleId);
+      const pools = motifPoolsFor(styleId);
+      const events = [];
+
+      const lowStyles = ['death','deathcore','brutal','hardcore','modern_hc','thall','nu','djent','groove','metalcore','moshcore','doom','stoner'];
+      const melodicStyles = ['black','melodeath','progressive','deadsquad','polyphia','power','melodic_hc'];
+      const pedalStyles = ['thrash','thrash_gallop','death','deathcore','brutal','hardcore','modern_hc','thall','nu','djent','groove','metalcore','moshcore'];
+      const ultraLow = ['deathcore','hardcore','modern_hc','thall','brutal','nu','moshcore'];
+
+      const mod12 = n => ((n % 12) + 12) % 12;
+      const nearestScaleRel = rel => {
+        if (scaleKey === 'chromatic' || scale.includes(mod12(rel))) return mod12(rel);
+        let best = scale[0], bestD = 99;
+        for (const x of scale) {
+          const d = Math.min(Math.abs(x - mod12(rel)), 12 - Math.abs(x - mod12(rel)));
+          if (d < bestD) { bestD = d; best = x; }
         }
-        if(out.length){if(bar===0||Math.random()<.7)out[0]=root;if(bar===bars-1)out[out.length-1]=root;}
-        return out;
+        return best;
+      };
+      const allowedGenreRel = () => {
+        const valid = grammar.filter(x => scaleKey === 'chromatic' || scale.includes(mod12(x)) || Math.random() < 0.22);
+        return valid.length ? valid : grammar;
       };
 
-      for(let bar=0;bar<bars;bar++){
-        const start=di; let sum=0;
-        while(di<durations.length&&sum<16){sum+=durations[di++];}
-        const ds=durations.slice(start,di), pcs=makeBar(ds.length,bar);
-        for(let j=0;j<ds.length;j++){
-          const dur=ds[j], pos=step%16, accent=[0,4,8,12].includes(pos), off=[2,6,10,14].includes(pos), hard=[3,7,11,15].includes(pos);
-          let rc=dna.r*(accent?.45:1);
-          if(styleId==='doom'||styleId==='stoner'||styleId==='black')rc*=.25;
-          if((styleId==='djent'||styleId==='thall')&&hard)rc*=.65;
-          if(Math.random()<rc&&j>0&&j<ds.length-1){events.push({notes:[],dur,rest:true,pick:null,muted:false,power:false,tech:null});step+=dur;continue;}
-
-          let pc=pcs[j];
-          // Apply genre interval grammar first; the selected Scale/Mode remains
-          // the main pool, while the genre adds controlled b2/b5/tritone/etc.
-          const grammar=RIFF_INTERVALS_V25[styleId];
-          if(grammar && Math.random() < (dna.m>.75 ? .72 : .58)) {
-            let rel=randomChoice(grammar);
-            if(scaleKey!=='chromatic' && Math.random()<.42 && !scale.includes(rel%12))
-              rel=randomChoice(scale);
-            pc=(root+rel)%12;
+      function transformMotif(raw, count, variation) {
+        let src = raw.map(x => mod12(x));
+        if (!src.length) src = [0,0,3,0];
+        if (variation === 'reverse') src.reverse();
+        if (variation === 'fragment') src = src.slice(0, Math.max(2, Math.ceil(src.length * .65)));
+        if (variation === 'lift') src = src.map((x,i) => i % 3 === 0 ? mod12(x + 2) : x);
+        const out = [];
+        while (out.length < count) {
+          for (const x of src) {
+            if (out.length >= count) break;
+            out.push(x);
           }
-          if(['djent','thall','deathcore','brutal'].includes(styleId)&&(accent||hard)&&Math.random()<.72)pc=root;
-          if(styleId==='nu'&&!accent&&Math.random()<.72)pc=root;
-          if(styleId==='hardcore'&&!accent&&Math.random()<.58)pc=root;
-          if(styleId==='groove'&&off&&Math.random()<.48)pc=(root+randomChoice([0,3,7,10]))%12;
-          if(styleId==='doom'&&Math.random()<.4)pc=(root+6)%12;
-          if(styleId==='thall'&&Math.random()<.55)pc=randomChoice([root,(root+1)%12,(root+6)%12,(root+11)%12]);
+        }
+        return out;
+      }
 
-          let s=pickString();
-          if(ultraLow.includes(styleId)||styleId==='doom')s=Math.random()<.93?0:Math.min(1,nstr-1);
-          if(styleId==='black'&&Math.random()<dna.up)s=Math.min(nstr-1,2+Math.floor(Math.random()*Math.max(1,nstr-2)));
-          if(['power','polyphia','progressive','melodeath'].includes(styleId)&&Math.random()<dna.up)s=Math.min(nstr-1,2+Math.floor(Math.random()*Math.max(1,nstr-2)));
+      function makeMotif(count, bar) {
+        const pool = randomChoice(pools);
+        let raw = randomChoice(pool).slice();
+        // Favor compact motifs. Long random cells were a major source of "note soup".
+        if (raw.length > 8) raw = raw.slice(0, 8);
+        const variants = bar === 0 ? ['base'] : ['base','base','fragment','lift','reverse'];
+        const variant = randomChoice(variants);
+        let motif = transformMotif(raw, Math.min(8, Math.max(3, count)), variant);
+        motif[0] = 0;
+        // Cadence target: root/fifth/flat-seven depending on genre.
+        const cadence = styleId === 'black' || styleId === 'melodeath'
+          ? randomChoice([0,5,7])
+          : styleId === 'doom' || styleId === 'stoner'
+            ? randomChoice([0,7])
+            : randomChoice([0,0,7]);
+        motif[motif.length - 1] = cadence;
+        if (motif.length > 3 && Math.random() < .7) motif[motif.length - 2] = nearestScaleRel(motif[motif.length - 2]);
+        return motif.map(nearestScaleRel);
+      }
 
-          const prev=events.length?events[events.length-1]:null;
-          // Keep metal rhythm phrases on the same low string longer.
-          const stringHopRate = ['black','melodeath','progressive','deadsquad','polyphia'].includes(styleId) ? .24 : .10;
-          if(prev?.notes?.length&&Math.random()<stringHopRate&&!['djent','thall','deadsquad','polyphia'].includes(styleId))
-            s=Math.max(0,Math.min(nstr-1,prev.notes[0].string+(Math.random()<.5?-1:1)));
+      function fretForPC(s, pc, anchor=0, max=12) {
+        const hits=[];
+        for(let f=0; f<=max; f++) if(mod12(open[s]+f)===mod12(pc)) hits.push(f);
+        if(!hits.length) return 0;
+        hits.sort((a,b)=>Math.abs(a-anchor)-Math.abs(b-anchor));
+        return hits[0];
+      }
 
-          const max=ultraLow.includes(styleId)||['doom','deathcore','thall'].includes(styleId)?5:(['power','progressive','polyphia','melodeath'].includes(styleId)?15:8);
-          let f=fret(s,pc,max), actual=(open[s]+f)%12;
-          if(scaleKey!=='chromatic'&&!scalePC.includes(actual)&&dna.c<.45){const safe=randomChoice(scalePC);f=fret(s,safe,max);pc=safe;}
+      function fifthFor(s, f) {
+        if (s >= nstr-1) return null;
+        const target = mod12(open[s] + f + 7);
+        for (let x=0; x<=10; x++) {
+          if (mod12(open[s+1] + x) === target)
+            return {string:s+1, fret:x, midi:open[s+1]+x};
+        }
+        return null;
+      }
 
-          const rootish=pc===root||pc===(root+7)%12||pc===(root+5)%12;
-          let pp=dna.p*(rootish?1.18:.55); if(s>=2)pp*=.3; if(dna.m>.7)pp*=.5;
-          const isPower=usePower&&rootish&&Math.random()<Math.min(1,pp), notes=[{string:s,fret:f,midi:open[s]+f}];
-          if(isPower){const x=fifth(s,f);if(x)notes.push(x);}
-
-          const prevPickEv=events.length?events[events.length-1]:null;
-          const prevPickStr=prevPickEv?.notes?.length ? prevPickEv.notes[0].string : s;
-          const stringMove=s-prevPickStr;
-          let pick=styleId==='black'?'T':(useDown?'D':(useAlt?(down?'D':'U'):'D'));
-          if(useEconomy && useAlt && prevPickEv?.notes?.length && stringMove!==0) {
-            pick=stringMove>0?'D':'U';
-          } else if(useAlt) {
-            down=!down;
+      function chooseString(prevString, melodic) {
+        if (nstr <= 1) return 0;
+        if (ultraLow.includes(styleId)) {
+          if (Math.random() < .86) return 0;
+          return 1;
+        }
+        if (pedalStyles.includes(styleId) && !melodic) {
+          if (Math.random() < .76) return 0;
+          return Math.min(1, nstr-1);
+        }
+        if (melodicStyles.includes(styleId)) {
+          const center = Math.min(nstr-1, Math.max(1, Math.floor(nstr/2)));
+          if (prevString != null && Math.random() < .62) {
+            const delta = Math.random() < .5 ? -1 : 1;
+            return Math.max(1, Math.min(nstr-1, prevString + delta));
           }
+          return Math.max(1, Math.min(nstr-1, center + (Math.random()<.5 ? 0 : 1)));
+        }
+        if (prevString != null && Math.random() < .80) return prevString;
+        return Math.random() < .7 ? 0 : Math.min(1, nstr-1);
+      }
+
+      function chooseRelative(baseRel, idx, count, pos, prevRel) {
+        let rel = mod12(baseRel);
+
+        // Strong beats are structural: root/fifth; weak positions carry the color.
+        if (pos === 0) rel = 0;
+        else if ((pos === 4 || pos === 8 || pos === 12) && Math.random() < .58) {
+          rel = styleId === 'doom' || styleId === 'stoner' ? 0 : randomChoice([0,5,7]);
+        }
+
+        // Keep the motif recognizable. Variation happens at phrase edges, not every note.
+        if (idx > 0 && idx < count-1) {
+          if (Math.random() < .78) {
+            rel = nearestScaleRel(rel);
+          } else if (Math.random() < .35) {
+            rel = nearestScaleRel(randomChoice([prevRel, 0, 3, 5, 7, 10]));
+          }
+        }
+
+        // Genre-specific spice is sparse and resolves immediately.
+        if (idx > 0 && idx < count-1 && Math.random() < Math.min(.10, dna.c*.10)) {
+          const spice = randomChoice(allowedGenreRel());
+          rel = mod12(spice);
+        }
+        return rel;
+      }
+
+      let di=0, globalStep=0, previousPC=root, previousFret=0, previousString=0, down=true;
+
+      for (let bar=0; bar<bars; bar++) {
+        const start=di;
+        let sum=0;
+        while(di<durations.length && sum<16) { sum += durations[di++]; }
+        const ds=durations.slice(start,di);
+        if(!ds.length) continue;
+
+        const motif=makeMotif(ds.length,bar);
+        const melodic = melodicStyles.includes(styleId) || styleId === 'black';
+        const barStart=globalStep;
+        let lastRel=0;
+
+        for(let j=0;j<ds.length;j++) {
+          const dur=ds[j];
+          const pos=(globalStep-barStart)%16;
+          const accent = pos===0 || pos===4 || pos===8 || pos===12;
+          const off = pos===2 || pos===6 || pos===10 || pos===14;
+          const hard = pos===3 || pos===7 || pos===11 || pos===15;
+
+          // Silence is intentional punctuation, never random note deletion.
+          let restChance=dna.r;
+          if(accent) restChance*=.28;
+          if(styleId==='doom'||styleId==='stoner'||styleId==='black') restChance*=.45;
+          if(['djent','thall','deathcore','brutal','moshcore'].includes(styleId) && hard) restChance*=.55;
+          if(j>0 && j<ds.length-1 && Math.random()<restChance) {
+            events.push({notes:[],dur,rest:true,pick:null,muted:false,power:false,tech:null});
+            globalStep+=dur;
+            continue;
+          }
+
+          let rel=chooseRelative(motif[j%motif.length],j,ds.length,pos,lastRel);
+          lastRel=rel;
+
+          // Pedal-point architecture: return to the root frequently on the lowest string.
+          if (pedalStyles.includes(styleId) && !melodic && !off && Math.random() < .48) rel=0;
+          if (styleId==='nu' && !accent && Math.random()<.68) rel=0;
+          if (styleId==='hardcore' && !accent && Math.random()<.56) rel=0;
+          if (styleId==='groove' && off && Math.random()<.48) rel=randomChoice([0,3,7,10]);
+          if (styleId==='doom' && Math.random()<.30) rel=randomChoice([0,5,7,10]);
+          if (styleId==='thall' && Math.random()<.35) rel=randomChoice([0,1,6,11]);
+
+          // Chromatic approach is only used as a leading tone into a target.
+          let nextRel = j+1<ds.length ? motif[(j+1)%motif.length] : 0;
+          if (j>0 && j<ds.length-1 && Math.random()<dna.c*.05) {
+            const target=nearestScaleRel(nextRel);
+            rel=mod12(target+11);
+          }
+
+          const pc=mod12(root+rel);
+          let s=chooseString(previousString,melodic);
+          if (accent && pedalStyles.includes(styleId) && !melodic && Math.random()<.72) s=0;
+          if (melodic && Math.random()<.30) s=Math.min(nstr-1,Math.max(1,s));
+
+          // Keep the same string/fret neighborhood instead of teleporting around the neck.
+          let maxF = ultraLow.includes(styleId) || ['doom','deathcore','thall','brutal'].includes(styleId) ? 5 : 9;
+          if (melodicStyles.includes(styleId)) maxF=12;
+          if (styleId==='power') maxF=15;
+
+          let anchor = previousString===s ? previousFret : (s===0 ? 0 : 5);
+          let f=fretForPC(s,pc,anchor,maxF);
+
+          // Root pedal should actually be the open/lowest-root position when available.
+          if (s===0 && pc===root && pedalStyles.includes(styleId) && Math.random()<.82) {
+            const openPC=mod12(open[s]);
+            if(openPC===root) f=0;
+            else f=fretForPC(s,pc,0,maxF);
+          }
+
+          // If a note is too far from the previous pitch, favor a nearby scale tone.
+          if (events.length && !events[events.length-1].rest && previousString===s) {
+            const semitoneMove=Math.abs((open[s]+f)-(open[s]+previousFret));
+            if (semitoneMove>7) {
+              const nearby=[0,3,5,7,10].map(x=>nearestScaleRel(x));
+              const candidates=nearby.map(r=>fretForPC(s,mod12(root+r),previousFret,maxF));
+              f=candidates.sort((a,b)=>Math.abs(a-previousFret)-Math.abs(b-previousFret))[0];
+            }
+          }
+
+          let notes=[{string:s,fret:f,midi:open[s]+f}];
+          const rootish=pc===root || pc===mod12(root+7) || pc===mod12(root+5);
+
+          // Power chords are structural accents, not random decoration.
+          let power = false;
+          if(usePower && rootish && (accent || j===ds.length-1) &&
+             Math.random() < Math.min(.94, dna.p*1.15)) {
+            const x=fifthFor(s,f);
+            if(x && s<nstr-1) { notes.push(x); power=true; }
+          }
+
+          let pick = styleId==='black' ? 'T' : (useDown ? 'D' : (useAlt ? (down?'D':'U') : 'D'));
+          if(useEconomy && useAlt && previousString!==s) pick = s>previousString ? 'D' : 'U';
+          else if(useAlt) down=!down;
+
           let muted=false;
-          if(usePalm&&!['doom','stoner','black','polyphia','power'].includes(styleId))
-            muted=Math.random()<Math.min(.9,.25+dna.s*.48) && dur<4;
+          if(usePalm && !['doom','stoner','black','polyphia','power'].includes(styleId)) {
+            const base=.18 + dna.s*.55;
+            muted = dur<=2 && Math.random()<Math.min(.86,base);
+            if(accent && Math.random()<.62) muted=false;
+            if(power && Math.random()<.45) muted=false;
+          }
 
-          const odinProfile = getOdinGenreProfile(styleId);
-          const techProfile = riffTechProfile(styleId);
-          let tech=null;
-          let slant=null;
-          if(useSlant && (useAlt||useDown) && Math.random()<techProfile.slant) {
+          let tech=null, slant=null;
+          if(useSlant && (useAlt||useDown) && Math.random()<techProfile.slant*.55)
             slant=pick==='D'?'DS':'US';
-          }
-          if(usePinch&&!muted&&(accent||hard)&&dur>=2&&Math.random()<(.045 + odinProfile.tech*.12))tech='ph';
-          if(useHopo&&prev?.notes?.length&&prev.notes[0].string===s&&!tech){
-            const df=f-prev.notes[0].fret;
-            if(Math.abs(df)<=2&&Math.abs(df)>=1&&Math.random()<(odinProfile.tech*.9 + (dna.m>.65?.08:.04)))tech=df>0?'h':'p';
-          }
-          if(useSlide&&prev?.notes?.length&&prev.notes[0].string===s&&!tech){
-            const df=f-prev.notes[0].fret;
-            if(Math.abs(df)>=3&&Math.random()<(.05 + odinProfile.tech*.55))tech=df>0?'/':'\\';
-          }
-          if(dna.m>.7&&styleId==='deadsquad'&&Math.random()<.08)tech='x';
 
-          const panicAllowed = usePanic && !muted && (accent||hard||styleId==='deathcore'||styleId==='thall') &&
-            Math.random() < techProfile.panic;
-          if (panicAllowed && !tech) {
+          // Techniques are attached only where the underlying notes support them.
+          if(useHopo && previousString===s && !muted && !power && !tech) {
+            const df=f-previousFret;
+            if(df>=1&&df<=2&&Math.random()<Math.min(.34,odinProfile.tech*.95+.06)) tech='h';
+            else if(df<=-1&&df>=-2&&Math.random()<Math.min(.34,odinProfile.tech*.95+.06)) tech='p';
+          }
+          if(useSlide && previousString===s && !muted && !tech) {
+            const df=f-previousFret;
+            if(Math.abs(df)>=3&&Math.random()<(.05+odinProfile.tech*.45)) tech=df>0?'/':'\\';
+          }
+          if(usePinch && !muted && !tech && dur>=2 && (accent || j===ds.length-1) &&
+             Math.random()<(.035+odinProfile.tech*.10)) tech='ph';
+
+          if(usePanic && !muted && !tech && (hard || j===ds.length-1) &&
+             Math.random()<techProfile.panic*.65) {
             const dis=randomChoice([1,6,10]);
-            const disPC=(root+dis)%12;
-            const addString=Math.min(nstr-1,s+1);
-            const df=fret(addString,disPC,Math.min(8,max));
-            notes.push({string:addString,fret:df,midi:open[addString]+df});
-            if(Math.random()<.45&&addString+1<nstr){
-              const tf=fret(addString+1,(root+6)%12,Math.min(8,max));
-              notes.push({string:addString+1,fret:tf,midi:open[addString+1]+tf});
+            const dsPC=mod12(root+dis);
+            const addS=Math.min(nstr-1,s+1);
+            const df=fretForPC(addS,dsPC,f,Math.min(8,maxF));
+            notes.push({string:addS,fret:df,midi:open[addS]+df});
+            if(addS+1<nstr && Math.random()<.35) {
+              const tf=fretForPC(addS+1,mod12(root+6),df,Math.min(8,maxF));
+              notes.push({string:addS+1,fret:tf,midi:open[addS+1]+tf});
             }
             tech='panic';
+            power=false;
           }
-          if (useBouncy && !tech && ['groove','moshcore','nu','hardcore','modern_hc','metalcore','deathcore','thall','djent'].includes(styleId) &&
-              Math.random()<techProfile.bouncy) {
-            muted=dur<=2 ? true : muted;
-            if(Math.random()<.72&&notes.length>1) notes.splice(1);
+
+          if(useBouncy && !tech && ['groove','moshcore','nu','hardcore','modern_hc','metalcore','deathcore','thall','djent'].includes(styleId) &&
+             Math.random()<techProfile.bouncy*.65) {
+            if(dur<=2) muted=true;
+            if(notes.length>1 && Math.random()<.72) notes=notes.slice(0,1);
             tech='bounce';
           }
 
-          events.push({notes,dur,rest:false,pick,muted,power:isPower&&notes.length>1,tech,slant,crossed:!!(prev?.notes?.length&&prev.notes[0].string!==s)});
-          step+=dur;
+          events.push({
+            notes, dur, rest:false, pick, muted, power, tech, slant,
+            crossed: previousString!==s
+          });
+          previousPC=pc;
+          previousFret=f;
+          previousString=s;
+          globalStep+=dur;
         }
       }
+
+      // Advanced string-geometry pass. These mutate only selected notes; the
+      // phrase pitches remain stable, so technique options cannot destroy the motif.
+      const retarget=(ev,targetString)=>{
+        if(!ev?.notes?.length || targetString<0 || targetString>=nstr) return false;
+        const pc=ev.notes[0].midi%12;
+        const nf=fretForPC(targetString,pc,ev.notes[0].fret,12);
+        ev.notes[0]={string:targetString,fret:nf,midi:open[targetString]+nf};
+        if(ev.power && ev.notes.length>1) {
+          const x=fifthFor(targetString,nf);
+          ev.notes=x?[ev.notes[0],x]:[ev.notes[0]];
+        }
+        return true;
+      };
+
+      if(useSweep||useSkip) {
+        for(let i=1;i<events.length-2;i++) {
+          const a=events[i-1], b=events[i], c=events[i+1], d=events[i+2];
+          if(a.rest||b.rest||c.rest||d.rest||!a.notes?.length||!b.notes?.length||!c.notes?.length||!d.notes?.length) continue;
+          if(useSweep && Math.random()<techProfile.sweep && Math.abs(b.notes[0].string-a.notes[0].string)<=1) {
+            const base=a.notes[0].string;
+            const dir=Math.random()<.5?1:-1;
+            const targets=[base+dir,base+2*dir,base+3*dir];
+            if(targets.every(x=>x>=0&&x<nstr) && retarget(b,targets[0]) && retarget(c,targets[1]) && retarget(d,targets[2])) {
+              b.tech='sweep'; c.tech='sweep'; d.tech='sweep';
+              b.pick='S'; c.pick='S'; d.pick='S';
+              b.slant=dir>0?'DS':'US'; c.slant=b.slant; d.slant=b.slant;
+              i+=2;
+            }
+          } else if(useSkip && Math.random()<techProfile.skip) {
+            const base=a.notes[0].string;
+            const dir=Math.random()<.5?-1:1;
+            const target=base+dir*2;
+            if(retarget(b,target)) { b.tech='skip'; b.pick=useAlt?(dir>0?'D':'U'):b.pick; }
+          }
+        }
+      }
+
+      const forceTech=(name,enabled)=>{
+        if(!enabled||events.some(e=>e.tech===name)) return;
+        const candidates=events.filter(e=>!e.rest&&e.notes?.length&&e.dur<=2&&!e.muted);
+        if(!candidates.length) return;
+        const e=randomChoice(candidates);
+        e.tech=name;
+        if(name==='sweep') e.pick='S';
+      };
+      forceTech('sweep',useSweep);
+      forceTech('skip',useSkip);
+
       return events;
     }
 
@@ -2835,30 +3033,65 @@
     */
     const ODIN = {
       // EXACT Odin III map from the supplied plugin screenshot.
-      // Screenshot convention: C-2=MIDI 0.
-      SLIDE_SLOW_FROM_UP: 0, SLIDE_SLOW_FROM_DOWN: 1, SLIDE_SLOW_TO_DOWN: 2, SLIDE_SLOW_TO_UP: 3,
-      SLIDE_FAST_FROM_UP: 4, SLIDE_FAST_FROM_DOWN: 5, SLIDE_FAST_TO_DOWN: 6, SLIDE_FAST_TO_UP: 7, AUTO_POWER: 8,
+      // C-2…B-2: slides + Auto Power; C0…B0: picking + mutes;
+      // C1…B1: open PM / legato / harmonics; C2…B2: slides + plucks.
+      SLIDE_SLOW_FROM_UP: 0,
+      SLIDE_SLOW_FROM_DOWN: 1,
+      SLIDE_SLOW_TO_DOWN: 2,
+      SLIDE_SLOW_TO_UP: 3,
+      SLIDE_FAST_FROM_UP: 4,
+      SLIDE_FAST_FROM_DOWN: 5,
+      SLIDE_FAST_TO_DOWN: 6,
+      SLIDE_FAST_TO_UP: 7,
+      AUTO_POWER: 8,
 
-      DOWN_OPEN_PM: 12, HAMMER_ON: 13, PULL_OFF: 14, UP_OPEN_PM: 15,
-      BEND_UP_FAST: 16, BEND_UP_SLOW: 17, AUTO_SLIDE: 18, SCRAPES: 19,
-      TREMOLO: 20, NATURAL_HARM: 21, PINCH_HARM: 22, NASTY_PINCH: 23,
+      ALT_PICKED: 24,
+      DOWN_PICKED: 25,
+      UP_PICKED: 26,
+      ALT_MUTE_SEMI: 27,
+      DOWN_MUTE_SEMI: 28,
+      UP_MUTE_SEMI: 29,
+      ALT_MUTE_CLOSED: 30,
+      DOWN_MUTE_CLOSED: 31,
+      UP_MUTE_CLOSED: 32,
+      ALT_MUTE_DEAD: 33,
+      DOWN_MUTE_DEAD: 34,
+      UP_MUTE_DEAD: 35,
 
-      ALT_PICKED: 24, DOWN_PICKED: 25, UP_PICKED: 26,
-      ALT_MUTE_SEMI: 27, DOWN_MUTE_SEMI: 28, UP_MUTE_SEMI: 29,
-      ALT_MUTE_CLOSED: 30, DOWN_MUTE_CLOSED: 31, UP_MUTE_CLOSED: 32,
-      ALT_MUTE_DEAD: 33, DOWN_MUTE_DEAD: 34, UP_MUTE_DEAD: 35,
+      DOWN_OPEN_PM: 36,
+      HAMMER_ON: 37,
+      PULL_OFF: 38,
+      UP_OPEN_PM: 39,
+      BEND_UP_FAST: 40,
+      BEND_UP_SLOW: 41,
+      AUTO_SLIDE: 42,
+      SCRAPES: 43,
+      TREMOLO: 44,
+      NATURAL_HARM: 45,
+      PINCH_HARM: 46,
+      NASTY_PINCH: 47,
 
-      DOWN_OPEN_PALM_MUTE: 36, HAMMER_ON_C1: 37, PULL_OFF_C1: 38, UP_OPEN_PALM_MUTE: 39,
-      BEND_UP_FAST_C1: 40, BEND_UP_SLOW_C1: 41, AUTO_SLIDE_C1: 42, SCRAPES_C1: 43,
-      TREMOLO_C1: 44, NATURAL_HARM_C1: 45, PINCH_HARM_C1: 46, NASTY_PINCH_C1: 47,
+      SLIDE_SLOW_FROM_UP_C2: 48,
+      SLIDE_SLOW_FROM_DOWN_C2: 49,
+      SLIDE_SLOW_TO_DOWN_C2: 50,
+      SLIDE_SLOW_TO_UP_C2: 51,
+      SLIDE_FAST_FROM_UP_C2: 52,
+      SLIDE_FAST_FROM_DOWN_C2: 53,
+      SLIDE_FAST_TO_DOWN_C2: 54,
+      SLIDE_FAST_TO_UP_C2: 55,
+      AUTO_POWER_C2: 56,
+      FINGER_PLUCK_OPEN: 57,
+      FINGER_PLUCK_DEAD: 58,
+      THUMB_SLAP: 59,
 
-      SLIDE_SLOW_FROM_UP_C2: 48, SLIDE_SLOW_FROM_DOWN_C2: 49, SLIDE_SLOW_TO_DOWN_C2: 50,
-      SLIDE_SLOW_TO_UP_C2: 51, SLIDE_FAST_FROM_UP_C2: 52, SLIDE_FAST_FROM_DOWN_C2: 53,
-      SLIDE_FAST_TO_DOWN_C2: 54, SLIDE_FAST_TO_UP_C2: 55, AUTO_POWER_C2: 56,
-      FINGER_PLUCK_OPEN: 57, FINGER_PLUCK_DEAD: 58, THUMB_SLAP: 59,
-
-      // String Selection: F6=8, F#6=7, G6=6, G#6=5, A6=4, A#6=3, B6=2, C7=1
-      STR8: 101, STR7: 102, STR6: 103, STR5: 104, STR4: 105, STR3: 106, STR2: 107, STR1: 108
+      STR8: 101,
+      STR7: 102,
+      STR6: 103,
+      STR5: 104,
+      STR4: 105,
+      STR3: 106,
+      STR2: 107,
+      STR1: 108
     };
     /*
       Bass VST Keyswitch Map (from user plugin)
@@ -3198,125 +3431,3 @@
 
       const track = [];
       const tname = 'Drums';
-      track.push(0x00, 0xFF, 0x03, tname.length);
-      for (let i = 0; i < tname.length; i++) track.push(tname.charCodeAt(i));
-
-      let prev = 0;
-      for (const e of events) {
-        const delta = Math.max(0, e.t - prev);
-        prev = e.t;
-        for (const b of toVarLen(delta)) track.push(b);
-        // channel 10 = 0x9
-        track.push(e.type === 'on' ? 0x99 : 0x89, e.note, e.vel);
-      }
-      track.push(0x00, 0xFF, 0x2F, 0x00);
-      return track;
-    }
-
-    function exportMidi() {
-      if (!hasAnyPart()) { showToast('Generate riff dulu!'); return; }
-      try {
-        const bpm = parseInt($('tempo').value, 10);
-        const useOdin = $('odinKs') && $('odinKs').checked;
-        const useAlt = $('altPicking').checked && !($('downstroke') && $('downstroke').checked);
-        const styleId = $('style').value;
-        const isTremoloStyle = (styleId === 'black');
-        const tpq = 480;
-
-        const tracks = [];
-        // Tempo track (track 0 for format 1)
-        const tempoTrack = [];
-        const uspq = Math.round(60000000 / bpm);
-        tempoTrack.push(0x00, 0xFF, 0x51, 0x03, (uspq>>16)&0xFF, (uspq>>8)&0xFF, uspq&0xFF);
-        tempoTrack.push(0x00, 0xFF, 0x2F, 0x00);
-        tracks.push(tempoTrack);
-
-        const baseOpts = { useOdin, useAlt, isTremoloStyle, styleId };
-
-        if (parts.rhythm) {
-          const ev = buildTrackEvents(parts.rhythm, { ...baseOpts, isGuitar: true });
-          tracks.push(eventsToTrackBytes(ev, 'Rhythm Guitar', useOdin ? null : 30));
-        }
-        if (parts.lead) {
-          const ev = buildTrackEvents(parts.lead, { ...baseOpts, isGuitar: true, isTremoloStyle });
-          tracks.push(eventsToTrackBytes(ev, 'Lead Guitar', useOdin ? null : 29));
-        }
-        if (parts.bass) {
-          const ev = buildTrackEvents(parts.bass, {
-            useOdin, useAlt: false, isTremoloStyle: false, styleId, isGuitar: false, isBass: true
-          });
-          tracks.push(eventsToTrackBytes(ev, 'Bass', useOdin ? null : 36));
-        }
-        if (parts.breakdown) {
-          const ev = buildTrackEvents(parts.breakdown, { ...baseOpts, isGuitar: true });
-          tracks.push(eventsToTrackBytes(ev, 'Breakdown', useOdin ? null : 30));
-        }
-        if (parts.drums) {
-          tracks.push(buildDrumTrackBytes(parts.drums));
-        }
-
-        // Format 1 header
-        const ntrks = tracks.length;
-        const header = [
-          0x4D,0x54,0x68,0x64, 0,0,0,6,
-          0,1, // format 1
-          (ntrks>>8)&0xFF, ntrks&0xFF,
-          (tpq>>8)&0xFF, tpq&0xFF
-        ];
-
-        let totalLen = header.length;
-        const packed = [];
-        for (const tr of tracks) {
-          const th = [0x4D,0x54,0x72,0x6B, (tr.length>>24)&0xFF,(tr.length>>16)&0xFF,(tr.length>>8)&0xFF,tr.length&0xFF];
-          packed.push(th, tr);
-          totalLen += th.length + tr.length;
-        }
-        const all = new Uint8Array(totalLen);
-        let off = 0;
-        all.set(header, 0); off = header.length;
-        for (const chunk of packed) { all.set(chunk, off); off += chunk.length; }
-
-        const blob = new Blob([all], { type: 'audio/midi' });
-        const tag = useOdin ? 'odin' : 'plain';
-        const partsTag = [parts.rhythm&&'r', parts.lead&&'l', parts.bass&&'b', parts.breakdown&&'bd', parts.drums&&'d'].filter(Boolean).join('');
-        const fname = `metal-${partsTag}-${$('key').value}-${$('style').value}-${bpm}bpm-${tag}.mid`;
-        const ok = downloadBlob(blob, fname);
-        showToast(ok ? `✓ MIDI (${ntrks - 1} parts) ready!` : 'MIDI dibuka di tab baru');
-      } catch (err) {
-        console.error(err);
-        showToast('Gagal: ' + err.message);
-      }
-    }
-
-    function copyTab() {
-      const chunks=[];
-      if(parts.rhythm)chunks.push($('tabRhythm').textContent);
-      if(parts.lead)chunks.push($('tabLead').textContent);
-      if(parts.bass)chunks.push($('tabBass').textContent);
-      if(parts.breakdown)chunks.push($('tabBreakdown').textContent);
-      if(parts.drums)chunks.push($('tabDrums').textContent);
-      const text=chunks.join('\n\n')||'No parts';
-      const done=()=>{const b=$('btnCopy'),old=b.textContent;b.textContent='✓ COPIED!';setTimeout(()=>b.textContent=old,1400);};
-      if(navigator.clipboard&&window.isSecureContext)navigator.clipboard.writeText(text).then(done).catch(()=>copyFallback(text,done));
-      else copyFallback(text,done);
-    }
-    function copyFallback(text,done){
-      const ta=document.createElement('textarea');ta.value=text;ta.style.position='fixed';ta.style.left='-9999px';
-      document.body.appendChild(ta);ta.focus();ta.select();
-      try{document.execCommand('copy');done();}catch(e){showToast('Clipboard gagal — copy manual dari TAB');}
-      finally{document.body.removeChild(ta);}
-    }
-
-    // ===================== INIT =====================
-    $('btnGen').addEventListener('click', () => { stopRiff(); generateRiff(); });
-    $('btnPlay').addEventListener('click', playRiff);
-    $('btnStop').addEventListener('click', stopRiff);
-    $('btnCopy').addEventListener('click', copyTab);
-    $('btnMidi').addEventListener('click', exportMidi);
-
-    buildWiki();
-    updateStyleCard();
-    renderFretboard([], 'standard6');
-  </script>
-</body>
-</html>
