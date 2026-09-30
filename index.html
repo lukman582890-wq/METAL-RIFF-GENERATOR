@@ -921,6 +921,33 @@
       brutal:{d:.64,r:.34,s:.97,c:.46,t:.58,m:.05,low:1,up:0,rep:.70,p:.52,mut:.55}
     };
     const riffDNA23 = id => RIFF_DNA_V23[id] || RIFF_DNA_V23.thrash;
+    // Genre interval grammar V25: keeps generated notes inside a recognizable
+    // vocabulary instead of choosing unrelated scale/chromatic notes at random.
+    // Relative to the selected root: 0=R, 1=b2, 2=2, 3=b3, 5=4, 6=b5,
+    // 7=5, 8=b6, 9=6, 10=b7, 11=7.
+    const RIFF_INTERVALS_V25 = {
+      thrash:[0,1,3,5,6,7,10,11],
+      thrash_gallop:[0,1,3,5,7,10],
+      death:[0,1,2,3,5,6,7,10],
+      melodeath:[0,2,3,5,7,8,10,11],
+      black:[0,1,2,3,5,7,8,10],
+      doom:[0,3,5,6,7,10],
+      stoner:[0,3,5,7,10],
+      groove:[0,3,5,7,10],
+      nu:[0,1,3,6,7,10],
+      metalcore:[0,1,3,5,6,7,10],
+      djent:[0,1,3,6,7,10],
+      progressive:[0,1,2,3,5,6,7,9,10,11],
+      deadsquad:[0,1,2,3,5,6,7,10,11],
+      polyphia:[0,2,3,5,7,9,10,11],
+      deathcore:[0,1,3,6,7,10],
+      hardcore:[0,1,3,5,6,7,10],
+      melodic_hc:[0,1,3,5,7,8,10],
+      modern_hc:[0,1,3,6,7,10],
+      thall:[0,1,3,6,7,10,11],
+      power:[0,2,3,4,5,7,9,11],
+      brutal:[0,1,3,6,7,10]
+    };
 
     function buildDurations(style, bars) {
       const id = Object.keys(STYLE_DB).find(k => STYLE_DB[k] === style) || 'thrash';
@@ -1001,6 +1028,15 @@
           if(Math.random()<rc&&j>0&&j<ds.length-1){events.push({notes:[],dur,rest:true,pick:null,muted:false,power:false,tech:null});step+=dur;continue;}
 
           let pc=pcs[j];
+          // Apply genre interval grammar first; the selected Scale/Mode remains
+          // the main pool, while the genre adds controlled b2/b5/tritone/etc.
+          const grammar=RIFF_INTERVALS_V25[styleId];
+          if(grammar && Math.random() < (dna.m>.75 ? .72 : .58)) {
+            let rel=randomChoice(grammar);
+            if(scaleKey!=='chromatic' && Math.random()<.42 && !scale.includes(rel%12))
+              rel=randomChoice(scale);
+            pc=(root+rel)%12;
+          }
           if(['djent','thall','deathcore','brutal'].includes(styleId)&&(accent||hard)&&Math.random()<.72)pc=root;
           if(styleId==='nu'&&!accent&&Math.random()<.72)pc=root;
           if(styleId==='hardcore'&&!accent&&Math.random()<.58)pc=root;
