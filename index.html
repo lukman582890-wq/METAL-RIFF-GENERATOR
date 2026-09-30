@@ -185,6 +185,8 @@
           <select id="scale">
             <option value="natural_minor">Natural Minor</option>
             <option value="harmonic_minor">Harmonic Minor</option>
+            <option value="minor_pent">Minor Pentatonic</option>
+            <option value="major_pent">Major Pentatonic</option>
             <option value="phrygian">Phrygian</option>
             <option value="phrygian_dominant">Phrygian Dominant</option>
             <option value="locrian">Locrian</option>
@@ -280,7 +282,11 @@
       <div class="check-row">
         <label><input type="checkbox" id="powerChord" checked /> Power Chords</label>
         <label><input type="checkbox" id="altPicking" checked /> Alternate Picking ↓↑</label>
+        <label><input type="checkbox" id="downstroke" /> All Downstrokes</label>
         <label><input type="checkbox" id="palmMute" checked /> Palm Mute</label>
+        <label><input type="checkbox" id="techPinch" checked /> Pinch Harmonic</label>
+        <label><input type="checkbox" id="techHopo" checked /> Hammer / Pull</label>
+        <label><input type="checkbox" id="techSlide" /> Slide</label>
         <label><input type="checkbox" id="odinKs" checked /> Guitar + Bass Keyswitches</label>
       </div>
 
@@ -497,7 +503,7 @@
         tempo: '110–150 BPM',
         scales: 'Natural Minor, Blues, Phrygian',
         tuningTip: 'Drop D / Drop C / Drop B',
-        recommended: { key: 'D', scale: 'natural_minor', tempo: 130, tuning: 'drop_d', power: true, palm: true, alt: true },
+        recommended: { key: 'D', scale: 'minor_pent', tempo: 130, tuning: 'drop_d', power: true, palm: true, alt: true },
         rhythms: [
           [3,1,2,2,3,1,2,2],[2,2,3,1,2,2,3,1],
           [4,2,2,4,4],[3,3,2,3,3,2],[2,1,1,2,2,2,1,1,2,2],
@@ -729,6 +735,8 @@
     const SCALES = {
       natural_minor:     [0,2,3,5,7,8,10],
       harmonic_minor:    [0,2,3,5,7,8,11],
+      minor_pent:        [0,3,5,7,10],
+      major_pent:        [0,2,4,7,9],
       phrygian:          [0,1,3,5,7,8,10],
       phrygian_dominant: [0,1,4,5,7,8,10],
       locrian:           [0,1,3,5,6,8,10],
@@ -739,9 +747,11 @@
       chromatic:         [0,1,2,3,4,5,6,7,8,9,10,11]
     };
     const SCALE_NAMES = {
-      natural_minor:'Natural Minor', harmonic_minor:'Harmonic Minor', phrygian:'Phrygian',
-      phrygian_dominant:'Phrygian Dominant', locrian:'Locrian', diminished:'Diminished',
-      blues:'Blues Minor', dorian:'Dorian', whole_tone:'Whole Tone', chromatic:'Chromatic'
+      natural_minor:'Natural Minor', harmonic_minor:'Harmonic Minor',
+      minor_pent:'Minor Pentatonic', major_pent:'Major Pentatonic',
+      phrygian:'Phrygian', phrygian_dominant:'Phrygian Dominant', locrian:'Locrian',
+      diminished:'Diminished', blues:'Blues Minor', dorian:'Dorian',
+      whole_tone:'Whole Tone', chromatic:'Chromatic'
     };
 
     const TUNINGS = {
@@ -905,106 +915,153 @@
       Values = semitones above root (0=root, 1=b2, 3=b3, 5=4, 6=tritone, 7=5th, 10=b7)
     */
     const MOTIF_POOL = {
-      // Universal metal cells (always available)
+      // Root-centric chug (universal)
       core: [
-        [0,0,0,0], [0,0,0,3], [0,0,1,0], [0,0,3,0],
-        [0,3,0,0], [0,0,0,7], [0,7,0,0], [0,0,5,0],
-        [0,0,0,0,3], [0,0,0,0,1], [0,3,5,0], [0,7,5,0],
-        [0,0,3,5], [0,5,3,0], [0,0,0,10], [0,10,0,0]
+        [0,0,0,0], [0,0,0,3], [0,0,3,0], [0,3,0,0],
+        [0,0,0,7], [0,7,0,0], [0,0,5,0], [0,5,0,0],
+        [0,0,0,0,3], [0,0,0,0,7], [0,0,3,5], [0,5,3,0],
+        [0,0,0,10], [0,10,0,0], [0,3,5,0], [0,7,5,0]
+      ],
+      // Minor pentatonic box shapes (0-b3-4-5-b7)
+      pent: [
+        [0,3,5,0], [0,3,5,7], [0,5,3,0], [0,3,0,5],
+        [0,0,3,5,7], [0,7,5,3,0], [0,3,5,7,10], [0,10,7,5,3],
+        [0,5,7,10,0], [0,0,0,3,5], [0,3,5,3,0], [0,7,10,7,5],
+        [0,0,5,7,5], [0,3,0,0,5], [0,5,0,3,0], [0,10,0,7,0]
+      ],
+      // Blues: pent + b5 (6)
+      blues: [
+        [0,3,5,6,5,0], [0,0,3,6,0], [0,3,6,5,0], [0,5,6,5,3],
+        [0,0,0,6,5], [0,6,5,3,0], [0,3,5,6,7], [0,7,6,5,0],
+        [0,0,5,6,0], [0,3,0,6,0], [0,6,0,3,0], [0,5,6,7,10]
       ],
       thrash: [
         [0,0,1,0,0,1], [0,0,0,1,3,0], [0,1,0,3,0,0],
         [0,0,3,0,1,0], [0,0,0,0,1,3], [0,3,1,0,0,0],
-        [0,0,7,0,0,5], [0,5,0,3,0,0]
+        [0,0,7,0,0,5], [0,5,0,3,0,0], [0,0,0,1,0,0],
+        [0,1,3,0,0,0], [0,0,5,0,1,0], [0,3,0,0,1,0]
       ],
       death: [
         [0,1,0,1,0,0], [0,0,1,3,0,0], [0,6,0,0,3,0],
         [0,0,0,1,0,3], [0,3,0,6,0,0], [0,1,3,0,1,0],
-        [0,0,6,0,3,0], [0,7,6,0,0,0]
+        [0,0,6,0,3,0], [0,7,6,0,0,0], [0,0,1,0,0,0],
+        [0,1,0,0,3,0], [0,0,0,6,0,1], [0,3,6,0,1,0]
       ],
       black: [
         [0,3,5,7], [0,3,5,0], [0,5,3,0], [0,3,7,5],
-        [0,7,5,3], [0,3,5,3], [0,5,7,0], [0,3,0,5]
+        [0,7,5,3], [0,3,5,3], [0,5,7,0], [0,3,0,5],
+        [0,0,3,5,7,8], [0,8,7,5,3,0], [0,3,5,7,8,7], [0,5,8,7,5]
       ],
       djent: [
         [0,0,0,5,0,0], [0,0,0,3,0,0], [0,0,5,0,0,3],
         [0,0,0,0,5,3], [0,5,0,0,0,3], [0,0,3,5,0,0],
-        [0,0,0,7,0,5], [0,0,10,0,0,0]
+        [0,0,0,7,0,5], [0,0,10,0,0,0], [0,0,0,0,3,0],
+        [0,0,5,0,3,0], [0,0,0,5,0,7], [0,3,0,0,5,0]
       ],
       groove: [
         [0,0,0,3,0,5], [0,0,5,0,3,0], [0,3,0,5,0,0],
         [0,0,0,0,5,0], [0,5,3,0,0,0], [0,0,7,0,5,0],
-        [0,0,0,10,0,0], [0,10,0,7,0,0]
+        [0,0,0,10,0,0], [0,10,0,7,0,0], [0,3,5,0,5,3],
+        [0,0,3,5,7,5], [0,5,0,0,3,5], [0,0,10,7,5,0]
       ],
       metalcore: [
         [0,0,0,0,3,5], [0,0,3,0,0,5], [0,0,0,5,3,0],
         [0,0,0,0,0,3], [0,3,5,0,0,0], [0,0,7,0,0,0],
-        [0,0,0,10,7,0], [0,5,0,0,3,0]
+        [0,0,0,10,7,0], [0,5,0,0,3,0], [0,0,3,5,7,0],
+        [0,7,5,3,0,0], [0,0,0,5,7,10], [0,3,0,5,0,7]
       ],
       hardcore: [
         [0,0,0,0], [0,0,0,3], [0,0,3,0], [0,0,0,0,0,0],
-        [0,0,5,0], [0,3,0,0], [0,0,0,7], [0,0,1,0]
+        [0,0,5,0], [0,3,0,0], [0,0,0,7], [0,0,1,0],
+        [0,0,0,0,3], [0,0,0,5,0], [0,0,3,0,0], [0,0,0,0,0]
       ],
       deathcore: [
         [0,0,0,0,0,0], [0,0,0,1,0,0], [0,0,0,3,0,0],
         [0,0,1,0,0,3], [0,0,0,6,0,0], [0,1,0,0,0,0],
-        [0,0,0,0,3,1], [0,0,7,0,0,0]
+        [0,0,0,0,3,1], [0,0,7,0,0,0], [0,0,0,0,0,3],
+        [0,0,0,1,0,1], [0,0,3,0,0,0], [0,0,0,0,1,0]
       ],
       thall: [
         [0,0,0,6,0,0], [0,0,1,0,0,6], [0,6,0,0,1,0],
         [0,0,0,0,6,3], [0,1,6,0,0,0], [0,0,3,6,0,0],
-        [0,0,0,11,0,0], [0,6,0,1,0,0]
+        [0,0,0,11,0,0], [0,6,0,1,0,0], [0,0,0,6,0,1],
+        [0,0,6,0,0,0], [0,1,0,6,0,0], [0,0,0,0,1,6]
       ],
       power: [
         [0,7,0,7], [0,7,5,0], [0,5,7,0], [0,7,0,5,7],
-        [0,0,7,0], [0,7,5,7], [0,3,7,0], [0,7,10,0]
+        [0,0,7,0], [0,7,5,7], [0,3,7,0], [0,7,10,0],
+        [0,7,5,3,0], [0,5,7,10,7], [0,0,5,7,0], [0,7,0,0,5]
       ],
       doom: [
         [0,0,3,0], [0,3,5,0], [0,0,0,5], [0,5,3,0],
-        [0,0,7,0], [0,3,0,5], [0,0,0,3], [0,7,0,0]
+        [0,0,7,0], [0,3,0,5], [0,0,0,3], [0,7,0,0],
+        [0,0,3,5,0], [0,5,0,3,0], [0,0,0,0,3], [0,3,5,7,0]
       ],
-      progressive: [
-        [0,0,3,5,7,0], [0,3,0,5,0,7], [0,0,5,3,0,0],
+      progressive: [        [0,0,3,5,7,0], [0,3,0,5,0,7], [0,0,5,3,0,0],
         [0,7,5,3,0,0], [0,0,2,3,0,0], [0,3,5,0,7,0],
-        [0,0,7,5,3,5], [0,5,0,3,7,0]
+        [0,0,7,5,3,5], [0,5,0,3,7,0], [0,2,3,5,7,5],
+        [0,3,5,7,8,7], [0,0,3,7,5,0], [0,5,7,3,0,0]
       ],
       polyphia: [
         [0,3,5,7,5,3], [0,5,3,0,5,7], [0,0,3,5,0,7],
-        [0,7,5,3,5,0], [0,3,0,7,5,0], [0,5,7,0,3,0]
+        [0,7,5,3,5,0], [0,3,0,7,5,0], [0,5,7,0,3,0],
+        [0,2,3,5,7,10], [0,10,7,5,3,0], [0,3,5,7,10,7],
+        [0,0,5,7,10,0], [0,7,5,7,3,0], [0,3,5,2,0,0]
       ],
       classic: [
         [0,0,3,5], [0,3,5,7], [0,7,5,3], [0,0,0,7],
-        [0,5,3,0], [0,0,7,5], [0,3,0,7], [0,0,5,7]
+        [0,5,3,0], [0,0,7,5], [0,3,0,7], [0,0,5,7],
+        [0,0,3,5,7], [0,7,5,3,0], [0,3,5,7,5], [0,5,7,0,0]
+      ],
+      // Harmonic minor flavor (raised 7th = 11)
+      harmonic: [
+        [0,0,3,0,11], [0,3,0,11,0], [0,0,11,0,0], [0,11,0,3,0],
+        [0,0,7,11,0], [0,11,7,5,0], [0,3,5,7,11], [0,11,0,0,7]
       ]
     };
 
-    // Map styleId → which motif pools to draw from (weighted)
     function motifPoolsFor(styleId) {
       const M = MOTIF_POOL;
       const map = {
-        thrash: [M.thrash, M.core], thrash_gallop: [M.thrash, M.core],
-        death: [M.death, M.core], black: [M.black, M.core],
-        djent: [M.djent, M.core], groove: [M.groove, M.core],
-        nu: [M.groove, M.metalcore, M.core],
-        metalcore: [M.metalcore, M.hardcore, M.core],
-        hardcore: [M.hardcore, M.core],
-        melodic_hc: [M.metalcore, M.classic, M.core],
-        modern_hc: [M.djent, M.hardcore, M.metalcore],
+        thrash: [M.thrash, M.core, M.pent],
+        thrash_gallop: [M.thrash, M.core, M.pent],
+        death: [M.death, M.core, M.thrash],
+        black: [M.black, M.pent, M.core],
+        djent: [M.djent, M.core, M.pent],
+        groove: [M.groove, M.pent, M.blues, M.core],
+        nu: [M.groove, M.pent, M.metalcore, M.core],
+        metalcore: [M.metalcore, M.pent, M.hardcore, M.core],
+        hardcore: [M.hardcore, M.core, M.pent],
+        melodic_hc: [M.metalcore, M.pent, M.classic, M.core],
+        modern_hc: [M.djent, M.hardcore, M.metalcore, M.pent],
         deathcore: [M.deathcore, M.hardcore, M.core],
         thall: [M.thall, M.djent, M.core],
-        deadsquad: [M.death, M.progressive, M.core],
-        progressive: [M.progressive, M.classic, M.core],
-        polyphia: [M.polyphia, M.progressive, M.classic],
-        power: [M.power, M.classic, M.core],
-        doom: [M.doom, M.core], stoner: [M.doom, M.groove, M.core],
+        deadsquad: [M.death, M.progressive, M.harmonic, M.core],
+        progressive: [M.progressive, M.pent, M.classic, M.harmonic],
+        polyphia: [M.polyphia, M.pent, M.progressive, M.classic],
+        power: [M.power, M.classic, M.pent, M.harmonic],
+        doom: [M.doom, M.pent, M.blues, M.core],
+        stoner: [M.blues, M.pent, M.doom, M.groove],
         brutal: [M.deathcore, M.death, M.core],
-        classic_metal: [M.classic, M.power, M.core]
+        classic_metal: [M.classic, M.power, M.pent, M.core]
       };
-      return map[styleId] || [M.core, M.classic];
+      return map[styleId] || [M.core, M.pent, M.classic];
+    }
+
+    // Snap interval offset to nearest scale degree relative to root
+    function quantizeToScale(offset, scaleIntervals) {
+      const target = ((offset % 12) + 12) % 12;
+      if (scaleIntervals.includes(target)) return target;
+      let best = scaleIntervals[0], bestD = 99;
+      for (const s of scaleIntervals) {
+        const d = Math.min(Math.abs(s - target), 12 - Math.abs(s - target));
+        if (d < bestD) { bestD = d; best = s; }
+      }
+      return best;
     }
 
     function generateRhythm(opts) {
-      const { key, scaleKey, styleId, style, bars, tuningKey, usePower, useAlt, usePalm, durations } = opts;
+      const { key, scaleKey, styleId, style, bars, tuningKey, usePower, useAlt, useDown, usePalm, usePinch, useHopo, useSlide, durations } = opts;
       const openMidi = TUNINGS[tuningKey];
       const numStrings = openMidi.length;
       const rootSemi = NOTE_TO_SEMI[key];
@@ -1041,29 +1098,115 @@
         return { string: stringIdx + 1, fret: rootFret, midi: nextOpen + rootFret };
       }
 
-      // Build a long sequence of pitch-classes by chaining motifs
+      // Scale intervals relative to root (0-based)
+      const scaleIntervals = (SCALES[scaleKey] || SCALES.natural_minor).slice();
+      const allowApproach = ['death','thrash','thrash_gallop','thall','deadsquad','brutal','deathcore'].includes(styleId);
       const pools = motifPoolsFor(styleId);
-      const pcSeq = [];
-      while (pcSeq.length < durations.length + 8) {
-        const pool = randomChoice(pools);
-        let motif = randomChoice(pool).slice();
-        // occasional transpose motif start by +5 (fourth up) for movement
-        if (Math.random() < 0.15) {
-          const shift = randomChoice([0, 5, 7, 3]);
-          motif = motif.map(x => (x + shift) % 12);
+
+      // --- Build ONE catchy phrase (1 bar worth), then REPEAT it ---
+      // This is what makes riffs memorable instead of random note soup
+      function buildPhrase(targetLen) {
+        const phrase = [];
+        // pick 1–2 motifs and loop them
+        const m1 = randomChoice(randomChoice(pools)).slice();
+        const m2 = Math.random() < 0.55 ? randomChoice(randomChoice(pools)).slice() : m1.slice();
+        // force start on root
+        m1[0] = 0;
+        if (Math.random() < 0.5) m2[0] = 0;
+        // end on root or fifth
+        if (m1.length > 1) m1[m1.length - 1] = Math.random() < 0.7 ? 0 : 7;
+        if (m2.length > 1) m2[m2.length - 1] = Math.random() < 0.6 ? 0 : 5;
+
+        let src = m1, flip = 0;
+        while (phrase.length < targetLen) {
+          if (flip === 0 && phrase.length >= Math.floor(targetLen / 2)) {
+            src = m2; flip = 1;
+          }
+          for (const off of src) {
+            if (phrase.length >= targetLen) break;
+            let q = quantizeToScale(off, scaleIntervals);
+            // very rare approach only mid-phrase
+            if (allowApproach && phrase.length > 1 && phrase.length < targetLen - 1 && Math.random() < 0.06) {
+              phrase.push((rootSemi + ((q + 11) % 12)) % 12);
+              if (phrase.length >= targetLen) break;
+            }
+            phrase.push((rootSemi + q) % 12);
+          }
         }
-        // slight variation: swap last note to root sometimes
-        if (Math.random() < 0.3 && motif.length > 2) motif[motif.length - 1] = 0;
-        for (const off of motif) pcSeq.push((rootSemi + off) % 12);
+        // strong cadence: last 1–2 notes = root
+        if (phrase.length >= 2) {
+          phrase[phrase.length - 1] = rootSemi;
+          if (Math.random() < 0.5) phrase[phrase.length - 2] = rootSemi;
+        } else if (phrase.length) phrase[0] = rootSemi;
+        return phrase;
+      }
+
+      // Phrase length ≈ notes in one bar of durations
+      let notesPerBar = Math.max(4, Math.round(durations.length / Math.max(1, bars)));
+      const phraseA = buildPhrase(notesPerBar);
+      // Variation B: same contour, slight change for call-response
+      const phraseB = phraseA.map((pc, i) => {
+        if (i === 0 || i === phraseA.length - 1) return rootSemi;
+        if (Math.random() < 0.2) {
+          const alt = quantizeToScale(3, scaleIntervals); // b3 color
+          return (rootSemi + alt) % 12;
+        }
+        return pc;
+      });
+
+      // Tile phrases across full riff: A A A B  or  A B A B
+      const pcSeq = [];
+      const pattern = Math.random() < 0.6 ? ['A','A','A','B'] : ['A','B','A','B'];
+      while (pcSeq.length < durations.length + 4) {
+        for (const tag of pattern) {
+          const src = tag === 'A' ? phraseA : phraseB;
+          for (const pc of src) pcSeq.push(pc);
+          if (pcSeq.length >= durations.length + 4) break;
+        }
       }
 
       const baseString = findRootString();
       let events = [], pickDown = true;
       let seqIdx = 0;
 
+      // Zone weights PER GENRE (not global)
+      // 0=lowest only, 1=mid, 2=upper
+      const ultraLow = ['brutal','deathcore','hardcore','thall','doom','stoner','nu'];
+      const mostlyLow = ['death','djent','groove','modern_hc','deadsquad','metalcore'];
+      const balanced = ['thrash','thrash_gallop','black','melodic_hc'];
+      const upperOk = ['polyphia','progressive','power','classic_metal'];
+      let zWts;
+      if (ultraLow.includes(styleId)) zWts = [20, 0.4, 0.01];
+      else if (mostlyLow.includes(styleId)) zWts = [10, 2, 0.25];
+      else if (balanced.includes(styleId)) zWts = [5, 3.5, 1.5];
+      else if (upperOk.includes(styleId)) zWts = [2, 3.5, 3.5];
+      else zWts = [8, 2.5, 0.6];
+
+      let zone = weightedChoice([0, 1, 2], zWts);
+      let zoneLeft = 6 + Math.floor(Math.random() * 6);
+
+      // Max fret by genre — brutal = open–5 only
+      let maxF = 9;
+      if (['brutal','deathcore','hardcore','thall','doom'].includes(styleId)) maxF = 5;
+      else if (['death','djent','groove','modern_hc','nu','metalcore'].includes(styleId)) maxF = 7;
+      else if (['polyphia','progressive','power'].includes(styleId)) maxF = 12;
+
+      function pickStringForZone(z, wantPower) {
+        const maxS = wantPower ? Math.max(0, numStrings - 2) : numStrings - 1;
+        if (z === 0) {
+          return Math.min(maxS, Math.random() < 0.88 ? 0 : Math.min(1, maxS));
+        }
+        if (z === 1) {
+          const lo = Math.min(1, maxS);
+          const hi = Math.min(maxS, 2);
+          return lo + Math.floor(Math.random() * Math.max(1, hi - lo + 1));
+        }
+        const lo = Math.min(maxS, Math.max(2, Math.floor(numStrings / 3)));
+        return lo + Math.floor(Math.random() * Math.max(1, maxS - lo + 1));
+      }
+
       for (let i = 0; i < durations.length; i++) {
         const dur = durations[i];
-        // rare rest
         if (usePalm && Math.random() < style.palmChance * 0.5) {
           events.push({ notes: [], dur, rest: true, pick: null, muted: false, power: false });
           continue;
@@ -1072,53 +1215,121 @@
         const pc = pcSeq[seqIdx % pcSeq.length];
         seqIdx++;
 
-        // Stay on low strings for heaviness
-        let stringIdx = baseString;
-        if (Math.random() < 0.12 && numStrings > 1) {
-          stringIdx = Math.min(baseString + 1, numStrings - 2);
+        zoneLeft--;
+        if (zoneLeft <= 0) {
+          zone = weightedChoice([0, 1, 2], zWts);
+          zoneLeft = 5 + Math.floor(Math.random() * (zone === 0 ? 8 : 4));
         }
-        if (usePower && stringIdx >= numStrings - 1) stringIdx = Math.max(0, numStrings - 2);
+
+        const isRootish = (pc === rootSemi || pc === (rootSemi + 7) % 12 || pc === (rootSemi + 5) % 12);
+        let pChance = style.powerChance;
+        if (isRootish) pChance = Math.min(1, pChance + 0.2);
+        if (pc === (rootSemi + 1) % 12 || pc === (rootSemi + 6) % 12) pChance *= 0.4;
+        if (zone === 2) pChance *= 0.15;
+        if (zone === 1) pChance *= 0.6;
+        const isPower = usePower && Math.random() < pChance;
+
+        let stringIdx = pickStringForZone(zone, isPower);
+        if (i > 0 && Math.random() < 0.45) {
+          const prev = events[events.length - 1];
+          if (prev && prev.notes && prev.notes.length) {
+            const ps = prev.notes[0].string;
+            const lim = numStrings - (isPower ? 2 : 1);
+            // only step ±1, and don't jump out of zone 0 to high strings for ultra-low genres
+            let next = Math.max(0, Math.min(lim, ps + (Math.random() < 0.5 ? -1 : 1)));
+            if (ultraLow.includes(styleId)) next = Math.min(next, 1);
+            stringIdx = next;
+          }
+        }
+        if (ultraLow.includes(styleId)) stringIdx = Math.min(stringIdx, 1);
 
         let fret = fretForPC(stringIdx, pc);
-        // If scale is not chromatic, snap off-scale tones toward nearest scale note
-        if (scaleKey !== 'chromatic' && !scaleSemis.includes(pc)) {
-          // prefer root or b3 or 5
+        // clamp to genre max fret
+        {
+          const open = openMidi[stringIdx];
+          let found = false;
+          for (let f = 0; f <= maxF; f++) {
+            if ((open + f) % 12 === pc) { fret = f; found = true; break; }
+          }
+          if (!found) fret = Math.min(fret, maxF);
+        }
+        if (zone >= 1 && maxF >= 7) {
+          const open = openMidi[stringIdx];
+          for (let f = 3; f <= maxF; f++) {
+            if ((open + f) % 12 === pc) { fret = f; break; }
+          }
+        }
+        if (scaleKey !== 'chromatic' && !scaleSemis.includes((openMidi[stringIdx] + fret) % 12)) {
           const fallbacks = [rootSemi, (rootSemi + 3) % 12, (rootSemi + 7) % 12, (rootSemi + 5) % 12];
           for (const fb of fallbacks) {
             if (scaleSemis.includes(fb)) {
-              fret = fretForPC(stringIdx, fb);
+              const open = openMidi[stringIdx];
+              for (let f = 0; f <= maxF; f++) {
+                if ((open + f) % 12 === fb) { fret = f; break; }
+              }
               break;
             }
           }
         }
+        fret = Math.max(0, Math.min(fret, maxF));
 
         const notes = [{ string: stringIdx, fret, midi: openMidi[stringIdx] + fret }];
 
-        // Power chord: strong on root/fifth notes
-        const isRootish = (pc === rootSemi || pc === (rootSemi + 7) % 12 || pc === (rootSemi + 5) % 12);
-        let pChance = style.powerChance;
-        if (isRootish) pChance = Math.min(1, pChance + 0.2);
-        if (pc === (rootSemi + 1) % 12 || pc === (rootSemi + 6) % 12) pChance *= 0.4; // less power on dissonant
-        const isPower = usePower && Math.random() < pChance;
         if (isPower) {
           const fifth = findPowerFifth(stringIdx, fret);
           if (fifth) notes.push(fifth);
         }
 
-        const pickDir = useAlt ? (pickDown ? 'D' : 'U') : null;
-        if (useAlt) pickDown = !pickDown;
+        // Picking: all downstrokes OR alternate OR default down
+        let pickDir = 'D';
+        if (useDown) {
+          pickDir = 'D';
+        } else if (useAlt) {
+          pickDir = pickDown ? 'D' : 'U';
+          pickDown = !pickDown;
+        }
 
         let muted = false;
         if (usePalm) {
           muted = highPalm ? (Math.random() < 0.72) : (Math.random() < 0.3);
-          // open up on longer notes / power chords sometimes
           if (dur >= 4 && Math.random() < 0.5) muted = false;
           if (isPower && Math.random() < 0.35) muted = false;
         }
 
+        // Guitar techniques
+        let tech = null;
+        const prevEv = events.length ? events[events.length - 1] : null;
+        const prevStr = prevEv && prevEv.notes && prevEv.notes.length ? prevEv.notes[0].string : stringIdx;
+        const prevFret = prevEv && prevEv.notes && prevEv.notes.length ? prevEv.notes[0].fret : fret;
+        const crossed = prevEv && !prevEv.rest && prevStr !== stringIdx;
+
+        // String crossing marker
+        if (crossed && Math.abs(prevStr - stringIdx) >= 1) {
+          tech = 'x'; // crossing
+        }
+
+        // Pinch — max sparse accents (avoid KS spam)
+        if (usePinch && !muted && tech == null && dur >= 2 && Math.random() < 0.04) {
+          tech = 'ph';
+        }
+
+        // Hammer-on / pull-off — same string, step 1–2 frets
+        if (useHopo && prevEv && !prevEv.rest && prevStr === stringIdx && tech == null) {
+          const df = fret - prevFret;
+          if (df >= 1 && df <= 2 && Math.random() < 0.28) tech = 'h';
+          else if (df <= -1 && df >= -2 && Math.random() < 0.28) tech = 'p';
+        }
+
+        // Slide — larger same-string jump, rare
+        if (useSlide && prevEv && !prevEv.rest && prevStr === stringIdx && tech == null) {
+          const df = fret - prevFret;
+          if (Math.abs(df) >= 3 && Math.random() < 0.12) tech = df > 0 ? '/' : '\\';
+        }
+
         events.push({
           notes, dur, rest: false, pick: pickDir,
-          muted, power: isPower && notes.length > 1
+          muted, power: isPower && notes.length > 1, tech,
+          crossed: !!crossed
         });
       }
       return events;
@@ -1738,8 +1949,12 @@
       const bars = parseInt($('bars').value, 10);
       const tuningKey = $('tuning').value;
       const usePower = $('powerChord').checked;
-      const useAlt = $('altPicking').checked;
+      const useAlt = $('altPicking').checked && !$('downstroke').checked;
+      const useDown = $('downstroke').checked;
       const usePalm = $('palmMute').checked;
+      const usePinch = $('techPinch').checked;
+      const useHopo = $('techHopo').checked;
+      const useSlide = $('techSlide').checked;
       const doRhythm = $('genRhythm').checked;
       const doLead = $('genLead').checked;
       const doBass = $('genBass').checked;
@@ -1752,7 +1967,7 @@
       }
 
       const durations = buildDurations(style, bars);
-      const opts = { key, scaleKey, styleId, style, bars, tuningKey, usePower, useAlt, usePalm, durations };
+      const opts = { key, scaleKey, styleId, style, bars, tuningKey, usePower, useAlt, useDown, usePalm, usePinch, useHopo, useSlide, durations };
 
       parts = { rhythm: null, lead: null, bass: null, breakdown: null, drums: null };
 
@@ -1781,8 +1996,7 @@
       if (parts.lead) {
         $('tabLead').textContent = formatTab(parts.lead, STRING_NAMES[tuningKey], meta, 'LEAD');
         $('panelLead').style.display = '';
-      } else {
-        $('tabLead').textContent = '(Lead off)';
+      } else {        $('tabLead').textContent = '(Lead off)';
         $('panelLead').style.display = 'none';
       }
       if (parts.bass) {
@@ -1826,16 +2040,28 @@
       const lines = Array.from({length: numStrings}, () => []);
       const pickLine = [];
       let hasPickMarks = false;
+      let hasTech = false;
 
-      for (const ev of events) {
+      for (let ei = 0; ei < events.length; ei++) {
+        const ev = events[ei];
         const cells = Array(numStrings).fill(null);
         let width = Math.max(2, Math.ceil(ev.dur * 1.15));
         if (!ev.rest) {
           for (const n of ev.notes) {
             const di = numStrings - 1 - n.string;
             if (di >= 0 && di < numStrings) {
-              // ghost notes: show 'x'
-              const fretStr = (ev.tech === 'ghost') ? 'x' : String(n.fret);
+              let fretStr;
+              if (ev.tech === 'ghost') fretStr = 'x';
+              else if (ev.tech === 'ph') { fretStr = n.fret + 'ph'; hasTech = true; }
+              else if (ev.tech === 'h') { fretStr = 'h' + n.fret; hasTech = true; }
+              else if (ev.tech === 'p') { fretStr = 'p' + n.fret; hasTech = true; }
+              else if (ev.tech === '/') { fretStr = '/' + n.fret; hasTech = true; }
+              else if (ev.tech === '\\') { fretStr = '\\' + n.fret; hasTech = true; }
+              else fretStr = String(n.fret);
+              // palm mute underline style: mark with *
+              if (ev.muted && !['ghost','ph'].includes(ev.tech)) {
+                // keep fret number; PM shown via pick row tip
+              }
               cells[di] = fretStr;
               width = Math.max(width, fretStr.length + 1);
             }
@@ -1876,6 +2102,9 @@
       if (label === 'LEAD') out += '  |  Shred/Sweep';
       if (label === 'BASS') out += '  |  Slap/Pop (S=slap P=pop x=ghost)';
       if (label === 'BREAKDOWN') out += '  |  Half-time chug / stomp';
+      if (label === 'RHYTHM' || label === 'BREAKDOWN') {
+        out += '\n// Tech: ↓↑ pick  |  h=hammer p=pull  |  /=slide up \\=slide down  |  ph=pinch  |  PM via mute';
+      }
       return out;
     }
 
@@ -2123,16 +2352,47 @@
         4. Power chords: fire Auto Power Chord KS before the chord
         5. Optional string-select KS when lowest string changes
     */
+    /*
+      Solemn Tones Odin III — EXACT map from plugin UI (user screenshot)
+      C-2=MIDI0 … C0=24 … C1=36 … C4=60 … C7=96
+      Velocity: 127 Pinch | 35–126 Alt | 25–34 PM | 15–24 PM closed | 0–14 PM dead
+    */
     const ODIN = {
-      ALT_PICKED: 12,
-      DOWN_PICKED: 13,
-      UP_PICKED: 14,
-      DOWN_OPEN_PM: 24,
-      UP_OPEN_PM: 27,
-      TREMOLO: 32,
-      AUTO_POWER: 44,
-      STR6: [79, 80, 81, 82, 83, 96],
-      STR7: [78, 79, 80, 81, 82, 83, 96]
+      // --- C-2 … B-2 (0–11) slides & power ---
+      SLIDE_SLOW_FROM_UP: 0,    // C-2
+      SLIDE_SLOW_FROM_DOWN: 1,  // C#-2
+      SLIDE_SLOW_TO_DOWN: 2,    // D-2
+      SLIDE_SLOW_TO_UP: 3,      // D#-2
+      SLIDE_FAST_FROM_UP: 4,    // E-2
+      SLIDE_FAST_FROM_DOWN: 5,  // F-2
+      SLIDE_FAST_TO_DOWN: 6,    // F#-2
+      SLIDE_FAST_TO_UP: 7,      // G-2
+      AUTO_POWER: 8,            // G#-2 *Auto Power Chord
+      // --- C0 … B0 (24–35) pick & mutes ---
+      ALT_PICKED: 24,           // C0  Alternate Picked
+      DOWN_PICKED: 25,          // C#0 Down Picked
+      UP_PICKED: 26,            // D0  Up Picked
+      ALT_MUTE_SEMI: 27,        // D#0
+      DOWN_MUTE_SEMI: 28,       // E0
+      UP_MUTE_SEMI: 29,         // F0
+      ALT_MUTE_CLOSED: 30,      // F#0
+      DOWN_MUTE_CLOSED: 31,     // G0
+      UP_MUTE_CLOSED: 32,       // G#0
+      // --- C1 … B1 (36–47) open PM, hopo, harm, tremolo ---
+      DOWN_OPEN_PM: 36,         // C1  Down Open Palm Mute
+      HAMMER_ON: 37,            // C#1 Hammer-On
+      PULL_OFF: 38,             // D1  Pull-Off
+      UP_OPEN_PM: 39,           // D#1 Up Open Palm Mute
+      AUTO_SLIDE: 42,           // F#1 *Auto Slide
+      TREMOLO: 44,              // G#1 Tremolo Picked
+      NATURAL_HARM: 45,         // A1  Natural Harmonic
+      PINCH_HARM: 46,           // A#1 Pinch Harmonic
+      NASTY_PINCH: 47,          // B1  Nasty Pinch Harmonic
+      // --- String Selection (UI: F5=Str8 … B5=Str2, C7=Str1) ---
+      // index 0 = lowest string
+      STR6: [79, 80, 81, 82, 83, 96],        // G5 Str6 … B5 Str2, C7 Str1
+      STR7: [78, 79, 80, 81, 82, 83, 96],    // F#5 Str7 …
+      STR8: [77, 78, 79, 80, 81, 82, 83, 96] // F5 Str8 …
     };
 
     /*
@@ -2213,18 +2473,17 @@
         if (!ev.notes) continue;
         for (const n of ev.notes) if (n.string > maxStr) maxStr = n.string;
       }
-      const strMap = maxStr >= 6 ? ODIN.STR7 : ODIN.STR6;
+      const strMap = maxStr >= 7 ? ODIN.STR8 : (maxStr >= 6 ? ODIN.STR7 : ODIN.STR6);
 
       let tick = 0, lastArt = null, lastMuted = null, lastStr = null, lastPick = null;
 
-      // Guitar (Odin III) initial KS
+      // Guitar (Odin III) initial articulation
       if (useOdin && isGuitar) {
         if (isTremoloStyle) { pushKS(0, ODIN.TREMOLO); lastArt = ODIN.TREMOLO; }
         else if (useAlt) { pushKS(0, ODIN.ALT_PICKED); lastArt = ODIN.ALT_PICKED; }
         else { pushKS(0, ODIN.DOWN_PICKED); lastArt = ODIN.DOWN_PICKED; }
         tick = KS_GAP;
       }
-      // Bass plugin initial KS → Slap mode default
       if (useOdin && isBass) {
         pushKS(0, BASS_KS.SLAP);
         lastArt = BASS_KS.SLAP;
@@ -2242,29 +2501,46 @@
         let vel;
 
         if (useOdin && isGuitar) {
-          vel = muted ? (26 + Math.floor(Math.random() * 8)) : (72 + Math.floor(Math.random() * 36));
-          if (isTremoloStyle) {
-            if (lastArt !== ODIN.TREMOLO) { pushKS(tick - KS_GAP, ODIN.TREMOLO); lastArt = ODIN.TREMOLO; }
-          } else if (muted) {
-            const pmKS = pick === 'U' ? ODIN.UP_OPEN_PM : ODIN.DOWN_OPEN_PM;
-            if (lastMuted !== true || lastArt !== pmKS) { pushKS(tick - KS_GAP, pmKS); lastArt = pmKS; }
-            lastMuted = true;
-          } else {
-            if (lastMuted === true || lastArt === ODIN.DOWN_OPEN_PM || lastArt === ODIN.UP_OPEN_PM) {
-              const back = useAlt ? ODIN.ALT_PICKED : ODIN.DOWN_PICKED;
-              pushKS(tick - KS_GAP, back); lastArt = back;
-            }
-            if (useAlt && pick && pick !== lastPick) {
-              const strokeKS = pick === 'D' ? ODIN.DOWN_PICKED : ODIN.UP_PICKED;
-              pushKS(tick - KS_GAP, strokeKS); lastArt = strokeKS; lastPick = pick;
-            }
-            lastMuted = false;
+          /*
+            Clean Odin III workflow (avoids KS spam seen in piano roll):
+            - Latch ONE pick mode (Alt or Down) for the whole riff
+            - Palm mute = VELOCITY 25–34 only — NO PM keyswitch spam
+            - Special tech (pinch/h/p/slide) = KS for that note only
+            - Auto Power only on power chords without special tech
+            - String select only when string changes
+          */
+          const basePick = isTremoloStyle ? ODIN.TREMOLO
+            : (useAlt ? ODIN.ALT_PICKED : ODIN.DOWN_PICKED);
+
+          let art = basePick;
+          let special = false;
+          if (tech === 'ph') { art = ODIN.PINCH_HARM; special = true; }
+          else if (tech === 'h') { art = ODIN.HAMMER_ON; special = true; }
+          else if (tech === 'p') { art = ODIN.PULL_OFF; special = true; }
+          else if (tech === '/') { art = ODIN.SLIDE_FAST_TO_UP; special = true; }
+          else if (tech === '\\') { art = ODIN.SLIDE_FAST_TO_DOWN; special = true; }
+
+          if (art !== lastArt) {
+            pushKS(tick - KS_GAP, art);
+            lastArt = art;
           }
-          if (isPower) pushKS(tick - KS_GAP, ODIN.AUTO_POWER);
+
+          // Velocity zones (native Odin): 127 pinch | 35–126 pick | 25–34 PM
+          if (tech === 'ph') vel = 127;
+          else if (muted) vel = 27 + Math.floor(Math.random() * 7);
+          else vel = 85 + Math.floor(Math.random() * 25);
+
+          if (isPower && !special) pushKS(tick - KS_GAP, ODIN.AUTO_POWER);
+
           const primary = ev.notes.reduce((a, b) => a.string <= b.string ? a : b);
           const si = Math.min(primary.string, strMap.length - 1);
           const strKS = strMap[si];
-          if (strKS !== lastStr) { pushKS(tick - KS_GAP, strKS); lastStr = strKS; }
+          if (strKS !== lastStr) {
+            pushKS(tick - KS_GAP, strKS);
+            lastStr = strKS;
+          }
+          lastMuted = muted;
+          lastPick = pick;
         } else if (useOdin && isBass) {
           // --- Bass keyswitch map ---
           let artKS = BASS_KS.SLAP;
@@ -2299,22 +2575,31 @@
           vel = isGuitar ? (muted ? 30 : 100) : 90;
         }
 
-        for (const n of ev.notes) {
-          let note = Math.max(0, Math.min(127, n.midi | 0));
-          // Guitar: keep out of Odin KS zone
-          if (useOdin && isGuitar && note < 48) note += 12;
-          // Bass: keep out of bass KS zone (0–16) and force-string zone is high so OK
-          if (useOdin && isBass && note < 20) note += 12;
-          events.push({ t: tick, type: 'on', note, vel });
-          events.push({ t: tick + Math.max(1, dur - 2), type: 'off', note, vel: 0 });
-        }
+        // With Odin Auto Power Chord KS: send ROOT only (plugin builds the 5th)
+          // Without Odin / non-power: send all notes in the event
+          let notesToPlay = ev.notes;
+          if (useOdin && isGuitar && isPower && !tech) {
+            const root = ev.notes.reduce((a, b) => a.midi <= b.midi ? a : b);
+            notesToPlay = [root];
+          }
+          for (const n of notesToPlay) {
+            let note = Math.max(0, Math.min(127, n.midi | 0));
+            // Guitar notes must stay above KS zone 0–35
+            if (useOdin && isGuitar) {
+              // KS occupy 0–47; keep performance notes at C2 (48)+ 
+              while (note < 48) note += 12;
+            }
+            if (useOdin && isBass && note < 20) note += 12;
+            events.push({ t: tick, type: 'on', note, vel });
+            events.push({ t: tick + Math.max(1, dur - 2), type: 'off', note, vel: 0 });
+          }
         tick += dur;
       }
 
       events.sort((a, b) => {
         if (a.t !== b.t) return a.t - b.t;
         const rank = e => {
-          const isKS = e.note <= 16 || e.note < 48 || (e.note >= 77 && e.note <= 96) || e.note >= 122;
+          const isKS = e.note <= 47 || (e.note >= 77 && e.note <= 83) || e.note === 96;
           if (e.type === 'off' && isKS) return 0;
           if (e.type === 'on' && isKS) return 1;
           if (e.type === 'off') return 2;
@@ -2386,7 +2671,7 @@
       try {
         const bpm = parseInt($('tempo').value, 10);
         const useOdin = $('odinKs') && $('odinKs').checked;
-        const useAlt = $('altPicking').checked;
+        const useAlt = $('altPicking').checked && !($('downstroke') && $('downstroke').checked);
         const styleId = $('style').value;
         const isTremoloStyle = (styleId === 'black');
         const tpq = 480;
