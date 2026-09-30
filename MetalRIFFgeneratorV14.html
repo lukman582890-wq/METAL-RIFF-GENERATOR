@@ -1,0 +1,2485 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Metal Riff Generator 🤘</title>
+  <style>
+    :root {
+      --bg: #0a0a0c;
+      --panel: #141418;
+      --border: #2a2a32;
+      --accent: #ff2a2a;
+      --accent2: #ff6b00;
+      --text: #e8e8ec;
+      --muted: #8888a0;
+      --green: #3dd68c;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      background-image:
+        radial-gradient(ellipse at 15% 0%, rgba(255,42,42,0.09) 0%, transparent 45%),
+        radial-gradient(ellipse at 85% 100%, rgba(255,107,0,0.07) 0%, transparent 45%);
+    }
+    .container { max-width: 1000px; margin: 0 auto; padding: 22px 14px 50px; }
+    header { text-align: center; margin-bottom: 22px; }
+    header h1 {
+      font-size: 2.1rem; letter-spacing: 2px;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    header p { color: var(--muted); margin-top: 6px; font-size: 0.92rem; }
+    .panel {
+      background: var(--panel); border: 1px solid var(--border);
+      border-radius: 12px; padding: 18px; margin-bottom: 16px;
+    }
+    .controls {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(145px, 1fr));
+      gap: 12px;
+    }
+    label {
+      display: block; font-size: 0.7rem; text-transform: uppercase;
+      letter-spacing: 1px; color: var(--muted); margin-bottom: 5px;
+    }
+    select, input[type="range"] {
+      width: 100%; background: var(--bg); border: 1px solid var(--border);
+      color: var(--text); padding: 9px 11px; border-radius: 8px; font-size: 0.9rem; outline: none;
+    }
+    select:focus { border-color: var(--accent); }
+    input[type="range"] {
+      padding: 0; height: 7px; -webkit-appearance: none;
+      background: var(--border); border-radius: 4px;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none; width: 16px; height: 16px;
+      background: var(--accent); border-radius: 50%; cursor: pointer;
+    }
+    .range-val { color: var(--accent2); font-weight: 600; }
+    .check-row {
+      display: flex; flex-wrap: wrap; gap: 14px; margin-top: 12px; align-items: center;
+    }
+    .check-row label {
+      display: flex; align-items: center; gap: 7px; text-transform: none;
+      font-size: 0.88rem; color: var(--text); cursor: pointer; letter-spacing: 0;
+    }
+    .check-row input[type="checkbox"] {
+      width: 16px; height: 16px; accent-color: var(--accent); cursor: pointer;
+    }
+    .btn-row { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 16px; }
+    button {
+      flex: 1; min-width: 100px; padding: 12px 14px; border: none; border-radius: 9px;
+      font-size: 0.9rem; font-weight: 700; cursor: pointer;
+      transition: transform 0.12s, opacity 0.15s; letter-spacing: 0.3px;
+    }
+    button:active { transform: scale(0.97); }
+    button:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn-gen { background: linear-gradient(135deg, var(--accent), #c01818); color: #fff; box-shadow: 0 3px 16px rgba(255,42,42,0.3); }
+    .btn-play { background: linear-gradient(135deg, #1a8a3a, #0d5c24); color: #fff; }
+    .btn-stop { background: #333; color: var(--text); border: 1px solid var(--border); }
+    .btn-copy { background: #252530; color: var(--text); border: 1px solid var(--border); }
+    .btn-midi { background: linear-gradient(135deg, #2a4a8a, #1a3060); color: #fff; }
+    .btn-apply { background: #2a2a38; color: var(--accent2); border: 1px solid var(--border); font-size: 0.82rem; padding: 8px 12px; flex: 0; min-width: auto; }
+
+    .style-card {
+      background: #0e0e14; border: 1px solid var(--border); border-radius: 10px;
+      padding: 14px 16px; margin-top: 12px; display: none;
+    }
+    .style-card.visible { display: block; }
+    .style-card h3 {
+      font-size: 1rem; color: var(--accent2); margin-bottom: 6px;
+      display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+    }
+    .style-card .badge {
+      font-size: 0.68rem; background: #2a1a10; color: var(--accent2);
+      padding: 2px 8px; border-radius: 20px; font-weight: 600; letter-spacing: 0.5px;
+    }
+    .style-card p { font-size: 0.84rem; color: #b0b0c0; line-height: 1.5; margin-bottom: 8px; }
+    .style-card .meta {
+      display: flex; flex-wrap: wrap; gap: 10px; font-size: 0.78rem; color: var(--muted);
+    }
+    .style-card .meta strong { color: var(--green); }
+    .style-card .bands { color: #9090a8; font-size: 0.78rem; margin-top: 6px; font-style: italic; }
+
+    .tab-display {
+      font-family: 'Courier New', Courier, monospace; font-size: 0.8rem; line-height: 1.48;
+      white-space: pre; overflow-x: auto; background: #0d0d10; border: 1px solid var(--border);
+      border-radius: 8px; padding: 14px; color: #b8f0c0; min-height: 150px;
+    }
+    .fretboard { margin-top: 10px; overflow-x: auto; }
+    .fretboard table { border-collapse: collapse; width: 100%; min-width: 500px; }
+    .fretboard td, .fretboard th {
+      border: 1px solid #2a2a35; text-align: center; padding: 3px 1px; font-size: 0.66rem; height: 24px;
+    }
+    .fretboard th { background: #1a1a22; color: var(--muted); font-weight: 500; width: 24px; }
+    .fretboard .string-label { background: #12121a; color: #aaa; font-weight: 600; width: 36px; }
+    .fretboard .active {
+      background: var(--accent); color: #fff; font-weight: 700; border-radius: 3px;
+      box-shadow: 0 0 7px rgba(255,42,42,0.5);
+    }
+    .info-bar {
+      display: flex; flex-wrap: wrap; gap: 12px; margin-top: 10px;
+      font-size: 0.85rem; color: var(--muted);
+    }
+    .info-bar span strong { color: var(--accent2); }
+
+    .wiki-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px;
+    }
+    .wiki-item {
+      background: #0e0e14; border: 1px solid var(--border); border-radius: 10px;
+      padding: 12px 14px; cursor: pointer; transition: border-color 0.2s, background 0.2s;
+    }
+    .wiki-item:hover { border-color: var(--accent); background: #16161e; }
+    .wiki-item h4 { font-size: 0.92rem; color: var(--accent2); margin-bottom: 4px; }
+    .wiki-item p { font-size: 0.78rem; color: #9898b0; line-height: 1.4; }
+    .wiki-item .tag {
+      display: inline-block; margin-top: 6px; font-size: 0.68rem;
+      background: #1a1a28; color: var(--muted); padding: 2px 7px; border-radius: 4px;
+    }
+
+    .tips { font-size: 0.8rem; color: var(--muted); line-height: 1.55; }
+    .tips code { background: #1a1a22; padding: 1px 5px; border-radius: 3px; color: #c0c0d8; }
+    footer { text-align: center; margin-top: 24px; color: #555; font-size: 0.78rem; }
+    details.wiki-section summary {
+      cursor: pointer; font-weight: 700; color: var(--text); font-size: 0.95rem;
+      padding: 4px 0; list-style: none; display: flex; align-items: center; gap: 8px;
+    }
+    details.wiki-section summary::before { content: '▶'; font-size: 0.7rem; color: var(--accent); transition: transform 0.2s; }
+    details.wiki-section[open] summary::before { transform: rotate(90deg); }
+    details.wiki-section summary::-webkit-details-marker { display: none; }
+
+    @media (max-width: 600px) {
+      header h1 { font-size: 1.5rem; }
+      .tab-display { font-size: 0.68rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>🤘 METAL RIFF GENERATOR</h1>
+      <p>Rhythm + Lead + Bass • 14 subgenre • Odin III • 7-string</p>
+    </header>
+
+    <!-- CONTROLS -->
+    <div class="panel">
+      <div class="controls">
+        <div>
+          <label>Key</label>
+          <select id="key">
+            <option value="E">E</option><option value="F">F</option>
+            <option value="F#">F# / Gb</option><option value="G">G</option>
+            <option value="G#">G# / Ab</option><option value="A" selected>A</option>
+            <option value="A#">A# / Bb</option><option value="B">B</option>
+            <option value="C">C</option><option value="C#">C# / Db</option>
+            <option value="D">D</option><option value="D#">D# / Eb</option>
+          </select>
+        </div>
+        <div>
+          <label>Scale / Mode</label>
+          <select id="scale">
+            <option value="natural_minor">Natural Minor</option>
+            <option value="harmonic_minor">Harmonic Minor</option>
+            <option value="phrygian">Phrygian</option>
+            <option value="phrygian_dominant">Phrygian Dominant</option>
+            <option value="locrian">Locrian</option>
+            <option value="diminished">Diminished</option>
+            <option value="blues">Blues Minor</option>
+            <option value="dorian">Dorian</option>
+            <option value="whole_tone">Whole Tone</option>
+            <option value="chromatic">Chromatic</option>
+          </select>
+        </div>
+        <div>
+          <label>Subgenre / Style</label>
+          <select id="style">
+            <option value="thrash">Thrash Metal</option>
+            <option value="thrash_gallop">Thrash Gallop</option>
+            <option value="death">Death Metal</option>
+            <option value="melodeath">Melodic Death</option>
+            <option value="black">Black Metal</option>
+            <option value="doom">Doom / Sludge</option>
+            <option value="stoner">Stoner / Desert</option>
+            <option value="groove">Groove Metal</option>
+            <option value="nu">Nu Metal</option>
+            <option value="metalcore">Metalcore</option>
+            <option value="djent">Djent / Modern Prog</option>
+            <option value="progressive">Progressive / Tech</option>
+            <option value="deadsquad">Tech Death Indo (DeadSquad)</option>
+            <option value="polyphia">Prog / Polyphia</option>
+            <option value="deathcore">Deathcore (TAIM / Lorna)</option>
+            <option value="hardcore">Hardcore / Beatdown</option>
+            <option value="melodic_hc">Melodic Metalcore (MMF / WSS)</option>
+            <option value="modern_hc">Modern HC (Alpha Wolf)</option>
+            <option value="thall">Thall</option>
+            <option value="power">Power Metal</option>
+            <option value="brutal">Brutal / Slam</option>
+          </select>
+        </div>
+        <div>
+          <label>Tempo: <span class="range-val" id="tempoVal">140</span> BPM</label>
+          <input type="range" id="tempo" min="40" max="300" value="140" />
+        </div>
+        <div>
+          <label>Panjang (bar)</label>
+          <select id="bars">
+            <option value="1">1 Bar</option>
+            <option value="2" selected>2 Bars</option>
+            <option value="4">4 Bars</option>
+            <option value="8">8 Bars</option>
+          </select>
+        </div>
+        <div>
+          <label>Strings / Tuning</label>
+          <select id="tuning">
+            <optgroup label="6-String">
+              <option value="standard6">Standard (EADGBE)</option>
+              <option value="drop_d">Drop D</option>
+              <option value="drop_c">Drop C</option>
+              <option value="drop_b">Drop B</option>
+              <option value="eb">Eb Standard</option>
+            </optgroup>
+            <optgroup label="7-String">
+              <option value="standard7">Standard 7 (BEADGBE)</option>
+              <option value="drop_a">Drop A</option>
+              <option value="drop_g">Drop G</option>
+              <option value="gcgc">G C G C F A D</option>
+              <option value="drop_fsharp">Drop F#</option>
+            </optgroup>
+          </select>
+        </div>
+      </div>
+
+      <!-- Style insight card -->
+      <div class="style-card" id="styleCard">
+        <h3 id="scTitle">— <span class="badge" id="scEra"></span></h3>
+        <p id="scDesc"></p>
+        <div class="meta">
+          <span>Tempo tipikal: <strong id="scTempo">—</strong></span>
+          <span>Scale favorit: <strong id="scScale">—</strong></span>
+          <span>Tuning: <strong id="scTuning">—</strong></span>
+        </div>
+        <div class="bands" id="scBands"></div>
+        <div style="margin-top:10px">
+          <button class="btn-apply" id="btnApplyPreset" type="button">⚙ Terapkan setting recommended</button>
+        </div>
+      </div>
+
+      <div class="check-row">
+        <label><input type="checkbox" id="genRhythm" checked /> Rhythm Guitar</label>
+        <label><input type="checkbox" id="genLead" checked /> Lead Guitar</label>
+        <label><input type="checkbox" id="genBass" checked /> Bass</label>
+        <label><input type="checkbox" id="genBreakdown" /> Breakdown</label>
+        <label><input type="checkbox" id="genDrums" checked /> Drums</label>
+      </div>
+      <div class="check-row">
+        <label><input type="checkbox" id="powerChord" checked /> Power Chords</label>
+        <label><input type="checkbox" id="altPicking" checked /> Alternate Picking ↓↑</label>
+        <label><input type="checkbox" id="palmMute" checked /> Palm Mute</label>
+        <label><input type="checkbox" id="odinKs" checked /> Guitar + Bass Keyswitches</label>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn-gen" id="btnGen">⚡ GENERATE</button>
+        <button class="btn-play" id="btnPlay" disabled>▶ PLAY</button>
+        <button class="btn-stop" id="btnStop" disabled>■ STOP</button>
+        <button class="btn-copy" id="btnCopy" disabled>📋 COPY TAB</button>
+        <button class="btn-midi" id="btnMidi" disabled>🎹 MIDI</button>
+      </div>
+    </div>
+
+    <!-- TABS -->
+    <div class="panel" id="panelRhythm">
+      <label style="margin-bottom:8px">🎸 Rhythm Guitar</label>
+      <div class="tab-display" id="tabRhythm">Generate untuk melihat tab rhythm...</div>
+    </div>
+    <div class="panel" id="panelLead">
+      <label style="margin-bottom:8px">🎸 Lead Guitar</label>
+      <div class="tab-display" id="tabLead">Generate untuk melihat tab lead...</div>
+    </div>
+    <div class="panel" id="panelBass">
+      <label style="margin-bottom:8px">🎸 Bass</label>
+      <div class="tab-display" id="tabBass">Generate untuk melihat tab bass...</div>
+    </div>
+    <div class="panel" id="panelBreakdown" style="display:none">
+      <label style="margin-bottom:8px">💥 Breakdown</label>
+      <div class="tab-display" id="tabBreakdown">Centang Breakdown + Generate...</div>
+    </div>
+    <div class="panel" id="panelDrums" style="display:none">
+      <label style="margin-bottom:8px">🥁 Drums (K S Toms + HH Crash China Ride Bell)</label>
+      <div class="tab-display" id="tabDrums">Centang Drums + Generate...</div>
+    </div>
+    <div class="panel">
+      <div class="info-bar" id="infoBar" style="display:none">
+        <span>Key: <strong id="infoKey">-</strong></span>
+        <span>Scale: <strong id="infoScale">-</strong></span>
+        <span>Style: <strong id="infoStyle">-</strong></span>
+        <span>BPM: <strong id="infoBpm">-</strong></span>
+        <span>Parts: <strong id="infoParts">-</strong></span>
+      </div>
+    </div>
+
+    <!-- FRETBOARD -->
+    <div class="panel">
+      <label>Fretboard Preview</label>
+      <div class="fretboard" id="fretboard"></div>
+    </div>
+
+    <!-- ENCYCLOPEDIA -->
+    <div class="panel">
+      <details class="wiki-section" open>
+        <summary>📚 Encyclopedia Subgenre Metal &amp; Karakter Riff</summary>
+        <p class="tips" style="margin:10px 0 14px">
+          Klik kartu di bawah untuk langsung pilih style tersebut di generator.
+          Setiap subgenre punya DNA riff yang berbeda — rhythm, interval, densitas, dan feel.
+        </p>
+        <div class="wiki-grid" id="wikiGrid"></div>
+      </details>
+    </div>
+
+    <div class="panel tips">
+      <strong style="color:var(--text)">Cara dapat riff bagus:</strong>
+      1) Pilih subgenre → klik “Terapkan setting recommended” → Generate berkali-kali.
+      2) Thrash/Death suka palm-mute + alternate picking.
+      3) Djent/Metalcore paling enak di Drop C / 7-string GCGC.
+      4) Black metal: matikan power chord (tremolo KS otomatis di Odin).
+      5) Centang <code>Odin III Keyswitches</code> → Export MIDI → load di DAW dengan THE ODIN III.
+         KS yang dikirim: Alternate/Down/Up Picked, Open Palm Mute, Tremolo, Auto Power Chord, String Select.
+         Velocity: 70–109 (picked) / 28–33 (palm mute) sesuai velocity trigger Odin.
+    </div>
+
+    <footer>Metal Riff Generator v3 • 14 Subgenre Encyclopedia • Client-side</footer>
+  </div>
+
+  <script>
+    // ===================== ENCYCLOPEDIA & STYLE DATA =====================
+    /*
+      Knowledge base: karakteristik riff per subgenre metal.
+      - rhythms: pola durasi dalam 16th-notes
+      - powerChance: probabilitas power chord
+      - palmChance: probabilitas rest/mute
+      - preferLow: seberapa agresif prefer senar rendah
+      - chromaticBias: tendensi loncat chromatic
+      - recommended: preset key/scale/tempo/tuning
+    */
+    const STYLE_DB = {
+      thrash: {
+        name: 'Thrash Metal',
+        era: '1980s Bay Area / Teutonic',
+        desc: 'Cepat, agresif, palm-mute chugging, gallop rhythm, dan riff chromatic yang “nyerang”. Fokus di downpicking endurance dan sinkronisasi dengan double-kick. Riff sering bergerak di sekitar open low string + power chord di fret 0–5.',
+        bands: 'Metallica, Slayer, Megadeth, Exodus, Kreator, Testament',
+        tempo: '160–200 BPM',
+        scales: 'Natural Minor, Phrygian, Chromatic',
+        tuningTip: 'Standard / Eb / Drop D',
+        recommended: { key: 'E', scale: 'natural_minor', tempo: 180, tuning: 'standard6', power: true, palm: true, alt: true },
+        rhythms: [
+          [2,2,2,2,2,2,2,2],
+          [1,1,2,1,1,2,2,2,2,2],
+          [4,4,2,2,2,2],
+          [2,2,4,2,2,4],
+          [1,1,1,1,2,2,4],
+          [3,1,2,2,3,1,2,2]
+        ],
+        powerChance: 0.75, palmChance: 0.08, preferLow: 0.85
+      },
+      thrash_gallop: {
+        name: 'Thrash Gallop',
+        era: 'Classic 80s technique',
+        desc: 'Pola ikonik 1-1-2 (dua sixteenth + eighth) — “da-da-dum”. Dipopulerkan Metallica (“The Four Horsemen”, “Motorbreath”) dan diadopsi hampir semua thrash band. Sangat bergantung pada alternate/downpicking yang ketat.',
+        bands: 'Metallica, Iron Maiden (gallop klasik), Exodus',
+        tempo: '150–190 BPM',
+        scales: 'Natural Minor, Aeolian',
+        tuningTip: 'Standard E / Eb',
+        recommended: { key: 'E', scale: 'natural_minor', tempo: 170, tuning: 'standard6', power: true, palm: true, alt: true },
+        rhythms: [
+          [1,1,2,1,1,2,1,1,2,1,1,2],
+          [1,1,2,1,1,2,4,4],
+          [1,1,2,1,1,2,1,1,2,4],
+          [3,1,1,1,3,1,1,1,2,2],
+          [1,1,2,1,1,2,1,1,2,1,1,2]
+        ],
+        powerChance: 0.8, palmChance: 0.05, preferLow: 0.9
+      },
+      death: {
+        name: 'Death Metal',
+        era: 'Late 80s – 90s Florida / Sweden',
+        desc: 'Riff chromatic, dissonan, sering pindah tonal center dengan cepat. Tremolo + palm-mute hybrid, interval minor 2nd & tritone. Swedish death (At the Gates era) lebih melodic; Florida lebih brutal & technical.',
+        bands: 'Death, Morbid Angel, Cannibal Corpse, Obituary, Entombed, Bolt Thrower',
+        tempo: '140–220 BPM',
+        scales: 'Phrygian, Locrian, Chromatic, Diminished',
+        tuningTip: 'D / C / B standard atau Drop',
+        recommended: { key: 'D', scale: 'phrygian', tempo: 160, tuning: 'drop_d', power: true, palm: true, alt: true },
+        rhythms: [
+          [1,1,1,1,1,1,1,1,2,2,2,2],
+          [2,1,1,2,1,1,2,2,2,2],
+          [1,1,2,1,1,2,4,4],
+          [3,1,3,1,2,2,2,2],
+          [1,1,1,1,4,1,1,1,1,4],
+          [2,2,1,1,1,1,2,2,2,2]
+        ],
+        powerChance: 0.55, palmChance: 0.1, preferLow: 0.88
+      },
+      melodeath: {
+        name: 'Melodic Death Metal',
+        era: '90s Gothenburg / Finland',
+        desc: 'Gabungan agresivitas death + melodi Iron Maiden. Harmonized dual-guitar leads, riff minor/harmonic minor yang “nyanyi”, breakdown yang masih melodis. Riff sering naik-turun di scale dengan interval yang lebih konsonan dibanding death klasik.',
+        bands: 'In Flames, At the Gates, Dark Tranquillity, Arch Enemy, Children of Bodom, Amon Amarth',
+        tempo: '130–180 BPM',
+        scales: 'Harmonic Minor, Natural Minor, Phrygian Dominant',
+        tuningTip: 'C / D standard, Drop C',
+        recommended: { key: 'C', scale: 'harmonic_minor', tempo: 155, tuning: 'drop_c', power: true, palm: true, alt: true },
+        rhythms: [
+          [2,2,2,2,4,4],
+          [4,2,2,4,2,2],
+          [1,1,2,1,1,2,2,2,2,2],
+          [3,1,2,2,3,1,2,2],
+          [2,2,4,2,2,4],
+          [4,4,2,1,1,2,2]
+        ],
+        powerChance: 0.7, palmChance: 0.06, preferLow: 0.7
+      },
+      black: {
+        name: 'Black Metal',
+        era: '90s Norwegian 2nd wave',
+        desc: 'Tremolo picking non-stop di minor/phrygian, atmosfer “dingin”, jarang power chord gemuk. Riff sering hypnosis — repetitif, naik-turun scale dengan sedikit variasi rhythm. Feel-nya wall-of-sound, bukan groove.',
+        bands: 'Mayhem, Darkthrone, Emperor, Immortal, Burzum, Gorgoroth, Dissection',
+        tempo: '140–200 BPM (atau sangat lambat atmospheric)',
+        scales: 'Natural Minor, Phrygian, Locrian',
+        tuningTip: 'Standard E / Eb (sering 6-string)',
+        recommended: { key: 'E', scale: 'phrygian', tempo: 160, tuning: 'standard6', power: false, palm: false, alt: true },
+        rhythms: [
+          [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+          [2,2,2,2,2,2,2,2],
+          [1,1,2,1,1,2,1,1,2,1,1,2],
+          [4,2,2,4,2,2],
+          [1,1,1,1,2,2,1,1,1,1,2,2]
+        ],
+        powerChance: 0.15, palmChance: 0.02, preferLow: 0.55
+      },
+      doom: {
+        name: 'Doom / Sludge',
+        era: '70s Sabbath → 90s/00s revival',
+        desc: 'Lambat, berat, power chord yang di-sustain lama. Interval tritone (diabolus in musica) ala Black Sabbath. Sludge menambah noise & punk attitude (Eyehategod, Crowbar). Riff “menggantung” dan memberi ruang untuk feedback.',
+        bands: 'Black Sabbath, Candlemass, Sleep, Electric Wizard, Crowbar, Neurosis',
+        tempo: '50–90 BPM',
+        scales: 'Blues Minor, Natural Minor, Tritone emphasis',
+        tuningTip: 'Drop C / Drop B / C standard',
+        recommended: { key: 'C', scale: 'blues', tempo: 70, tuning: 'drop_c', power: true, palm: false, alt: false },
+        rhythms: [
+          [8,8],[4,4,4,4],[6,2,6,2],[8,4,4],[4,2,2,4,2,2],[8,2,2,4]
+        ],
+        powerChance: 0.9, palmChance: 0.03, preferLow: 0.95
+      },
+      stoner: {
+        name: 'Stoner / Desert Rock',
+        era: '90s Palm Desert / Kyuss',
+        desc: 'Groove mid-tempo, fuzz berat, bluesy pentatonic + minor. Riff “bouncing” dan hypnotic, sering di open D/C tuning. Lebih rock daripada metal murni, tapi fundamental buat sludge & modern doom.',
+        bands: 'Kyuss, Queens of the Stone Age, Sleep, Fu Manchu, Elephant Tree',
+        tempo: '90–130 BPM',
+        scales: 'Blues, Natural Minor, Dorian',
+        tuningTip: 'C / D standard, Drop C',
+        recommended: { key: 'D', scale: 'blues', tempo: 110, tuning: 'drop_d', power: true, palm: false, alt: false },
+        rhythms: [
+          [4,4,4,4],[6,2,4,4],[3,3,2,3,3,2],[4,2,2,4,4],[8,4,4],[2,2,4,2,2,4]
+        ],
+        powerChance: 0.85, palmChance: 0.04, preferLow: 0.9
+      },
+      groove: {
+        name: 'Groove Metal',
+        era: '90s Pantera → 2000s',
+        desc: 'Mid-tempo, syncopated, “bounce”. Aksentuasi di off-beat, staccato power chord, dan riff yang bikin kepala goyang. Lamb of God membawa ke arah more thrashy; Pantera lebih southern/blues-inflected.',
+        bands: 'Pantera, Lamb of God, Machine Head, Sepultura (Roots era), Gojira (early)',
+        tempo: '110–150 BPM',
+        scales: 'Natural Minor, Blues, Phrygian',
+        tuningTip: 'Drop D / Drop C / Drop B',
+        recommended: { key: 'D', scale: 'natural_minor', tempo: 130, tuning: 'drop_d', power: true, palm: true, alt: true },
+        rhythms: [
+          [3,1,2,2,3,1,2,2],[2,2,3,1,2,2,3,1],
+          [4,2,2,4,4],[3,3,2,3,3,2],[2,1,1,2,2,2,1,1,2,2],
+          [3,1,3,1,4,4]
+        ],
+        powerChance: 0.85, palmChance: 0.1, preferLow: 0.9
+      },
+      nu: {
+        name: 'Nu Metal',
+        era: 'Late 90s – early 2000s',
+        desc: 'Hip-hop influenced rhythm, simple chromatic chugs, drop-tuned, syncopated. Riff sering 1–2 note pattern yang diulang dengan feel “bounce”. Lebih tentang groove & attitude daripada complexity.',
+        bands: 'Korn, Deftones, Slipknot, Limp Bizkit, Mudvayne, System of a Down',
+        tempo: '90–140 BPM',
+        scales: 'Chromatic, Minor, Phrygian',
+        tuningTip: 'Drop A / Drop B / 7-string',
+        recommended: { key: 'A', scale: 'chromatic', tempo: 110, tuning: 'drop_a', power: true, palm: true, alt: false },
+        rhythms: [
+          [2,2,4,2,2,4],[3,1,3,1,2,2,2,2],[4,4,2,2,4],
+          [2,1,1,2,2,2,1,1,2,2],[3,3,2,4,4],[2,2,2,2,4,4]
+        ],
+        powerChance: 0.7, palmChance: 0.12, preferLow: 0.95
+      },
+      metalcore: {
+        name: 'Metalcore',
+        era: '2000s – present',
+        desc: 'Gabungan hardcore breakdown + melodic metal. Chug-chug di low string, lalu lompat ke open chord atau harmonic. Breakdown biasanya half-time feel. Modern metalcore (Architects, Spiritbox) lebih progressive & atmospheric.',
+        bands: 'Killswitch Engage, As I Lay Dying, Parkway Drive, Architects, Spiritbox, Knocked Loose',
+        tempo: '120–180 BPM (breakdown lebih lambat)',
+        scales: 'Natural Minor, Phrygian, Harmonic Minor',
+        tuningTip: 'Drop C / Drop B / 7-string',
+        recommended: { key: 'C', scale: 'natural_minor', tempo: 140, tuning: 'drop_c', power: true, palm: true, alt: true },
+        rhythms: [
+          [2,2,2,2,4,4],[3,1,3,1,2,2,2,2],[4,4,2,1,1,2,2],
+          [2,2,3,3,2,2,2],[1,1,2,1,1,2,4,4],[4,2,2,4,2,1,1]
+        ],
+        powerChance: 0.8, palmChance: 0.1, preferLow: 0.92
+      },
+      djent: {
+        name: 'Djent / Modern Prog',
+        era: '2000s Meshuggah → Periphery wave',
+        desc: 'Syncopated, polyrhythmic, low-tuned staccato. Kata “djent” dari onomatopoeia palm-muted low note. Odd time signatures, rest yang strategic, dan riff yang “mechanical”. 7 & 8-string sangat umum.',
+        bands: 'Meshuggah, Periphery, TesseracT, Animals as Leaders, Vildhjarta, Born of Osiris',
+        tempo: '100–160 BPM (feel sering half-time)',
+        scales: 'Chromatic, Phrygian, Diminished, Whole Tone',
+        tuningTip: 'Drop A / G C G C F A D / 7-8 string',
+        recommended: { key: 'G', scale: 'chromatic', tempo: 120, tuning: 'gcgc', power: true, palm: true, alt: true },
+        rhythms: [
+          [3,3,2,3,3,2],[2,2,2,3,2,2,3],[5,3,2,2,4],
+          [3,2,3,2,3,3],[1,1,1,3,1,1,1,3,2,2],[4,3,1,4,2,2],
+          [2,3,3,2,3,3]
+        ],
+        powerChance: 0.65, palmChance: 0.15, preferLow: 0.95
+      },
+      progressive: {
+        name: 'Progressive / Tech Death',
+        era: '90s–present',
+        desc: 'Odd meters (5/4, 7/8), shifting accents, riff yang berkembang (bukan hanya diulang). Tech death menambah sweep, string-skipping, dan chromatic density ekstrem. Opeth menggabungkan clean progressive rock parts.',
+        bands: 'Opeth, Dream Theater (prog metal), Necrophagist, Obscura, Between the Buried and Me, Gojira',
+        tempo: '100–180 BPM (berubah-ubah)',
+        scales: 'Diminished, Whole Tone, Harmonic Minor, Chromatic',
+        tuningTip: 'Standard / Drop D / 7-string',
+        recommended: { key: 'E', scale: 'diminished', tempo: 140, tuning: 'standard7', power: false, palm: true, alt: true },
+        rhythms: [
+          [3,3,2,3,3,2],[5,3,5,3],[2,2,3,2,2,3,2],
+          [4,3,1,4,3,1],[1,2,1,2,3,3,2,2],[5,2,1,4,4],[3,2,2,3,3,3]
+        ],
+        powerChance: 0.35, palmChance: 0.08, preferLow: 0.6
+      },
+      deadsquad: {
+        name: 'Tech Death Indo (DeadSquad-ish)',
+        era: '2000s–present Indonesia',
+        desc: 'Tech death presisi tinggi ala DeadSquad / Perangai Nadir: riff rapat penuh kejutan, syncopation ganjil, chug rendah + burst chromatic di mid, tempo mendesak. Bukan riff yang diulang datar — tiap frase beda. Solo lean fusion/Holdsworth (interval lebar, jazzy). Cocok 7-string Drop G.',
+        bands: 'DeadSquad, Burgerkill (tech era), The Faceless, Zenith Passage, Psychoptrick',
+        tempo: '140–175 BPM',
+        scales: 'Chromatic, Diminished, Phrygian, Harmonic Minor',
+        tuningTip: '7-string Drop G / GCGC / Drop A',
+        recommended: { key: 'G', scale: 'chromatic', tempo: 155, tuning: 'drop_g', power: true, palm: true, alt: true },
+        rhythms: [
+          // denser, surprise hits, odd cells like tech death Indo
+          [1,1,1,1,2,1,1,2,2,1,1,2],
+          [3,3,2,1,1,1,1,2,2],
+          [2,1,1,2,3,1,2,1,1,2],
+          [1,1,2,1,1,1,3,2,1,1,2],
+          [4,1,1,1,1,2,2,1,1,2],
+          [3,1,2,3,1,2,2,2],
+          [1,1,1,3,1,1,2,1,1,1,3],
+          [2,2,1,1,3,1,1,2,3],
+          [5,3,1,1,2,1,1,2],
+          [1,2,1,2,1,1,4,1,1,2]
+        ],
+        powerChance: 0.45, palmChance: 0.12, preferLow: 0.82
+      },
+      polyphia: {
+        name: 'Prog / Polyphia',
+        era: '2010s–present modern prog',
+        desc: 'Instrumental progressive ala Polyphia: groove sinkopasi modern, riff clean/hybrid, hybrid picking feel, frase catchy + technical. Kurang palm-mute brutal, lebih melodic & rhythmic pocket. Lead penuh tapping/sweep/sequence. Tuning sering Drop C / standard extended range.',
+        bands: 'Polyphia, Animals as Leaders, Chon, Intervals, Plini',
+        tempo: '110–160 BPM',
+        scales: 'Dorian, Natural Minor, Major-ish modes, Chromatic spice',
+        tuningTip: 'Drop C / Standard / 7-string',
+        recommended: { key: 'C', scale: 'dorian', tempo: 130, tuning: 'drop_c', power: false, palm: false, alt: true },
+        rhythms: [
+          [3,3,2,3,3,2],[2,2,3,2,2,3],[3,1,2,2,3,1,2,2],
+          [4,2,2,3,3,2],[1,1,2,3,1,1,2,3],[5,3,2,2,4],
+          [2,1,1,2,2,1,1,2,2],[3,3,3,3,2,2],[4,3,1,4,2,2]
+        ],
+        powerChance: 0.25, palmChance: 0.04, preferLow: 0.45
+      },
+      deathcore: {
+        name: 'Deathcore (TAIM / Lorna Shore)',
+        era: '2000s–present',
+        desc: 'Deathcore modern: blast + breakdown berat, open-string chug, dissonan, half-time stomp. Thy Art Is Murder = groove-deathcore agresif; Lorna Shore = symphonic/tech deathcore + huge breakdowns. Riff rendah, repetitive impact, fills chromatic pendek.',
+        bands: 'Thy Art Is Murder, Lorna Shore, Slaughter to Prevail, Fit For An Autopsy, Whitechapel',
+        tempo: '120–180 BPM (breakdown lebih half-time)',
+        scales: 'Phrygian, Chromatic, Natural Minor, Locrian',
+        tuningTip: 'Drop A / Drop G / 7-8 string',
+        recommended: { key: 'A', scale: 'phrygian', tempo: 140, tuning: 'drop_a', power: true, palm: true, alt: true },
+        rhythms: [
+          [2,2,2,2,4,4],[1,1,1,1,2,2,4,4],[4,4,2,1,1,2,2],
+          [3,1,3,1,2,2,2,2],[2,2,3,3,2,2,2],[1,1,2,1,1,2,1,1,2,4],
+          [4,2,2,4,2,1,1],[8,4,4],[2,1,1,2,1,1,4,4],
+          [3,3,2,3,3,2],[1,1,1,1,1,1,1,1,4,4]
+        ],
+        powerChance: 0.8, palmChance: 0.15, preferLow: 0.95
+      },
+      hardcore: {
+        name: 'Hardcore / Beatdown',
+        era: '80s NYHC → modern beatdown',
+        desc: 'Hardcore klasik & beatdown: riff pendek, agresif, palm-mute berat, breakdown stomp. Fokus impact & mosh — bukan lead kompleks. Open chord + chug, tempo menengah, groove patah-patah.',
+        bands: 'Hatebreed, Terror, Madball, Knocked Loose, Kublai Khan TX, Hotbox',
+        tempo: '100–160 BPM',
+        scales: 'Natural Minor, Phrygian, Chromatic',
+        tuningTip: 'Drop C / Drop B / Drop A',
+        recommended: { key: 'C', scale: 'phrygian', tempo: 130, tuning: 'drop_c', power: true, palm: true, alt: false },
+        rhythms: [
+          [4,4,4,4],[2,2,4,2,2,4],[4,2,2,4,4],
+          [3,1,4,3,1,4],[2,2,2,2,8],[1,1,2,1,1,2,4,4],
+          [4,4,2,1,1,4],[8,4,2,2],[3,3,2,4,4]
+        ],
+        powerChance: 0.75, palmChance: 0.2, preferLow: 0.9
+      },
+      melodic_hc: {
+        name: 'Melodic Metalcore (MMF / WSS)',
+        era: '2000s–present',
+        desc: 'Metalcore melodic ala Memphis May Fire & While She Sleeps: verse chug + chorus open/melodic, dual guitar harmony feel, breakdown di bridge. Campur agresif dan catchy. UK style (WSS) lebih raw; US (MMF) lebih polished & anthemic.',
+        bands: 'Memphis May Fire, While She Sleeps, Bullet For My Valentine, Killswitch Engage, Architects (early), The Devil Wears Prada',
+        tempo: '130–175 BPM',
+        scales: 'Natural Minor, Harmonic Minor, Phrygian',
+        tuningTip: 'Drop C / Drop B / Standard D',
+        recommended: { key: 'C', scale: 'natural_minor', tempo: 150, tuning: 'drop_c', power: true, palm: true, alt: true },
+        rhythms: [
+          [2,2,2,2,2,2,2,2],[1,1,2,1,1,2,1,1,2,1,1,2],
+          [4,4,2,2,2,2],[3,3,2,3,3,2],[2,2,4,4,2,2],
+          [4,2,2,4,2,1,1],[1,1,1,1,2,2,4,4],[8,4,4]
+        ],
+        powerChance: 0.65, palmChance: 0.12, preferLow: 0.7
+      },
+      modern_hc: {
+        name: 'Modern HC (Alpha Wolf)',
+        era: '2010s–present',
+        desc: 'Modern metalcore/hardcore ala Alpha Wolf: riff djenty + hardcore energy, glitchy rhythm, low chug, sudden stop-start, heavy breakdowns. Hybrid picking feel, syncopation kompleks, tuning rendah. Juga close ke Spiritbox/Knocked Loose modern edge.',
+        bands: 'Alpha Wolf, Loathe, Knocked Loose, Better Lovers, Boundaries, Hotbox',
+        tempo: '120–170 BPM',
+        scales: 'Phrygian, Chromatic, Natural Minor, Diminished',
+        tuningTip: 'Drop A / Drop G / 7-string',
+        recommended: { key: 'A', scale: 'phrygian', tempo: 145, tuning: 'drop_a', power: true, palm: true, alt: true },
+        rhythms: [
+          [3,3,2,1,1,2,2,2],[2,1,1,2,3,1,2,1,1,2],
+          [4,1,1,1,1,2,2,4],[1,1,1,1,2,1,1,2,2,4],
+          [5,3,2,2,4],[3,1,2,3,1,2,4],[2,2,1,1,3,1,1,2,3],
+          [4,4,2,1,1,1,1,2],[1,2,1,2,1,1,4,1,1,2]
+        ],
+        powerChance: 0.7, palmChance: 0.18, preferLow: 0.88
+      },
+      thall: {
+        name: 'Thall',
+        era: '2010s–present (Vildhjarta school)',
+        desc: 'Thall = extreme atmospheric djent: ultra-low, dissonan, polyrhythm gelap, ambient gap, riff “wet” & slow-burn. Bukan sekadar djent — mood cold, abstract, meshuggah-adjacent tapi lebih alien. Humanity\'s Last Breath, Vildhjarta, Invent Animate (thall-ish).',
+        bands: 'Vildhjarta, Humanity\'s Last Breath, Car Bomb, Undeath (djent), Reflections, Northlane (some eras)',
+        tempo: '90–140 BPM (feel half-time sering)',
+        scales: 'Chromatic, Diminished, Locrian, Phrygian',
+        tuningTip: 'Drop G / Drop F# / 8-string',
+        recommended: { key: 'G', scale: 'chromatic', tempo: 110, tuning: 'drop_g', power: true, palm: true, alt: true },
+        rhythms: [
+          [5,3,5,3],[3,3,2,3,3,2],[7,1,4,4],[5,2,1,4,4],
+          [4,3,1,4,3,1],[6,2,4,4],[3,2,2,3,3,3],
+          [8,3,5],[4,4,3,1,4],[5,5,2,2,2]
+        ],
+        powerChance: 0.55, palmChance: 0.1, preferLow: 0.95
+      },
+      power: {
+        name: 'Power Metal',
+        era: '80s Helloween → European school',
+        desc: 'Upbeat, major-ish feel (meski sering minor), gallop, dan riff yang support melodi vokal / lead guitar. Lebih “heroic” daripada dark. Riff sering open-chord + scale run yang nyanyi.',
+        bands: 'Helloween, Blind Guardian, DragonForce, Stratovarius, HammerFall, Sabaton',
+        tempo: '140–200 BPM',
+        scales: 'Natural Minor, Harmonic Minor, Major-ish modes',
+        tuningTip: 'Standard E / Eb',
+        recommended: { key: 'E', scale: 'harmonic_minor', tempo: 165, tuning: 'standard6', power: true, palm: false, alt: true },
+        rhythms: [
+          [2,2,2,2,2,2,2,2],[1,1,2,1,1,2,1,1,2,1,1,2],
+          [4,4,2,2,2,2],[2,2,4,4,2,2],[4,2,2,4,2,2],
+          [1,1,1,1,2,2,4]
+        ],
+        powerChance: 0.7, palmChance: 0.03, preferLow: 0.5
+      },
+      brutal: {
+        name: 'Brutal / Slam',
+        era: '90s–2000s underground',
+        desc: 'Ultra-low, chromatic, minimalis, dan “slamming”. Riff sering 2–3 note pattern di fret 0–3 dengan rhythm yang patah-patah. Fokus pada impact & heaviness, bukan melodi. Pig squeals & slow slams di breakdown.',
+        bands: 'Devourment, Internal Bleeding, Abominable Putridity, Analepsy, Vulvodynia',
+        tempo: '80–140 BPM (slam sections lebih lambat)',
+        scales: 'Chromatic, Locrian',
+        tuningTip: 'Drop A / G / F# 7-string atau lebih rendah',
+        recommended: { key: 'A', scale: 'chromatic', tempo: 100, tuning: 'drop_a', power: true, palm: true, alt: false },
+        rhythms: [
+          [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+          [2,1,1,2,1,1,2,1,1,2,1,1],
+          [1,1,1,1,2,1,1,1,1,2,2,2],
+          [3,1,1,1,3,1,1,1,4],[4,4,2,2,2,2],[2,2,2,2,4,4]
+        ],
+        powerChance: 0.5, palmChance: 0.12, preferLow: 0.98
+      }
+    };
+
+    const NOTES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+    const NOTE_TO_SEMI = Object.fromEntries(NOTES.map((n,i)=>[n,i]));
+
+    const SCALES = {
+      natural_minor:     [0,2,3,5,7,8,10],
+      harmonic_minor:    [0,2,3,5,7,8,11],
+      phrygian:          [0,1,3,5,7,8,10],
+      phrygian_dominant: [0,1,4,5,7,8,10],
+      locrian:           [0,1,3,5,6,8,10],
+      diminished:        [0,1,3,4,6,7,9,10],
+      blues:             [0,3,5,6,7,10],
+      dorian:            [0,2,3,5,7,9,10],
+      whole_tone:        [0,2,4,6,8,10],
+      chromatic:         [0,1,2,3,4,5,6,7,8,9,10,11]
+    };
+    const SCALE_NAMES = {
+      natural_minor:'Natural Minor', harmonic_minor:'Harmonic Minor', phrygian:'Phrygian',
+      phrygian_dominant:'Phrygian Dominant', locrian:'Locrian', diminished:'Diminished',
+      blues:'Blues Minor', dorian:'Dorian', whole_tone:'Whole Tone', chromatic:'Chromatic'
+    };
+
+    const TUNINGS = {
+      standard6:  [40,45,50,55,59,64],
+      drop_d:     [38,45,50,55,59,64],
+      drop_c:     [36,43,48,53,57,62],
+      drop_b:     [35,42,47,52,56,61],
+      eb:         [39,44,49,54,58,63],
+      standard7:  [35,40,45,50,55,59,64],
+      drop_a:     [33,40,45,50,55,59,64],
+      drop_g:     [31,38,43,48,53,57,62],
+      gcgc:       [31,36,43,48,53,57,62],
+      drop_fsharp:[30,37,42,47,51,56,61]
+    };
+    const STRING_NAMES = {
+      standard6:  ['E','A','D','G','B','e'],
+      drop_d:     ['D','A','D','G','B','e'],
+      drop_c:     ['C','G','C','F','A','d'],
+      drop_b:     ['B','F#','B','E','G#','c#'],
+      eb:         ['Eb','Ab','Db','Gb','Bb','eb'],
+      standard7:  ['B','E','A','D','G','B','e'],
+      drop_a:     ['A','E','A','D','G','B','e'],
+      drop_g:     ['G','D','G','C','F','A','d'],
+      gcgc:       ['G','C','G','C','F','A','d'],
+      drop_fsharp:['F#','C#','F#','B','E','A','c#']
+    };
+
+    // ===================== STATE =====================
+    // parts: { rhythm, lead, bass } each is array of events or null
+    let parts = { rhythm: null, lead: null, bass: null, breakdown: null, drums: null };
+
+    // GM drum map (channel 10)
+    const DRUM_MAP = {
+      K: 36,    // Kick
+      S: 38,    // Snare
+      T1: 48,   // High tom
+      T2: 45,   // Mid tom
+      F: 41,    // Floor tom
+      HH: 42,   // Closed hi-hat
+      HO: 46,   // Open hi-hat
+      HP: 44,   // Pedal hi-hat
+      CL: 49,   // Crash left (Crash 1)
+      CR: 57,   // Crash right (Crash 2)
+      CH: 52,   // China
+      RD: 51,   // Ride
+      BL: 53    // Ride bell
+    };
+    const DRUM_ROWS = ['K', 'S', 'T1', 'T2', 'F', 'HH', 'HO', 'CL', 'CR', 'CH', 'RD', 'BL'];
+    const DRUM_LABELS = {
+      K: 'K ', S: 'S ', T1: 'T1', T2: 'T2', F: 'F ',
+      HH: 'HH', HO: 'HO', CL: 'CL', CR: 'CR', CH: 'CH', RD: 'RD', BL: 'BL'
+    };
+    let audioCtx = null, isPlaying = false, playTimeouts = [];
+    const $ = id => document.getElementById(id);
+
+    // Bass open strings (4-string) MIDI – mirrors common metal bass tunings
+    const BASS_TUNINGS = {
+      standard6:  [28, 33, 38, 43],          // E A D G
+      drop_d:     [26, 33, 38, 43],          // D A D G
+      drop_c:     [24, 31, 36, 41],          // C G C F
+      drop_b:     [23, 30, 35, 40],          // B F# B E
+      eb:         [27, 32, 37, 42],          // Eb Ab Db Gb
+      standard7:  [23, 28, 33, 38],          // B E A D (match low 4 of 7str)
+      drop_a:     [21, 28, 33, 38],          // A E A D
+      drop_g:     [19, 26, 31, 36],          // G D G C
+      gcgc:       [19, 24, 31, 36],          // G C G C
+      drop_fsharp:[18, 25, 30, 35]           // F# C# F# B
+    };
+    const BASS_NAMES = {
+      standard6: ['E','A','D','G'], drop_d: ['D','A','D','G'],
+      drop_c: ['C','G','C','F'], drop_b: ['B','F#','B','E'],
+      eb: ['Eb','Ab','Db','Gb'], standard7: ['B','E','A','D'],
+      drop_a: ['A','E','A','D'], drop_g: ['G','D','G','C'],
+      gcgc: ['G','C','G','C'], drop_fsharp: ['F#','C#','F#','B']
+    };
+
+    $('tempo').addEventListener('input', e => { $('tempoVal').textContent = e.target.value; });
+
+    // ===================== STYLE CARD + WIKI =====================
+    function updateStyleCard() {
+      const key = $('style').value;
+      const s = STYLE_DB[key];
+      if (!s) return;
+      $('scTitle').innerHTML = s.name + ' <span class="badge">' + s.era + '</span>';
+      $('scDesc').textContent = s.desc;
+      $('scTempo').textContent = s.tempo;
+      $('scScale').textContent = s.scales;
+      $('scTuning').textContent = s.tuningTip;
+      $('scBands').textContent = 'Band referensi: ' + s.bands;
+      $('styleCard').classList.add('visible');
+    }
+
+    function applyPreset() {
+      const s = STYLE_DB[$('style').value];
+      if (!s || !s.recommended) return;
+      const r = s.recommended;
+      $('key').value = r.key;
+      $('scale').value = r.scale;
+      $('tempo').value = r.tempo;
+      $('tempoVal').textContent = r.tempo;
+      $('tuning').value = r.tuning;
+      $('powerChord').checked = r.power;
+      $('palmMute').checked = r.palm;
+      $('altPicking').checked = r.alt;
+      showToast('Preset ' + s.name + ' diterapkan');
+    }
+
+    function buildWiki() {
+      const grid = $('wikiGrid');
+      grid.innerHTML = '';
+      for (const [id, s] of Object.entries(STYLE_DB)) {
+        const div = document.createElement('div');
+        div.className = 'wiki-item';
+        div.innerHTML = `<h4>${s.name}</h4><p>${s.desc.slice(0, 120)}…</p><span class="tag">${s.tempo}</span>`;
+        div.addEventListener('click', () => {
+          $('style').value = id;
+          updateStyleCard();
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+        grid.appendChild(div);
+      }
+    }
+
+    $('style').addEventListener('change', updateStyleCard);
+    $('btnApplyPreset').addEventListener('click', applyPreset);
+
+    // ===================== HELPERS =====================
+    function midiToNoteName(midi) { return NOTES[((midi % 12) + 12) % 12]; }
+    function getScaleNotes(root, scaleKey) {
+      return SCALES[scaleKey].map(i => (NOTE_TO_SEMI[root] + i) % 12);
+    }
+    function randomChoice(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+    function weightedChoice(items, weights) {
+      const total = weights.reduce((a,b)=>a+b,0);
+      let r = Math.random() * total;
+      for (let i=0;i<items.length;i++) { r -= weights[i]; if (r <= 0) return items[i]; }
+      return items[items.length-1];
+    }
+
+    // ===================== GENERATE =====================
+    function buildDurations(style, bars) {
+      const rhythmPool = style.rhythms;
+      let remaining = bars * 16;
+      const durations = [];
+      while (remaining > 0) {
+        let pat = randomChoice(rhythmPool).slice();
+        if (Math.random() < 0.25) pat = pat.reverse();
+        for (const d of pat) {
+          if (remaining <= 0) break;
+          durations.push(Math.min(d, remaining));
+          remaining -= Math.min(d, remaining);
+        }
+      }
+      return durations;
+    }
+
+    /*
+      Motif library — relative semitone offsets from KEY ROOT on low string.
+      Inspired by common metal vocabulary (chug shapes, gallops, djent cells,
+      thrash chromatic approaches) WITHOUT copying any specific copyrighted riff.
+      Values = semitones above root (0=root, 1=b2, 3=b3, 5=4, 6=tritone, 7=5th, 10=b7)
+    */
+    const MOTIF_POOL = {
+      // Universal metal cells (always available)
+      core: [
+        [0,0,0,0], [0,0,0,3], [0,0,1,0], [0,0,3,0],
+        [0,3,0,0], [0,0,0,7], [0,7,0,0], [0,0,5,0],
+        [0,0,0,0,3], [0,0,0,0,1], [0,3,5,0], [0,7,5,0],
+        [0,0,3,5], [0,5,3,0], [0,0,0,10], [0,10,0,0]
+      ],
+      thrash: [
+        [0,0,1,0,0,1], [0,0,0,1,3,0], [0,1,0,3,0,0],
+        [0,0,3,0,1,0], [0,0,0,0,1,3], [0,3,1,0,0,0],
+        [0,0,7,0,0,5], [0,5,0,3,0,0]
+      ],
+      death: [
+        [0,1,0,1,0,0], [0,0,1,3,0,0], [0,6,0,0,3,0],
+        [0,0,0,1,0,3], [0,3,0,6,0,0], [0,1,3,0,1,0],
+        [0,0,6,0,3,0], [0,7,6,0,0,0]
+      ],
+      black: [
+        [0,3,5,7], [0,3,5,0], [0,5,3,0], [0,3,7,5],
+        [0,7,5,3], [0,3,5,3], [0,5,7,0], [0,3,0,5]
+      ],
+      djent: [
+        [0,0,0,5,0,0], [0,0,0,3,0,0], [0,0,5,0,0,3],
+        [0,0,0,0,5,3], [0,5,0,0,0,3], [0,0,3,5,0,0],
+        [0,0,0,7,0,5], [0,0,10,0,0,0]
+      ],
+      groove: [
+        [0,0,0,3,0,5], [0,0,5,0,3,0], [0,3,0,5,0,0],
+        [0,0,0,0,5,0], [0,5,3,0,0,0], [0,0,7,0,5,0],
+        [0,0,0,10,0,0], [0,10,0,7,0,0]
+      ],
+      metalcore: [
+        [0,0,0,0,3,5], [0,0,3,0,0,5], [0,0,0,5,3,0],
+        [0,0,0,0,0,3], [0,3,5,0,0,0], [0,0,7,0,0,0],
+        [0,0,0,10,7,0], [0,5,0,0,3,0]
+      ],
+      hardcore: [
+        [0,0,0,0], [0,0,0,3], [0,0,3,0], [0,0,0,0,0,0],
+        [0,0,5,0], [0,3,0,0], [0,0,0,7], [0,0,1,0]
+      ],
+      deathcore: [
+        [0,0,0,0,0,0], [0,0,0,1,0,0], [0,0,0,3,0,0],
+        [0,0,1,0,0,3], [0,0,0,6,0,0], [0,1,0,0,0,0],
+        [0,0,0,0,3,1], [0,0,7,0,0,0]
+      ],
+      thall: [
+        [0,0,0,6,0,0], [0,0,1,0,0,6], [0,6,0,0,1,0],
+        [0,0,0,0,6,3], [0,1,6,0,0,0], [0,0,3,6,0,0],
+        [0,0,0,11,0,0], [0,6,0,1,0,0]
+      ],
+      power: [
+        [0,7,0,7], [0,7,5,0], [0,5,7,0], [0,7,0,5,7],
+        [0,0,7,0], [0,7,5,7], [0,3,7,0], [0,7,10,0]
+      ],
+      doom: [
+        [0,0,3,0], [0,3,5,0], [0,0,0,5], [0,5,3,0],
+        [0,0,7,0], [0,3,0,5], [0,0,0,3], [0,7,0,0]
+      ],
+      progressive: [
+        [0,0,3,5,7,0], [0,3,0,5,0,7], [0,0,5,3,0,0],
+        [0,7,5,3,0,0], [0,0,2,3,0,0], [0,3,5,0,7,0],
+        [0,0,7,5,3,5], [0,5,0,3,7,0]
+      ],
+      polyphia: [
+        [0,3,5,7,5,3], [0,5,3,0,5,7], [0,0,3,5,0,7],
+        [0,7,5,3,5,0], [0,3,0,7,5,0], [0,5,7,0,3,0]
+      ],
+      classic: [
+        [0,0,3,5], [0,3,5,7], [0,7,5,3], [0,0,0,7],
+        [0,5,3,0], [0,0,7,5], [0,3,0,7], [0,0,5,7]
+      ]
+    };
+
+    // Map styleId → which motif pools to draw from (weighted)
+    function motifPoolsFor(styleId) {
+      const M = MOTIF_POOL;
+      const map = {
+        thrash: [M.thrash, M.core], thrash_gallop: [M.thrash, M.core],
+        death: [M.death, M.core], black: [M.black, M.core],
+        djent: [M.djent, M.core], groove: [M.groove, M.core],
+        nu: [M.groove, M.metalcore, M.core],
+        metalcore: [M.metalcore, M.hardcore, M.core],
+        hardcore: [M.hardcore, M.core],
+        melodic_hc: [M.metalcore, M.classic, M.core],
+        modern_hc: [M.djent, M.hardcore, M.metalcore],
+        deathcore: [M.deathcore, M.hardcore, M.core],
+        thall: [M.thall, M.djent, M.core],
+        deadsquad: [M.death, M.progressive, M.core],
+        progressive: [M.progressive, M.classic, M.core],
+        polyphia: [M.polyphia, M.progressive, M.classic],
+        power: [M.power, M.classic, M.core],
+        doom: [M.doom, M.core], stoner: [M.doom, M.groove, M.core],
+        brutal: [M.deathcore, M.death, M.core],
+        classic_metal: [M.classic, M.power, M.core]
+      };
+      return map[styleId] || [M.core, M.classic];
+    }
+
+    function generateRhythm(opts) {
+      const { key, scaleKey, styleId, style, bars, tuningKey, usePower, useAlt, usePalm, durations } = opts;
+      const openMidi = TUNINGS[tuningKey];
+      const numStrings = openMidi.length;
+      const rootSemi = NOTE_TO_SEMI[key];
+      const scaleSemis = getScaleNotes(key, scaleKey);
+      const highPalm = ['djent','metalcore','thrash','thrash_gallop','groove','nu','brutal',
+        'deadsquad','deathcore','hardcore','modern_hc','thall','melodic_hc'].includes(styleId);
+
+      // Find lowest string fret for a target pitch-class (prefer open/low frets)
+      function fretForPC(stringIdx, pc) {
+        const open = openMidi[stringIdx];
+        for (let f = 0; f <= 12; f++) {
+          if ((open + f) % 12 === pc) return f;
+        }
+        return 0;
+      }
+      function findRootString() {
+        // Prefer string 0 (lowest) with root at low fret
+        for (let s = 0; s < Math.min(2, numStrings); s++) {
+          for (let f = 0; f <= 5; f++) {
+            if ((openMidi[s] + f) % 12 === rootSemi) return s;
+          }
+        }
+        return 0;
+      }
+      function findPowerFifth(stringIdx, rootFret) {
+        if (stringIdx >= numStrings - 1) return null;
+        const rootMidi = openMidi[stringIdx] + rootFret;
+        const targetSemi = (rootMidi + 7) % 12;
+        const nextOpen = openMidi[stringIdx + 1];
+        for (let f = 0; f <= 7; f++) {
+          if ((nextOpen + f) % 12 === targetSemi)
+            return { string: stringIdx + 1, fret: f, midi: nextOpen + f };
+        }
+        return { string: stringIdx + 1, fret: rootFret, midi: nextOpen + rootFret };
+      }
+
+      // Build a long sequence of pitch-classes by chaining motifs
+      const pools = motifPoolsFor(styleId);
+      const pcSeq = [];
+      while (pcSeq.length < durations.length + 8) {
+        const pool = randomChoice(pools);
+        let motif = randomChoice(pool).slice();
+        // occasional transpose motif start by +5 (fourth up) for movement
+        if (Math.random() < 0.15) {
+          const shift = randomChoice([0, 5, 7, 3]);
+          motif = motif.map(x => (x + shift) % 12);
+        }
+        // slight variation: swap last note to root sometimes
+        if (Math.random() < 0.3 && motif.length > 2) motif[motif.length - 1] = 0;
+        for (const off of motif) pcSeq.push((rootSemi + off) % 12);
+      }
+
+      const baseString = findRootString();
+      let events = [], pickDown = true;
+      let seqIdx = 0;
+
+      for (let i = 0; i < durations.length; i++) {
+        const dur = durations[i];
+        // rare rest
+        if (usePalm && Math.random() < style.palmChance * 0.5) {
+          events.push({ notes: [], dur, rest: true, pick: null, muted: false, power: false });
+          continue;
+        }
+
+        const pc = pcSeq[seqIdx % pcSeq.length];
+        seqIdx++;
+
+        // Stay on low strings for heaviness
+        let stringIdx = baseString;
+        if (Math.random() < 0.12 && numStrings > 1) {
+          stringIdx = Math.min(baseString + 1, numStrings - 2);
+        }
+        if (usePower && stringIdx >= numStrings - 1) stringIdx = Math.max(0, numStrings - 2);
+
+        let fret = fretForPC(stringIdx, pc);
+        // If scale is not chromatic, snap off-scale tones toward nearest scale note
+        if (scaleKey !== 'chromatic' && !scaleSemis.includes(pc)) {
+          // prefer root or b3 or 5
+          const fallbacks = [rootSemi, (rootSemi + 3) % 12, (rootSemi + 7) % 12, (rootSemi + 5) % 12];
+          for (const fb of fallbacks) {
+            if (scaleSemis.includes(fb)) {
+              fret = fretForPC(stringIdx, fb);
+              break;
+            }
+          }
+        }
+
+        const notes = [{ string: stringIdx, fret, midi: openMidi[stringIdx] + fret }];
+
+        // Power chord: strong on root/fifth notes
+        const isRootish = (pc === rootSemi || pc === (rootSemi + 7) % 12 || pc === (rootSemi + 5) % 12);
+        let pChance = style.powerChance;
+        if (isRootish) pChance = Math.min(1, pChance + 0.2);
+        if (pc === (rootSemi + 1) % 12 || pc === (rootSemi + 6) % 12) pChance *= 0.4; // less power on dissonant
+        const isPower = usePower && Math.random() < pChance;
+        if (isPower) {
+          const fifth = findPowerFifth(stringIdx, fret);
+          if (fifth) notes.push(fifth);
+        }
+
+        const pickDir = useAlt ? (pickDown ? 'D' : 'U') : null;
+        if (useAlt) pickDown = !pickDown;
+
+        let muted = false;
+        if (usePalm) {
+          muted = highPalm ? (Math.random() < 0.72) : (Math.random() < 0.3);
+          // open up on longer notes / power chords sometimes
+          if (dur >= 4 && Math.random() < 0.5) muted = false;
+          if (isPower && Math.random() < 0.35) muted = false;
+        }
+
+        events.push({
+          notes, dur, rest: false, pick: pickDir,
+          muted, power: isPower && notes.length > 1
+        });
+      }
+      return events;
+    }
+
+    // Lead: SHRED / SWEEP + fusion wide intervals (Holdsworth / DeadSquad solo vibe)
+    function generateLead(opts) {
+      const { key, scaleKey, tuningKey, useAlt, bars, styleId } = opts;
+      const fusionLead = (styleId === 'deadsquad' || styleId === 'progressive' || styleId === 'polyphia');
+      const openMidi = TUNINGS[tuningKey];
+      const numStrings = openMidi.length;
+      const scaleSemis = getScaleNotes(key, scaleKey);
+      const total16 = bars * 16;
+
+      // Collect scale frets per string (fret 5–17 for shred zone)
+      function scaleFretsOnString(s) {
+        const out = [];
+        for (let f = 5; f <= 17; f++) {
+          if (scaleSemis.includes((openMidi[s] + f) % 12)) out.push(f);
+        }
+        return out;
+      }
+      const fretsPerString = [];
+      for (let s = 0; s < numStrings; s++) fretsPerString.push(scaleFretsOnString(s));
+
+      // Build a pool of shred phrases as sequences of {string, fret, midi, dur}
+      function makeRun(startStr, startFret, len, dir) {
+        // dir: 1 ascending frets, -1 descending; also move across strings
+        const seq = [];
+        let s = startStr, f = startFret;
+        for (let i = 0; i < len; i++) {
+          const avail = fretsPerString[s];
+          if (!avail.length) break;
+          // snap to nearest scale fret
+          let best = avail[0], bd = 99;
+          for (const af of avail) {
+            const d = Math.abs(af - f);
+            if (d < bd) { bd = d; best = af; }
+          }
+          seq.push({ string: s, fret: best, midi: openMidi[s] + best, dur: 1 });
+          // move
+          f = best + dir * (Math.random() < 0.5 ? 1 : 2);
+          if (Math.random() < 0.45) {
+            // change string in sweep direction
+            const ns = s + (dir > 0 ? 1 : -1);
+            if (ns >= 0 && ns < numStrings) s = ns;
+          }
+          if (f < 5) f = 5;
+          if (f > 17) f = 17;
+        }
+        return seq;
+      }
+
+      function makeSweep(startStr, len) {
+        // classic sweep: one note per string, adjacent frets forming arpeggio-ish
+        const seq = [];
+        const dir = Math.random() < 0.5 ? 1 : -1;
+        let s = Math.max(0, Math.min(numStrings - 1, startStr));
+        // pick a shape: minor triad-ish offsets on successive strings
+        const shape = [0, 3, 7, 12, 15, 19, 24]; // frets relative – will snap to scale
+        let baseFret = 5 + Math.floor(Math.random() * 6);
+        for (let i = 0; i < len; i++) {
+          const si = Math.max(0, Math.min(numStrings - 1, s + i * dir));
+          const target = baseFret + (shape[i % shape.length] % 5);
+          const avail = fretsPerString[si];
+          if (!avail.length) continue;
+          let best = avail[0], bd = 99;
+          for (const af of avail) {
+            const d = Math.abs(af - target);
+            if (d < bd) { bd = d; best = af; }
+          }
+          seq.push({ string: si, fret: best, midi: openMidi[si] + best, dur: 1 });
+        }
+        return seq;
+      }
+
+      function makeSequence(startStr, startFret) {
+        // 3-note-per-string repeating sequence
+        const seq = [];
+        let s = startStr, f = startFret;
+        const pattern = [0, 2, 4, 2]; // relative scale steps approx via frets
+        for (let rep = 0; rep < 3; rep++) {
+          for (const off of pattern) {
+            const avail = fretsPerString[s];
+            if (!avail.length) break;
+            const target = f + off;
+            let best = avail[0], bd = 99;
+            for (const af of avail) {
+              const d = Math.abs(af - target);
+              if (d < bd) { bd = d; best = af; }
+            }
+            seq.push({ string: s, fret: best, midi: openMidi[s] + best, dur: 1 });
+          }
+          // shift position
+          f += Math.random() < 0.5 ? 1 : 2;
+          if (Math.random() < 0.4) s = Math.min(numStrings - 1, s + 1);
+        }
+        return seq;
+      }
+
+      // Assemble phrases until we fill total16 sixteenths
+      const noteSeq = [];
+      let filled = 0;
+      while (filled < total16) {
+        const r = Math.random();
+        let phrase;
+        const startStr = Math.floor(numStrings / 2) + Math.floor(Math.random() * Math.max(1, numStrings - Math.floor(numStrings / 2)));
+        const startFret = 7 + Math.floor(Math.random() * 6);
+
+        if (fusionLead && r < 0.28) {
+          // Holdsworth-ish wide interval leaps (4ths/5ths/minor 6ths across strings)
+          phrase = [];
+          let s = startStr, f = startFret;
+          const leaps = [3, 4, 5, 6, 7, -3, -4, -5, -7];
+          for (let i = 0; i < 5 + Math.floor(Math.random() * 4); i++) {
+            const avail = fretsPerString[s];
+            if (!avail.length) break;
+            let best = avail[0], bd = 99;
+            for (const af of avail) {
+              const d = Math.abs(af - f);
+              if (d < bd) { bd = d; best = af; }
+            }
+            phrase.push({ string: s, fret: best, midi: openMidi[s] + best, dur: Math.random() < 0.3 ? 2 : 1 });
+            f = best + leaps[Math.floor(Math.random() * leaps.length)];
+            if (Math.random() < 0.5) s = Math.max(0, Math.min(numStrings - 1, s + (Math.random() < 0.5 ? 1 : -1)));
+            if (f < 5) f = 5; if (f > 17) f = 17;
+          }
+        } else if (r < 0.35) {
+          phrase = makeSweep(Math.max(0, startStr - 2), 4 + Math.floor(Math.random() * 3));
+        } else if (r < 0.65) {
+          phrase = makeRun(startStr, startFret, 6 + Math.floor(Math.random() * 6), Math.random() < 0.5 ? 1 : -1);
+        } else if (r < 0.85) {
+          phrase = makeSequence(startStr, startFret);
+        } else {
+          const avail = fretsPerString[startStr];
+          const f = avail.length ? avail[Math.floor(Math.random() * avail.length)] : 7;
+          phrase = [{ string: startStr, fret: f, midi: openMidi[startStr] + f, dur: 2 + Math.floor(Math.random() * 3) }];
+        }
+
+        // optional short rest between phrases
+        if (noteSeq.length && Math.random() < 0.3) {
+          const restDur = Math.min(2, total16 - filled);
+          if (restDur > 0) {
+            noteSeq.push({ rest: true, dur: restDur });
+            filled += restDur;
+          }
+        }
+
+        for (const n of phrase) {
+          if (filled >= total16) break;
+          const d = Math.min(n.dur, total16 - filled);
+          noteSeq.push({ rest: false, string: n.string, fret: n.fret, midi: n.midi, dur: d });
+          filled += d;
+        }
+      }
+
+      // Convert to events with alt picking
+      let events = [], pickDown = true;
+      for (const n of noteSeq) {
+        if (n.rest) {
+          events.push({ notes: [], dur: n.dur, rest: true, pick: null, muted: false, power: false, tech: null });
+        } else {
+          const pickDir = useAlt ? (pickDown ? 'D' : 'U') : null;
+          if (useAlt) pickDown = !pickDown;
+          events.push({
+            notes: [{ string: n.string, fret: n.fret, midi: n.midi }],
+            dur: n.dur, rest: false, pick: pickDir, muted: false, power: false, tech: 'shred'
+          });
+        }
+      }
+      return events;
+    }
+
+    // Bass: SLAP style – tightly locked to rhythm guitar roots (same pitch class)
+    function generateBass(opts) {
+      const { key, scaleKey, tuningKey, durations, rhythmEvents } = opts;
+      const openMidi = BASS_TUNINGS[tuningKey] || BASS_TUNINGS.standard6;
+      const numStrings = openMidi.length;
+      const scaleSemis = getScaleNotes(key, scaleKey);
+      const rootSemi = NOTE_TO_SEMI[key];
+
+      // Pitch-class outline from rhythm (same note name as guitar root)
+      const rootPC = []; // pitch class 0-11 per event
+      if (rhythmEvents) {
+        for (const ev of rhythmEvents) {
+          if (ev.rest || !ev.notes || !ev.notes.length) rootPC.push(null);
+          else {
+            const lowest = ev.notes.reduce((a, b) => a.midi <= b.midi ? a : b);
+            rootPC.push(((lowest.midi % 12) + 12) % 12);
+          }
+        }
+      }
+
+      // Find best fret on any bass string for a target pitch class (prefer low register)
+      function findPitchClass(pc, preferLow) {
+        let best = null, bestScore = -1e9;
+        for (let s = 0; s < numStrings; s++) {
+          for (let f = 0; f <= 12; f++) {
+            if ((openMidi[s] + f) % 12 !== pc) continue;
+            // score: low frets + low strings preferred
+            let score = 20 - f * 1.2 - s * 2;
+            if (preferLow && s <= 1) score += 5;
+            if (f <= 5) score += 3;
+            if (score > bestScore) {
+              bestScore = score;
+              best = { string: s, fret: f, midi: openMidi[s] + f };
+            }
+          }
+        }
+        // fallback root of key
+        if (!best) {
+          for (let s = 0; s < numStrings; s++) {
+            for (let f = 0; f <= 7; f++) {
+              if ((openMidi[s] + f) % 12 === rootSemi)
+                return { string: s, fret: f, midi: openMidi[s] + f };
+            }
+          }
+          return { string: 0, fret: 0, midi: openMidi[0] };
+        }
+        return best;
+      }
+
+      // Octave above same pitch class for pop
+      function findPop(pc) {
+        let best = null, bestScore = -1e9;
+        for (let s = Math.min(2, numStrings - 1); s < numStrings; s++) {
+          for (let f = 0; f <= 12; f++) {
+            if ((openMidi[s] + f) % 12 !== pc) continue;
+            let score = f + s * 2; // prefer higher
+            if (score > bestScore) {
+              bestScore = score;
+              best = { string: s, fret: f, midi: openMidi[s] + f };
+            }
+          }
+        }
+        return best || findPitchClass(pc, false);
+      }
+
+      let events = [];
+      let lastPC = rootSemi;
+
+      for (let i = 0; i < durations.length; i++) {
+        const dur = durations[i];
+        // Target pitch class: follow guitar root tightly
+        let pc = rootPC[i];
+        if (pc == null) pc = lastPC;
+        // 85% stay on exact guitar root PC — tight lock
+        if (Math.random() < 0.15 && scaleSemis.length) {
+          // slight variation: 5th or octave feel via 5th PC
+          pc = Math.random() < 0.6 ? (pc + 7) % 12 : pc;
+          if (!scaleSemis.includes(pc)) pc = rootPC[i] != null ? rootPC[i] : rootSemi;
+        }
+        lastPC = pc;
+
+        const mode = Math.random();
+
+        // Ghost (~10%)
+        if (mode < 0.1) {
+          const g = findPitchClass(pc, true);
+          events.push({
+            notes: [{ string: g.string, fret: g.fret, midi: g.midi }],
+            dur, rest: false, pick: 'S', muted: true, power: false, tech: 'ghost'
+          });
+          continue;
+        }
+
+        // Slap root (~50%)
+        if (mode < 0.6) {
+          const p = findPitchClass(pc, true);
+          events.push({
+            notes: [{ string: p.string, fret: p.fret, midi: p.midi }],
+            dur, rest: false, pick: 'S', muted: false, power: false, tech: 'slap'
+          });
+          continue;
+        }
+
+        // Pop octave/same PC high (~25%)
+        if (mode < 0.85) {
+          const p = findPop(pc);
+          events.push({
+            notes: [{ string: p.string, fret: p.fret, midi: p.midi }],
+            dur, rest: false, pick: 'P', muted: false, power: false, tech: 'pop'
+          });
+          continue;
+        }
+
+        // Slap + pop same PC
+        const slap = findPitchClass(pc, true);
+        const pop = findPop(pc);
+        events.push({
+          notes: [
+            { string: slap.string, fret: slap.fret, midi: slap.midi },
+            { string: pop.string, fret: pop.fret, midi: pop.midi }
+          ],
+          dur, rest: false, pick: 'S', muted: false, power: false, tech: 'slap-pop'
+        });
+      }
+      return events;
+    }
+
+    // Breakdown: half-time feel, heavy open chugs, simple impactful hits
+    function generateBreakdown(opts) {
+      const { key, scaleKey, styleId, tuningKey, usePower, useAlt, bars } = opts;
+      const openMidi = TUNINGS[tuningKey];
+      const numStrings = openMidi.length;
+      const scaleSemis = getScaleNotes(key, scaleKey);
+      const rootSemi = NOTE_TO_SEMI[key];
+      const total16 = bars * 16;
+
+      // Classic breakdown rhythm cells (half-time / syncopated chugs)
+      const cells = [
+        [4, 4, 4, 4],           // straight half-time
+        [4, 2, 2, 4, 4],
+        [3, 3, 2, 4, 4],
+        [4, 4, 2, 1, 1, 4],
+        [2, 2, 4, 2, 2, 4],
+        [4, 1, 1, 2, 4, 4],
+        [3, 1, 4, 3, 1, 4],
+        [8, 4, 4],              // long stomp
+        [4, 4, 1, 1, 1, 1, 4],
+        [2, 1, 1, 2, 2, 4, 4]
+      ];
+
+      let durations = [];
+      let rem = total16;
+      while (rem > 0) {
+        let pat = randomChoice(cells).slice();
+        if (Math.random() < 0.3) pat = pat.reverse();
+        for (const d of pat) {
+          if (rem <= 0) break;
+          const use = Math.min(d, rem);
+          durations.push(use);
+          rem -= use;
+        }
+      }
+
+      function findRootOnLow() {
+        // Prefer open / low fret root on lowest 1–2 strings
+        for (let s = 0; s < Math.min(2, numStrings); s++) {
+          for (let f = 0; f <= 5; f++) {
+            if ((openMidi[s] + f) % 12 === rootSemi)
+              return { string: s, fret: f, midi: openMidi[s] + f };
+          }
+        }
+        // any scale tone low
+        for (let s = 0; s < Math.min(2, numStrings); s++) {
+          for (let f = 0; f <= 5; f++) {
+            if (scaleSemis.includes((openMidi[s] + f) % 12))
+              return { string: s, fret: f, midi: openMidi[s] + f };
+          }
+        }
+        return { string: 0, fret: 0, midi: openMidi[0] };
+      }
+
+      function findFifth(root) {
+        if (root.string >= numStrings - 1) return null;
+        const target = (root.midi + 7) % 12;
+        const nextOpen = openMidi[root.string + 1];
+        for (let f = 0; f <= 5; f++) {
+          if ((nextOpen + f) % 12 === target)
+            return { string: root.string + 1, fret: f, midi: nextOpen + f };
+        }
+        return { string: root.string + 1, fret: root.fret, midi: nextOpen + root.fret };
+      }
+
+      const events = [];
+      let pickDown = true;
+      let lastRoot = findRootOnLow();
+
+      for (let i = 0; i < durations.length; i++) {
+        const dur = durations[i];
+        // rare rest for breath
+        if (Math.random() < 0.06) {
+          events.push({ notes: [], dur, rest: true, pick: null, muted: false, power: false });
+          continue;
+        }
+
+        // Mostly same root; occasional move to b3 or 5th PC for variation
+        let root = lastRoot;
+        if (Math.random() < 0.2) {
+          root = findRootOnLow();
+          // slight chance of b3
+          if (Math.random() < 0.35) {
+            const b3 = (rootSemi + 3) % 12;
+            for (let s = 0; s < Math.min(2, numStrings); s++) {
+              for (let f = 0; f <= 5; f++) {
+                if ((openMidi[s] + f) % 12 === b3) {
+                  root = { string: s, fret: f, midi: openMidi[s] + f };
+                  break;
+                }
+              }
+            }
+          }
+        }
+        lastRoot = root;
+
+        const notes = [{ string: root.string, fret: root.fret, midi: root.midi }];
+        // Heavy power chords almost always in breakdowns
+        const doPow = usePower !== false && Math.random() < 0.85;
+        if (doPow) {
+          const fifth = findFifth(root);
+          if (fifth) notes.push(fifth);
+        }
+
+        const pickDir = useAlt ? (pickDown ? 'D' : 'U') : 'D';
+        if (useAlt) pickDown = !pickDown;
+
+        // Breakdown = mostly palm muted chugs
+        const muted = Math.random() < 0.8;
+
+        events.push({
+          notes, dur, rest: false, pick: pickDir,
+          muted, power: doPow && notes.length > 1, tech: 'breakdown'
+        });
+      }
+      return events;
+    }
+
+    // Drums: Kick, Snare, Tom1, Tom2, Floor — style-aware patterns
+    function generateDrums(opts) {
+      const { styleId, bars, durations } = opts;
+      const total16 = bars * 16;
+
+      // Build per-16th hit grid: each slot is set of drum keys
+      const grid = Array.from({ length: total16 }, () => new Set());
+
+      const isBreakdownFeel = styleId === 'deathcore' || styleId === 'brutal' || styleId === 'doom' || styleId === 'hardcore' || styleId === 'thall';
+      const isBlast = styleId === 'death' || styleId === 'black' || styleId === 'deadsquad' || styleId === 'brutal';
+      const isGroove = styleId === 'groove' || styleId === 'nu' || styleId === 'metalcore' || styleId === 'djent' || styleId === 'polyphia' || styleId === 'melodic_hc' || styleId === 'modern_hc';
+
+      // Kick patterns
+      for (let i = 0; i < total16; i++) {
+        const beat = i % 16; // position in bar
+        // four-on-floor / half-time / double kick feel
+        if (isBlast) {
+          if (i % 2 === 0 || Math.random() < 0.35) grid[i].add('K');
+        } else if (isBreakdownFeel) {
+          // half-time: kick on 1 and 3 (0, 8)
+          if (beat === 0 || beat === 8 || (beat === 4 && Math.random() < 0.3) || (beat === 12 && Math.random() < 0.25))
+            grid[i].add('K');
+        } else if (isGroove) {
+          if (beat === 0 || beat === 8 || beat === 6 || beat === 14 ||
+              (beat === 3 && Math.random() < 0.4) || (beat === 10 && Math.random() < 0.35))
+            grid[i].add('K');
+        } else {
+          // thrash / standard: 1 & 3 + some doubles
+          if (beat === 0 || beat === 8 || beat === 4 || beat === 12 ||
+              (beat % 4 === 2 && Math.random() < 0.25))
+            grid[i].add('K');
+        }
+      }
+
+      // Snare: backbeat 2 & 4 (beats 4 and 12 in 16th grid)
+      for (let i = 0; i < total16; i++) {
+        const beat = i % 16;
+        if (isBlast) {
+          if (beat === 4 || beat === 12 || (Math.random() < 0.08)) grid[i].add('S');
+        } else if (isBreakdownFeel) {
+          // half-time snare on 3 (beat 8)
+          if (beat === 8 || (beat === 0 && Math.random() < 0.1)) grid[i].add('S');
+        } else {
+          if (beat === 4 || beat === 12) grid[i].add('S');
+          // occasional ghost / flam
+          if ((beat === 3 || beat === 11) && Math.random() < 0.15) grid[i].add('S');
+        }
+      }
+
+      // Toms fills: at end of bars or random accents
+      for (let bar = 0; bar < bars; bar++) {
+        const base = bar * 16;
+        // end-of-bar fill chance
+        if (Math.random() < (isGroove ? 0.35 : 0.25) || bar === bars - 1) {
+          const fillStart = base + 12 + Math.floor(Math.random() * 2);
+          const tomSeq = ['T1', 'T2', 'F'];
+          if (Math.random() < 0.5) tomSeq.reverse();
+          let ti = 0;
+          for (let i = fillStart; i < base + 16 && i < total16; i++) {
+            grid[i].add(tomSeq[ti % tomSeq.length]);
+            ti++;
+            if (Math.random() < 0.4) {
+              // double hit
+              if (i + 1 < base + 16) grid[i + 1].add(tomSeq[ti % tomSeq.length]);
+            }
+          }
+        }
+        // occasional mid-bar tom accent
+        if (Math.random() < 0.2) {
+          const pos = base + [2, 6, 10, 14][Math.floor(Math.random() * 4)];
+          if (pos < total16) grid[pos].add(randomChoice(['T1', 'T2', 'F']));
+        }
+      }
+
+      // Align kicks roughly with guitar rhythm accents if available
+      if (opts.rhythmEvents) {
+        let tick = 0;
+        for (const ev of opts.rhythmEvents) {
+          if (!ev.rest && ev.notes && ev.notes.length && tick < total16) {
+            if (ev.dur >= 2 || ev.power) grid[tick].add('K');
+          }
+          tick += ev.dur;
+          if (tick >= total16) break;
+        }
+      }
+
+      // ---- Cymbals: HH, Crash L/R, China, Ride, Bell ----
+      for (let i = 0; i < total16; i++) {
+        const beat = i % 16;
+        const barStart = i % 16 === 0;
+
+        // Hi-hat: 8th or 16th pulse (closed), occasional open
+        if (isBlast) {
+          if (i % 2 === 0) grid[i].add('HH');
+          if (beat === 7 || beat === 15) grid[i].add('HO');
+        } else if (isBreakdownFeel) {
+          // sparse hats or ride on half-time
+          if (beat === 0 || beat === 8) grid[i].add('RD');
+          if (beat === 4 || beat === 12) grid[i].add('HH');
+        } else if (isGroove) {
+          if (beat % 2 === 0) grid[i].add('HH');
+          if ((beat === 6 || beat === 14) && Math.random() < 0.4) {
+            grid[i].delete('HH');
+            grid[i].add('HO');
+          }
+        } else {
+          // thrash / standard: 8th hats
+          if (beat % 2 === 0) grid[i].add('HH');
+          if ((beat === 7 || beat === 15) && Math.random() < 0.35) {
+            grid[i].delete('HH');
+            grid[i].add('HO');
+          }
+        }
+
+        // Crash on downbeats (bar starts) + accents
+        if (barStart) {
+          grid[i].add(Math.random() < 0.55 ? 'CL' : 'CR');
+        }
+        // crash with snare accents sometimes
+        if ((beat === 4 || beat === 12) && Math.random() < 0.12) {
+          grid[i].add(Math.random() < 0.5 ? 'CL' : 'CR');
+        }
+      }
+
+      // China accents (metal staple) — offbeat / with snare
+      for (let bar = 0; bar < bars; bar++) {
+        const base = bar * 16;
+        if (Math.random() < 0.45 || styleId === 'deathcore' || styleId === 'metalcore') {
+          const pos = base + randomChoice([4, 8, 12, 6, 14]);
+          if (pos < total16) grid[pos].add('CH');
+        }
+        // second china chance
+        if (Math.random() < 0.2) {
+          const pos = base + randomChoice([2, 10, 15]);
+          if (pos < total16) grid[pos].add('CH');
+        }
+      }
+
+      // Ride pattern (when not breakdown) — replace some hats with ride in later bars
+      if (!isBreakdownFeel && bars >= 2) {
+        for (let i = Math.floor(total16 / 2); i < total16; i++) {
+          const beat = i % 16;
+          if (Math.random() < 0.25 && beat % 2 === 0) {
+            grid[i].delete('HH');
+            grid[i].add('RD');
+          }
+          // ride bell accents
+          if ((beat === 0 || beat === 8) && Math.random() < 0.2) grid[i].add('BL');
+        }
+      } else if (isBreakdownFeel) {
+        // breakdown: ride + occasional bell
+        for (let i = 0; i < total16; i++) {
+          const beat = i % 16;
+          if (beat === 0 || beat === 8) grid[i].add('BL');
+        }
+      }
+
+      // Extra crash on last bar for ending impact
+      if (total16 >= 16) {
+        grid[total16 - 16].add('CL');
+        if (Math.random() < 0.5) grid[total16 - 16].add('CR');
+      }
+
+      return { grid, total16 };
+    }
+
+    function formatDrumTab(drumData, meta) {
+      const { grid, total16 } = drumData;
+      const lines = {};
+      DRUM_ROWS.forEach(r => { lines[r] = []; });
+
+      for (let i = 0; i < total16; i++) {
+        // bar separator every 16
+        if (i > 0 && i % 16 === 0) {
+          DRUM_ROWS.forEach(r => lines[r].push('|'));
+        }
+        const hits = grid[i];
+        DRUM_ROWS.forEach(r => {
+          lines[r].push(hits.has(r) ? 'x' : '-');
+        });
+      }
+
+      let out = '// === DRUMS ===\n';
+      out += '// K=Kick S=Snare T1/T2/F=Toms  HH=Hat HO=OpenHat\n';
+      out += '// CL=CrashL CR=CrashR CH=China RD=Ride BL=Bell\n';
+      DRUM_ROWS.forEach(r => {
+        out += DRUM_LABELS[r].padEnd(2, ' ') + '|' + lines[r].join('') + '|\n';
+      });
+      const st = STYLE_DB[meta.styleId];
+      out += `\n// ${st.name}  |  ${$('tempo').value} BPM  |  ${meta.bars || ''} bars`;
+      return out;
+    }
+
+    function generateRiff() {
+      const key = $('key').value;
+      const scaleKey = $('scale').value;
+      const styleId = $('style').value;
+      const style = STYLE_DB[styleId];
+      const bars = parseInt($('bars').value, 10);
+      const tuningKey = $('tuning').value;
+      const usePower = $('powerChord').checked;
+      const useAlt = $('altPicking').checked;
+      const usePalm = $('palmMute').checked;
+      const doRhythm = $('genRhythm').checked;
+      const doLead = $('genLead').checked;
+      const doBass = $('genBass').checked;
+      const doBreakdown = $('genBreakdown').checked;
+      const doDrums = $('genDrums').checked;
+
+      if (!doRhythm && !doLead && !doBass && !doBreakdown && !doDrums) {
+        showToast('Pilih minimal 1 part');
+        return;
+      }
+
+      const durations = buildDurations(style, bars);
+      const opts = { key, scaleKey, styleId, style, bars, tuningKey, usePower, useAlt, usePalm, durations };
+
+      parts = { rhythm: null, lead: null, bass: null, breakdown: null, drums: null };
+
+      if (doRhythm) parts.rhythm = generateRhythm(opts);
+      if (doLead) parts.lead = generateLead(opts);
+      if (doBreakdown) parts.breakdown = generateBreakdown(opts);
+      if (doBass) {
+        opts.rhythmEvents = parts.rhythm || parts.breakdown;
+        parts.bass = generateBass(opts);
+      }
+      if (doDrums) {
+        opts.rhythmEvents = parts.rhythm || parts.breakdown;
+        parts.drums = generateDrums(opts);
+      }
+
+      // Render tabs
+      const meta = { key, scaleKey, styleId, useAlt, tuningKey, bars };
+      if (parts.rhythm) {
+        $('tabRhythm').textContent = formatTab(parts.rhythm, STRING_NAMES[tuningKey], meta, 'RHYTHM');
+        $('panelRhythm').style.display = '';
+        renderFretboard(parts.rhythm, tuningKey);
+      } else {
+        $('tabRhythm').textContent = '(Rhythm off)';
+        $('panelRhythm').style.display = 'none';
+      }
+      if (parts.lead) {
+        $('tabLead').textContent = formatTab(parts.lead, STRING_NAMES[tuningKey], meta, 'LEAD');
+        $('panelLead').style.display = '';
+      } else {
+        $('tabLead').textContent = '(Lead off)';
+        $('panelLead').style.display = 'none';
+      }
+      if (parts.bass) {
+        $('tabBass').textContent = formatTab(parts.bass, BASS_NAMES[tuningKey] || BASS_NAMES.standard6, meta, 'BASS');
+        $('panelBass').style.display = '';
+      } else {
+        $('tabBass').textContent = '(Bass off)';
+        $('panelBass').style.display = 'none';
+      }
+      if (parts.breakdown) {
+        $('tabBreakdown').textContent = formatTab(parts.breakdown, STRING_NAMES[tuningKey], meta, 'BREAKDOWN');
+        $('panelBreakdown').style.display = '';
+        if (!parts.rhythm) renderFretboard(parts.breakdown, tuningKey);
+      } else {
+        $('tabBreakdown').textContent = '(Breakdown off)';
+        $('panelBreakdown').style.display = 'none';
+      }
+      if (parts.drums) {
+        $('tabDrums').textContent = formatDrumTab(parts.drums, meta);
+        $('panelDrums').style.display = '';
+      } else {
+        $('tabDrums').textContent = '(Drums off)';
+        $('panelDrums').style.display = 'none';
+      }
+
+      $('btnPlay').disabled = false;
+      $('btnCopy').disabled = false;
+      $('btnMidi').disabled = false;
+      $('infoBar').style.display = 'flex';
+      $('infoKey').textContent = key;
+      $('infoScale').textContent = SCALE_NAMES[scaleKey];
+      $('infoStyle').textContent = style.name;
+      $('infoBpm').textContent = $('tempo').value;
+      const enabled = [doRhythm && 'Rhythm', doLead && 'Lead', doBass && 'Bass', doBreakdown && 'Breakdown', doDrums && 'Drums'].filter(Boolean);
+      $('infoParts').textContent = enabled.join(' + ');
+    }
+
+    // ===================== RENDER TAB =====================
+    function formatTab(events, names, meta, label) {
+      const numStrings = names.length;
+      const lines = Array.from({length: numStrings}, () => []);
+      const pickLine = [];
+      let hasPickMarks = false;
+
+      for (const ev of events) {
+        const cells = Array(numStrings).fill(null);
+        let width = Math.max(2, Math.ceil(ev.dur * 1.15));
+        if (!ev.rest) {
+          for (const n of ev.notes) {
+            const di = numStrings - 1 - n.string;
+            if (di >= 0 && di < numStrings) {
+              // ghost notes: show 'x'
+              const fretStr = (ev.tech === 'ghost') ? 'x' : String(n.fret);
+              cells[di] = fretStr;
+              width = Math.max(width, fretStr.length + 1);
+            }
+          }
+        }
+        for (let s = 0; s < numStrings; s++) {
+          if (cells[s] == null) lines[s].push('-'.repeat(width));
+          else {
+            const pad = width - cells[s].length;
+            const left = Math.floor(pad / 2);
+            lines[s].push('-'.repeat(left) + cells[s] + '-'.repeat(pad - left));
+          }
+        }
+        let sym = null;
+        if (!ev.rest && ev.pick) {
+          if (ev.pick === 'D') sym = '↓';
+          else if (ev.pick === 'U') sym = '↑';
+          else if (ev.pick === 'S') sym = 'S';
+          else if (ev.pick === 'P') sym = 'P';
+        }
+        if (sym) {
+          hasPickMarks = true;
+          const pad = width - 1, left = Math.floor(pad / 2);
+          pickLine.push(' '.repeat(left) + sym + ' '.repeat(pad - left));
+        } else {
+          pickLine.push(' '.repeat(width));
+        }
+      }
+
+      let out = `// === ${label} ===\n`;
+      if (hasPickMarks) out += '  |' + pickLine.join('') + '|\n';
+      for (let s = 0; s < numStrings; s++) {
+        out += names[numStrings - 1 - s].padStart(2) + '|' + lines[s].join('') + '|\n';
+      }
+      const st = STYLE_DB[meta.styleId];
+      out += `\n// ${st.name}  |  Key: ${meta.key}  |  ${SCALE_NAMES[meta.scaleKey]}  |  ${$('tempo').value} BPM\n`;
+      out += `// Tuning: ${meta.tuningKey.replace(/_/g,' ').toUpperCase()}`;
+      if (label === 'LEAD') out += '  |  Shred/Sweep';
+      if (label === 'BASS') out += '  |  Slap/Pop (S=slap P=pop x=ghost)';
+      if (label === 'BREAKDOWN') out += '  |  Half-time chug / stomp';
+      return out;
+    }
+
+    function renderFretboard(events, tuningKey) {
+      const openMidi = TUNINGS[tuningKey];
+      const names = STRING_NAMES[tuningKey];
+      const numStrings = names.length;
+      const used = Array.from({length: numStrings}, () => new Set());
+      for (const ev of events) {
+        if (ev.rest) continue;
+        for (const n of ev.notes) used[n.string].add(n.fret);
+      }
+      let html = '<table><thead><tr><th></th>';
+      for (let f = 0; f <= 12; f++) html += `<th>${f}</th>`;
+      html += '</tr></thead><tbody>';
+      for (let s = numStrings - 1; s >= 0; s--) {
+        html += `<tr><td class="string-label">${names[s]}</td>`;
+        for (let f = 0; f <= 12; f++) {
+          const active = used[s].has(f);
+          html += `<td${active ? ' class="active"' : ''}>${active ? midiToNoteName(openMidi[s] + f) : ''}</td>`;
+        }
+        html += '</tr>';
+      }
+      html += '</tbody></table>';
+      $('fretboard').innerHTML = html;
+    }
+
+    // ===================== AUDIO =====================
+    function ensureAudio() {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+    }
+    function playNote(midi, startTime, durationSec, velocity = 0.2) {
+      if (midi == null) return;
+      const ctx = audioCtx;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      const filter = ctx.createBiquadFilter();
+      const dist = ctx.createWaveShaper();
+      osc.type = 'sawtooth';
+      osc.frequency.value = 440 * Math.pow(2, (midi - 69) / 12);
+      const curve = new Float32Array(256);
+      for (let i = 0; i < 256; i++) { const x = (i/128)-1; curve[i] = Math.tanh(x * 3.8); }
+      dist.curve = curve; dist.oversample = '2x';
+      filter.type = 'lowpass'; filter.frequency.value = 1500 + Math.random()*500; filter.Q.value = 1.1;
+      const now = startTime;
+      gain.gain.setValueAtTime(0, now);
+      gain.gain.linearRampToValueAtTime(velocity, now + 0.008);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + durationSec);
+      osc.connect(dist); dist.connect(filter); filter.connect(gain); gain.connect(ctx.destination);
+      osc.start(now); osc.stop(now + durationSec + 0.04);
+    }
+    function playNoteTone(midi, startTime, durationSec, velocity, type) {
+      if (midi == null) return;
+      const ctx = audioCtx;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      const filter = ctx.createBiquadFilter();
+      const dist = ctx.createWaveShaper();
+
+      if (type === 'bass') {
+        osc.type = 'triangle';
+        filter.type = 'lowpass';
+        filter.frequency.value = 400;
+      } else if (type === 'lead') {
+        osc.type = 'sawtooth';
+        filter.type = 'lowpass';
+        filter.frequency.value = 2800;
+      } else {
+        osc.type = 'sawtooth';
+        filter.type = 'lowpass';
+        filter.frequency.value = 1600;
+      }
+
+      osc.frequency.value = 440 * Math.pow(2, (midi - 69) / 12);
+      const curve = new Float32Array(256);
+      for (let i = 0; i < 256; i++) { const x = (i/128)-1; curve[i] = Math.tanh(x * (type === 'bass' ? 2 : 3.5)); }
+      dist.curve = curve; dist.oversample = '2x';
+      filter.Q.value = 1;
+
+      const now = startTime;
+      gain.gain.setValueAtTime(0, now);
+      gain.gain.linearRampToValueAtTime(velocity, now + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + durationSec);
+
+      osc.connect(dist); dist.connect(filter); filter.connect(gain); gain.connect(ctx.destination);
+      osc.start(now); osc.stop(now + durationSec + 0.04);
+    }
+
+    function schedulePart(events, type, startAt, sixteenth) {
+      let t = startAt;
+      for (const ev of events) {
+        const durSec = ev.dur * sixteenth;
+        if (!ev.rest && ev.notes) {
+          let baseVel = type === 'bass' ? 0.3 : type === 'lead' ? 0.13 : 0.18;
+          let hold = 0.9;
+          // Slap: short punchy; ghost: quieter & shorter; pop: brighter accent
+          if (type === 'bass') {
+            if (ev.tech === 'ghost') { baseVel = 0.12; hold = 0.25; }
+            else if (ev.tech === 'slap') { baseVel = 0.34; hold = 0.35; }
+            else if (ev.tech === 'pop') { baseVel = 0.26; hold = 0.45; }
+            else if (ev.tech === 'slap-pop') { baseVel = 0.28; hold = 0.4; }
+          }
+          if (type === 'lead') hold = 0.75; // faster decay for shred runs
+          const vel = ev.notes.length > 1 ? baseVel * 0.8 : baseVel;
+          for (const n of ev.notes) {
+            playNoteTone(n.midi, t, Math.max(0.03, durSec * hold), vel, type);
+          }
+        }
+        t += durSec;
+      }
+      return t;
+    }
+
+    function hasAnyPart() {
+      return !!(parts.rhythm || parts.lead || parts.bass || parts.breakdown || parts.drums);
+    }
+
+    function playDrumHit(kind, startTime, velocity) {
+      if (!audioCtx) return;
+      const ctx = audioCtx;
+      const t0 = startTime;
+      if (kind === 'K') {
+        // kick: short sine pitch drop
+        const osc = ctx.createOscillator();
+        const g = ctx.createGain();
+        osc.frequency.setValueAtTime(120, t0);
+        osc.frequency.exponentialRampToValueAtTime(40, t0 + 0.08);
+        g.gain.setValueAtTime(velocity * 0.9, t0);
+        g.gain.exponentialRampToValueAtTime(0.001, t0 + 0.2);
+        osc.connect(g); g.connect(ctx.destination);
+        osc.start(t0); osc.stop(t0 + 0.22);
+      } else if (kind === 'S') {
+        // snare: noise burst + tone
+        const bufSize = Math.floor(ctx.sampleRate * 0.12);
+        const buf = ctx.createBuffer(1, bufSize, ctx.sampleRate);
+        const data = buf.getChannelData(0);
+        for (let i = 0; i < bufSize; i++) data[i] = Math.random() * 2 - 1;
+        const noise = ctx.createBufferSource();
+        noise.buffer = buf;
+        const ng = ctx.createGain();
+        const nf = ctx.createBiquadFilter();
+        nf.type = 'bandpass'; nf.frequency.value = 1800;
+        ng.gain.setValueAtTime(velocity * 0.55, t0);
+        ng.gain.exponentialRampToValueAtTime(0.001, t0 + 0.1);
+        noise.connect(nf); nf.connect(ng); ng.connect(ctx.destination);
+        noise.start(t0); noise.stop(t0 + 0.12);
+        const osc = ctx.createOscillator();
+        const og = ctx.createGain();
+        osc.frequency.value = 200;
+        og.gain.setValueAtTime(velocity * 0.35, t0);
+        og.gain.exponentialRampToValueAtTime(0.001, t0 + 0.08);
+        osc.connect(og); og.connect(ctx.destination);
+        osc.start(t0); osc.stop(t0 + 0.1);
+      } else if (kind === 'T1' || kind === 'T2' || kind === 'F') {
+        const freqs = { T1: 220, T2: 160, F: 100 };
+        const osc = ctx.createOscillator();
+        const g = ctx.createGain();
+        const f0 = freqs[kind] || 150;
+        osc.frequency.setValueAtTime(f0, t0);
+        osc.frequency.exponentialRampToValueAtTime(f0 * 0.6, t0 + 0.12);
+        g.gain.setValueAtTime(velocity * 0.5, t0);
+        g.gain.exponentialRampToValueAtTime(0.001, t0 + 0.18);
+        osc.connect(g); g.connect(ctx.destination);
+        osc.start(t0); osc.stop(t0 + 0.2);
+      } else {
+        // Cymbals: filtered noise (HH short, crash/china long, ride mid)
+        const isHat = (kind === 'HH' || kind === 'HO' || kind === 'HP');
+        const isCrash = (kind === 'CL' || kind === 'CR' || kind === 'CH');
+        const dur = isHat ? (kind === 'HO' ? 0.25 : 0.06) : isCrash ? 0.8 : 0.35;
+        const freq = kind === 'BL' ? 4500 : kind === 'RD' ? 3500 : kind === 'CH' ? 2800
+          : kind === 'CL' ? 3200 : kind === 'CR' ? 3000 : kind === 'HO' ? 6000 : 7000;
+        const bufSize = Math.floor(ctx.sampleRate * Math.min(dur, 0.5));
+        const buf = ctx.createBuffer(1, bufSize, ctx.sampleRate);
+        const data = buf.getChannelData(0);
+        for (let i = 0; i < bufSize; i++) data[i] = Math.random() * 2 - 1;
+        const noise = ctx.createBufferSource();
+        noise.buffer = buf;
+        const nf = ctx.createBiquadFilter();
+        nf.type = isHat ? 'highpass' : 'bandpass';
+        nf.frequency.value = freq;
+        nf.Q.value = isHat ? 0.7 : 0.5;
+        const g = ctx.createGain();
+        const vol = isHat ? 0.25 : isCrash ? 0.4 : 0.3;
+        g.gain.setValueAtTime(velocity * vol, t0);
+        g.gain.exponentialRampToValueAtTime(0.001, t0 + dur);
+        noise.connect(nf); nf.connect(g); g.connect(ctx.destination);
+        noise.start(t0); noise.stop(t0 + dur + 0.02);
+      }
+    }
+
+    function scheduleDrums(drumData, startAt, sixteenth) {
+      const { grid, total16 } = drumData;
+      for (let i = 0; i < total16; i++) {
+        const t = startAt + i * sixteenth;
+        const hits = grid[i];
+        hits.forEach(k => playDrumHit(k, t, 0.7 + Math.random() * 0.25));
+      }
+      return startAt + total16 * sixteenth;
+    }
+
+    function playRiff() {
+      if (!hasAnyPart() || isPlaying) return;
+      ensureAudio(); isPlaying = true;
+      $('btnPlay').disabled = true; $('btnStop').disabled = false; $('btnGen').disabled = true;
+      const bpm = parseInt($('tempo').value, 10);
+      const sixteenth = 60 / bpm / 4;
+      const startAt = audioCtx.currentTime + 0.08;
+      let endT = startAt;
+      if (parts.rhythm) endT = Math.max(endT, schedulePart(parts.rhythm, 'rhythm', startAt, sixteenth));
+      if (parts.lead) endT = Math.max(endT, schedulePart(parts.lead, 'lead', startAt, sixteenth));
+      if (parts.bass) endT = Math.max(endT, schedulePart(parts.bass, 'bass', startAt, sixteenth));
+      if (parts.breakdown) endT = Math.max(endT, schedulePart(parts.breakdown, 'rhythm', startAt, sixteenth));
+      if (parts.drums) endT = Math.max(endT, scheduleDrums(parts.drums, startAt, sixteenth));
+      playTimeouts.push(setTimeout(() => stopRiff(), (endT - audioCtx.currentTime) * 1000 + 100));
+    }
+    function stopRiff() {
+      isPlaying = false;
+      playTimeouts.forEach(clearTimeout); playTimeouts = [];
+      if (audioCtx) audioCtx.close().then(() => { audioCtx = null; });
+      $('btnPlay').disabled = !hasAnyPart();
+      $('btnStop').disabled = true; $('btnGen').disabled = false;
+    }
+
+    // ===================== MIDI (Odin III compatible) =====================
+    /*
+      THE ODIN III (Solemn Tones) – articulation via KEYSWITCH + VELOCITY
+
+      Keyswitches (latch until next KS):
+        C0=12  Alternate Picked     C#0=13 Down Picked      D0=14 Up Picked
+        C1=24  Down Open Palm Mute  D#1=27 Up Open Palm Mute
+        G#1=32 Tremolo Picked       G#2=44 *Auto Power Chord
+
+      Velocity is the main switch between picked vs muted:
+        35–126  → Alt / normal picking sound
+        25–34   → Palm Mutes
+        15–24   → Palm Mutes Closed
+        0–14    → Palm Mutes Dead
+        127     → Pinch Harmonics
+
+      Strategy:
+        1. Latch base articulation once (Alternate / Tremolo / Down)
+        2. Per-note: velocity selects mute vs pick (most reliable in Odin)
+        3. On mute notes also fire Open Palm Mute KS when entering mute region
+        4. Power chords: fire Auto Power Chord KS before the chord
+        5. Optional string-select KS when lowest string changes
+    */
+    const ODIN = {
+      ALT_PICKED: 12,
+      DOWN_PICKED: 13,
+      UP_PICKED: 14,
+      DOWN_OPEN_PM: 24,
+      UP_OPEN_PM: 27,
+      TREMOLO: 32,
+      AUTO_POWER: 44,
+      STR6: [79, 80, 81, 82, 83, 96],
+      STR7: [78, 79, 80, 81, 82, 83, 96]
+    };
+
+    /*
+      Bass VST Keyswitch Map (from user plugin)
+      C-2=0  Finger Alternate   C#-2=1 Finger Index   D-2=2 Finger Middle
+      D#-2=3 Dead Note          E-2=4  Slap            F-2=5 Dead Slap
+      F#-2=6 Pop                G-2=7  Dead Pop        G#-2=8 Harmonic
+      A-2=9  Hammer/Pull        A#-2=10 Tapping        B-2=11 Slide Trigger
+      C-1=12 Dead Dbl Thumb     C#-1=13 Thump          D-1=14 Dbl Thumb
+      D#-1=15 Dbl Thumb Pop     E-1=16 Fret Hand Mute
+      Force String: B=127 E=126 A=125 D=124 G=123 C=122
+    */
+    const BASS_KS = {
+      FINGER_ALT: 0,
+      FINGER_INDEX: 1,
+      FINGER_MIDDLE: 2,
+      DEAD_NOTE: 3,
+      SLAP: 4,
+      DEAD_SLAP: 5,
+      POP: 6,
+      DEAD_POP: 7,
+      HARMONIC: 8,
+      HAMMER_PULL: 9,
+      TAPPING: 10,
+      SLIDE: 11,
+      DEAD_DBL_THUMB: 12,
+      THUMP: 13,
+      DBL_THUMB: 14,
+      DBL_THUMB_POP: 15,
+      FRET_MUTE: 16,
+      // Force string for 4-string E-A-D-G (index 0=lowest E)
+      FORCE_STR: [126, 125, 124, 123] // E A D G
+    };
+
+    function toVarLen(value) {
+      const buffer = []; buffer.push(value & 0x7F); value >>= 7;
+      while (value > 0) { buffer.push((value & 0x7F) | 0x80); value >>= 7; }
+      return buffer.reverse();
+    }
+    function downloadBlob(blob, filename) {
+      try {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.style.display = 'none'; a.href = url; a.download = filename;
+        document.body.appendChild(a); a.click();
+        setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 250);
+        return true;
+      } catch (e) {
+        window.open(URL.createObjectURL(blob), '_blank');
+        return false;
+      }
+    }
+    function showToast(msg) {
+      let t = document.getElementById('toast');
+      if (!t) {
+        t = document.createElement('div'); t.id = 'toast';
+        t.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a8a3a;color:#fff;padding:12px 22px;border-radius:10px;font-weight:700;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,0.4);transition:opacity 0.3s;opacity:0;';
+        document.body.appendChild(t);
+      }
+      t.textContent = msg; t.style.opacity = '1';
+      clearTimeout(t._timer);
+      t._timer = setTimeout(() => { t.style.opacity = '0'; }, 2200);
+    }
+
+    function buildTrackEvents(partEvents, opts) {
+      // Returns array of {t, type, note, vel} for one instrument part
+      const { useOdin, useAlt, isTremoloStyle, isGuitar, isBass } = opts;
+      const tpq = 480, ticks16 = tpq / 4, KS_GAP = 12;
+      const events = [];
+      const pushKS = (t, note) => {
+        const tt = Math.max(0, t);
+        events.push({ t: tt, type: 'on', note, vel: 100 });
+        events.push({ t: tt + 4, type: 'off', note, vel: 0 });
+      };
+
+      let maxStr = 5;
+      for (const ev of partEvents) {
+        if (!ev.notes) continue;
+        for (const n of ev.notes) if (n.string > maxStr) maxStr = n.string;
+      }
+      const strMap = maxStr >= 6 ? ODIN.STR7 : ODIN.STR6;
+
+      let tick = 0, lastArt = null, lastMuted = null, lastStr = null, lastPick = null;
+
+      // Guitar (Odin III) initial KS
+      if (useOdin && isGuitar) {
+        if (isTremoloStyle) { pushKS(0, ODIN.TREMOLO); lastArt = ODIN.TREMOLO; }
+        else if (useAlt) { pushKS(0, ODIN.ALT_PICKED); lastArt = ODIN.ALT_PICKED; }
+        else { pushKS(0, ODIN.DOWN_PICKED); lastArt = ODIN.DOWN_PICKED; }
+        tick = KS_GAP;
+      }
+      // Bass plugin initial KS → Slap mode default
+      if (useOdin && isBass) {
+        pushKS(0, BASS_KS.SLAP);
+        lastArt = BASS_KS.SLAP;
+        tick = KS_GAP;
+      }
+
+      for (const ev of partEvents) {
+        const dur = Math.max(1, Math.round(ev.dur * ticks16));
+        if (ev.rest || !ev.notes || !ev.notes.length) { tick += dur; continue; }
+
+        const muted = !!ev.muted;
+        const isPower = !!ev.power;
+        const pick = ev.pick;
+        const tech = ev.tech;
+        let vel;
+
+        if (useOdin && isGuitar) {
+          vel = muted ? (26 + Math.floor(Math.random() * 8)) : (72 + Math.floor(Math.random() * 36));
+          if (isTremoloStyle) {
+            if (lastArt !== ODIN.TREMOLO) { pushKS(tick - KS_GAP, ODIN.TREMOLO); lastArt = ODIN.TREMOLO; }
+          } else if (muted) {
+            const pmKS = pick === 'U' ? ODIN.UP_OPEN_PM : ODIN.DOWN_OPEN_PM;
+            if (lastMuted !== true || lastArt !== pmKS) { pushKS(tick - KS_GAP, pmKS); lastArt = pmKS; }
+            lastMuted = true;
+          } else {
+            if (lastMuted === true || lastArt === ODIN.DOWN_OPEN_PM || lastArt === ODIN.UP_OPEN_PM) {
+              const back = useAlt ? ODIN.ALT_PICKED : ODIN.DOWN_PICKED;
+              pushKS(tick - KS_GAP, back); lastArt = back;
+            }
+            if (useAlt && pick && pick !== lastPick) {
+              const strokeKS = pick === 'D' ? ODIN.DOWN_PICKED : ODIN.UP_PICKED;
+              pushKS(tick - KS_GAP, strokeKS); lastArt = strokeKS; lastPick = pick;
+            }
+            lastMuted = false;
+          }
+          if (isPower) pushKS(tick - KS_GAP, ODIN.AUTO_POWER);
+          const primary = ev.notes.reduce((a, b) => a.string <= b.string ? a : b);
+          const si = Math.min(primary.string, strMap.length - 1);
+          const strKS = strMap[si];
+          if (strKS !== lastStr) { pushKS(tick - KS_GAP, strKS); lastStr = strKS; }
+        } else if (useOdin && isBass) {
+          // --- Bass keyswitch map ---
+          let artKS = BASS_KS.SLAP;
+          if (tech === 'ghost') artKS = BASS_KS.DEAD_NOTE;
+          else if (tech === 'slap') artKS = BASS_KS.SLAP;
+          else if (tech === 'pop') artKS = BASS_KS.POP;
+          else if (tech === 'slap-pop') artKS = BASS_KS.DBL_THUMB_POP;
+          else if (pick === 'S') artKS = BASS_KS.SLAP;
+          else if (pick === 'P') artKS = BASS_KS.POP;
+          else artKS = BASS_KS.FINGER_ALT;
+
+          if (artKS !== lastArt) {
+            pushKS(tick - KS_GAP, artKS);
+            lastArt = artKS;
+          }
+
+          // Force string for primary note
+          const primary = ev.notes.reduce((a, b) => a.string <= b.string ? a : b);
+          const si = Math.min(primary.string, BASS_KS.FORCE_STR.length - 1);
+          const fks = BASS_KS.FORCE_STR[si];
+          if (fks !== lastStr) {
+            pushKS(tick - KS_GAP, fks);
+            lastStr = fks;
+          }
+
+          // Velocity: slap harder, ghost softer, pop medium-high
+          if (tech === 'ghost') vel = 40 + Math.floor(Math.random() * 20);
+          else if (tech === 'slap' || pick === 'S') vel = 95 + Math.floor(Math.random() * 25);
+          else if (tech === 'pop' || pick === 'P') vel = 85 + Math.floor(Math.random() * 30);
+          else vel = 80 + Math.floor(Math.random() * 30);
+        } else {
+          vel = isGuitar ? (muted ? 30 : 100) : 90;
+        }
+
+        for (const n of ev.notes) {
+          let note = Math.max(0, Math.min(127, n.midi | 0));
+          // Guitar: keep out of Odin KS zone
+          if (useOdin && isGuitar && note < 48) note += 12;
+          // Bass: keep out of bass KS zone (0–16) and force-string zone is high so OK
+          if (useOdin && isBass && note < 20) note += 12;
+          events.push({ t: tick, type: 'on', note, vel });
+          events.push({ t: tick + Math.max(1, dur - 2), type: 'off', note, vel: 0 });
+        }
+        tick += dur;
+      }
+
+      events.sort((a, b) => {
+        if (a.t !== b.t) return a.t - b.t;
+        const rank = e => {
+          const isKS = e.note <= 16 || e.note < 48 || (e.note >= 77 && e.note <= 96) || e.note >= 122;
+          if (e.type === 'off' && isKS) return 0;
+          if (e.type === 'on' && isKS) return 1;
+          if (e.type === 'off') return 2;
+          return 3;
+        };
+        return rank(a) - rank(b);
+      });
+      return events;
+    }
+
+    function eventsToTrackBytes(events, trackName, program) {
+      const track = [];
+      // track name
+      track.push(0x00, 0xFF, 0x03, trackName.length);
+      for (let i = 0; i < trackName.length; i++) track.push(trackName.charCodeAt(i));
+      // program change
+      if (program != null) track.push(0x00, 0xC0, program);
+
+      let prev = 0;
+      for (const e of events) {
+        const delta = Math.max(0, e.t - prev);
+        prev = e.t;
+        for (const b of toVarLen(delta)) track.push(b);
+        track.push(e.type === 'on' ? 0x90 : 0x80, e.note, e.vel);
+      }
+      track.push(0x00, 0xFF, 0x2F, 0x00);
+      return track;
+    }
+
+    // Drum track on MIDI channel 10 (0-based ch 9 → status 0x99 / 0x89)
+    function buildDrumTrackBytes(drumData) {
+      const tpq = 480, ticks16 = tpq / 4;
+      const { grid, total16 } = drumData;
+      const events = [];
+      for (let i = 0; i < total16; i++) {
+        const t = i * ticks16;
+        grid[i].forEach(k => {
+          const note = DRUM_MAP[k];
+          if (note == null) return;
+          const vel = k === 'K' ? 110 : k === 'S' ? 100
+            : (k === 'CL' || k === 'CR' || k === 'CH') ? 105
+            : (k === 'HH' || k === 'HO') ? 80
+            : (k === 'RD' || k === 'BL') ? 88 : 90;
+          events.push({ t, type: 'on', note, vel });
+          events.push({ t: t + Math.max(8, ticks16 - 4), type: 'off', note, vel: 0 });
+        });
+      }
+      events.sort((a, b) => a.t - b.t || (a.type === 'off' ? -1 : 1));
+
+      const track = [];
+      const tname = 'Drums';
+      track.push(0x00, 0xFF, 0x03, tname.length);
+      for (let i = 0; i < tname.length; i++) track.push(tname.charCodeAt(i));
+
+      let prev = 0;
+      for (const e of events) {
+        const delta = Math.max(0, e.t - prev);
+        prev = e.t;
+        for (const b of toVarLen(delta)) track.push(b);
+        // channel 10 = 0x9
+        track.push(e.type === 'on' ? 0x99 : 0x89, e.note, e.vel);
+      }
+      track.push(0x00, 0xFF, 0x2F, 0x00);
+      return track;
+    }
+
+    function exportMidi() {
+      if (!hasAnyPart()) { showToast('Generate riff dulu!'); return; }
+      try {
+        const bpm = parseInt($('tempo').value, 10);
+        const useOdin = $('odinKs') && $('odinKs').checked;
+        const useAlt = $('altPicking').checked;
+        const styleId = $('style').value;
+        const isTremoloStyle = (styleId === 'black');
+        const tpq = 480;
+
+        const tracks = [];
+        // Tempo track (track 0 for format 1)
+        const tempoTrack = [];
+        const uspq = Math.round(60000000 / bpm);
+        tempoTrack.push(0x00, 0xFF, 0x51, 0x03, (uspq>>16)&0xFF, (uspq>>8)&0xFF, uspq&0xFF);
+        tempoTrack.push(0x00, 0xFF, 0x2F, 0x00);
+        tracks.push(tempoTrack);
+
+        const baseOpts = { useOdin, useAlt, isTremoloStyle };
+
+        if (parts.rhythm) {
+          const ev = buildTrackEvents(parts.rhythm, { ...baseOpts, isGuitar: true });
+          tracks.push(eventsToTrackBytes(ev, 'Rhythm Guitar', useOdin ? null : 30));
+        }
+        if (parts.lead) {
+          const ev = buildTrackEvents(parts.lead, { ...baseOpts, isGuitar: true, isTremoloStyle: false });
+          tracks.push(eventsToTrackBytes(ev, 'Lead Guitar', useOdin ? null : 29));
+        }
+        if (parts.bass) {
+          const ev = buildTrackEvents(parts.bass, {
+            useOdin, useAlt: false, isTremoloStyle: false, isGuitar: false, isBass: true
+          });
+          tracks.push(eventsToTrackBytes(ev, 'Bass', useOdin ? null : 36));
+        }
+        if (parts.breakdown) {
+          const ev = buildTrackEvents(parts.breakdown, { ...baseOpts, isGuitar: true });
+          tracks.push(eventsToTrackBytes(ev, 'Breakdown', useOdin ? null : 30));
+        }
+        if (parts.drums) {
+          tracks.push(buildDrumTrackBytes(parts.drums));
+        }
+
+        // Format 1 header
+        const ntrks = tracks.length;
+        const header = [
+          0x4D,0x54,0x68,0x64, 0,0,0,6,
+          0,1, // format 1
+          (ntrks>>8)&0xFF, ntrks&0xFF,
+          (tpq>>8)&0xFF, tpq&0xFF
+        ];
+
+        let totalLen = header.length;
+        const packed = [];
+        for (const tr of tracks) {
+          const th = [0x4D,0x54,0x72,0x6B, (tr.length>>24)&0xFF,(tr.length>>16)&0xFF,(tr.length>>8)&0xFF,tr.length&0xFF];
+          packed.push(th, tr);
+          totalLen += th.length + tr.length;
+        }
+        const all = new Uint8Array(totalLen);
+        let off = 0;
+        all.set(header, 0); off = header.length;
+        for (const chunk of packed) { all.set(chunk, off); off += chunk.length; }
+
+        const blob = new Blob([all], { type: 'audio/midi' });
+        const tag = useOdin ? 'odin' : 'plain';
+        const partsTag = [parts.rhythm&&'r', parts.lead&&'l', parts.bass&&'b', parts.breakdown&&'bd', parts.drums&&'d'].filter(Boolean).join('');
+        const fname = `metal-${partsTag}-${$('key').value}-${$('style').value}-${bpm}bpm-${tag}.mid`;
+        const ok = downloadBlob(blob, fname);
+        showToast(ok ? `✓ MIDI (${ntrks - 1} parts) ready!` : 'MIDI dibuka di tab baru');
+      } catch (err) {
+        console.error(err);
+        showToast('Gagal: ' + err.message);
+      }
+    }
+
+    function copyTab() {
+      const chunks = [];
+      if (parts.rhythm) chunks.push($('tabRhythm').textContent);
+      if (parts.lead) chunks.push($('tabLead').textContent);
+      if (parts.bass) chunks.push($('tabBass').textContent);
+      if (parts.breakdown) chunks.push($('tabBreakdown').textContent);
+      if (parts.drums) chunks.push($('tabDrums').textContent);
+      const text = chunks.join('\n\n') || 'No parts';
+      navigator.clipboard.writeText(text).then(() => {
+        const btn = $('btnCopy'); const old = btn.textContent;
+        btn.textContent = '✓ COPIED!'; setTimeout(() => btn.textContent = old, 1400);
+      });
+    }
+
+    // ===================== INIT =====================
+    $('btnGen').addEventListener('click', () => { stopRiff(); generateRiff(); });
+    $('btnPlay').addEventListener('click', playRiff);
+    $('btnStop').addEventListener('click', stopRiff);
+    $('btnCopy').addEventListener('click', copyTab);
+    $('btnMidi').addEventListener('click', exportMidi);
+
+    buildWiki();
+    updateStyleCard();
+    renderFretboard([], 'standard6');
+  </script>
+</body>
+</html>
