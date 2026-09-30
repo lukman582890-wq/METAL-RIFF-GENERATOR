@@ -2159,7 +2159,8 @@
         out += DRUM_LABELS[r].padEnd(2, ' ') + '|' + lines[r].join('') + '|\n';
       });
       const st = STYLE_DB[meta.styleId];
-      out += `\n// ${st.name}  |  ${$('tempo').value} BPM  |  ${meta.bars || ''} bars`;\n      if (drumData.feelSummary) out += `\\n// Feel: ${drumData.feelSummary}`;
+      out += `\n// ${st.name}  |  ${$('tempo').value} BPM  |  ${meta.bars || ''} bars`;
+      if (drumData.feelSummary) out += `\n// Feel: ${drumData.feelSummary}`;
       return out;
     }
 
