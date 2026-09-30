@@ -1481,7 +1481,7 @@
 
     // Lead: SHRED / SWEEP + fusion wide intervals (Holdsworth / DeadSquad solo vibe)
     function generateLead(opts) {
-      const { key, scaleKey, tuningKey, useAlt, bars, styleId } = opts;
+      const { key, scaleKey, tuningKey, useAlt, useDown, usePinch, useHopo, useSlide, bars, styleId } = opts;
       const fusionLead = (styleId === 'deadsquad' || styleId === 'progressive' || styleId === 'polyphia');
       const leadFlavor = {
         thrash:{rest:.04,run:.72,range:[5,13]},thrash_gallop:{rest:.03,run:.78,range:[5,12]},death:{rest:.07,run:.78,range:[4,14]},
@@ -1647,10 +1647,21 @@
         } else {
           const pickDir = useAlt ? (pickDown ? 'D' : 'U') : null;
           if (useAlt) pickDown = !pickDown;
+          let tech = 'shred';
+          if (usePinch && Math.random() < (styleId === 'polyphia' ? .04 : .018)) tech = 'ph';
+          if (useHopo && last && last.string === n.string && tech === 'shred') {
+            const df = n.fret - last.fret;
+            if (Math.abs(df) >= 1 && Math.abs(df) <= 3 && Math.random() < .16) tech = df > 0 ? 'h' : 'p';
+          }
+          if (useSlide && last && last.string === n.string && tech === 'shred') {
+            const df = n.fret - last.fret;
+            if (Math.abs(df) >= 3 && Math.random() < (styleId === 'doom' ? .18 : .08)) tech = df > 0 ? '/' : '\\';
+          }
           events.push({
             notes: [{ string: n.string, fret: n.fret, midi: n.midi }],
-            dur: n.dur, rest: false, pick: pickDir, muted: false, power: false, tech: 'shred'
+            dur: n.dur, rest: false, pick: useDown ? 'D' : (useAlt ? pickDir : 'D'), muted: false, power: false, tech
           });
+          last = { string: n.string, fret: n.fret };
         }
       }
       return events;
