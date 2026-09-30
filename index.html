@@ -2746,16 +2746,30 @@
       return buffer.reverse();
     }
     function downloadBlob(blob, filename) {
+      // Chrome/Edge: force a real user-initiated download from a Blob URL.
+      // Keep the anchor alive briefly because some browsers ignore an anchor
+      // that is removed immediately after click().
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      a.rel = 'noopener';
+      a.style.position = 'fixed';
+      a.style.left = '-9999px';
+      a.style.top = '0';
+      document.body.appendChild(a);
       try {
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.style.display = 'none'; a.href = url; a.download = filename;
-        document.body.appendChild(a); a.click();
-        setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 250);
+        a.click();
         return true;
       } catch (e) {
-        window.open(URL.createObjectURL(blob), '_blank');
+        console.error('Blob download failed:', e);
+        try { window.open(url, '_blank', 'noopener'); } catch (_) {}
         return false;
+      } finally {
+        setTimeout(() => {
+          try { a.remove(); } catch (_) {}
+          try { URL.revokeObjectURL(url); } catch (_) {}
+        }, 1500);
       }
     }
     function showToast(msg) {
@@ -2788,7 +2802,7 @@
 
     function buildTrackEvents(partEvents, opts) {
       // Returns array of {t, type, note, vel} for one instrument part
-      const { useOdin, useAlt, isTremoloStyle, isGuitar, isBass } = opts;
+      const { useOdin, useAlt, isTremoloStyle, isGuitar, isBass, styleId } = opts;
       const tpq = 480, ticks16 = tpq / 4, KS_GAP = 12;
       const events = [];
       const pushKS = (t, note) => {
@@ -2903,6 +2917,7 @@
           const stringChanged = strKS !== lastStr;
           const lastSi = lastStr == null ? -99 : strMap.indexOf(lastStr);
           const largeJump = lastStr != null && Math.abs(si - lastSi) >= 2;
+          const accent = (((tick - KS_GAP) % (tpq * 4)) === 0) || (ev.dur >= 4);
           const barAccent = ((tick - KS_GAP) % (tpq * 4)) < KS_GAP;
           if (lastStr == null || (stringChanged && (largeJump || accent || barAccent || Math.random() < profile.stringMove))) {
             pushKS(tick - KS_GAP, strKS);
@@ -3065,7 +3080,7 @@
         }
         if (parts.bass) {
           const ev = buildTrackEvents(parts.bass, {
-            useOdin, useAlt: false, isTremoloStyle: false, isGuitar: false, isBass: true
+            useOdin, useAlt: false, isTremoloStyle: false, styleId, isGuitar: false, isBass: true
           });
           tracks.push(eventsToTrackBytes(ev, 'Bass', useOdin ? null : 36));
         }
