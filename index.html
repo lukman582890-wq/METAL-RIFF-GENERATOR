@@ -360,7 +360,7 @@
          Velocity: 70–109 (picked) / 28–33 (palm mute) sesuai velocity trigger Odin.
     </div>
 
-    <footer>Metal Riff Generator v24 • Genre-aware multi-part engine • Client-side</footer>
+    <footer>Metal Riff Generator v25 • Genre-aware multi-part engine • Extreme drum vocabulary • Client-side</footer>
   </div>
 
   <script>
@@ -1921,170 +1921,219 @@
       return events;
     }
 
-    // Drums: Kick, Snare, Tom1, Tom2, Floor — style-aware patterns
-    function generateDrums(opts) {
-      const { styleId, bars, durations } = opts;
-      const total16 = bars * 16;
+    // ===================== DRUM ENGINE V25 =====================
+    // Genre-specific extreme-metal vocabulary:
+    // skank, traditional blast, hammer blast, bomb blast, gravity blast,
+    // double-kick, half-time, groove, syncopated/djent and melodic patterns.
+    // The patterns are deliberately structural, not generic random hits.
 
-      // Build per-16th hit grid: each slot is set of drum keys
-      const grid = Array.from({ length: total16 }, () => new Set());
+    const DRUM_STYLE_V25 = {
+      thrash:       { primary:['skank','doublekick','groove'], blastMin:165, blastChance:.18 },
+      thrash_gallop:{ primary:['skank','doublekick'], blastMin:175, blastChance:.22 },
+      death:        { primary:['traditional','bomb','hammer','doublekick'], blastMin:150, blastChance:.78 },
+      melodeath:    { primary:['traditional','doublekick','skank','blast'], blastMin:155, blastChance:.58 },
+      black:        { primary:['skank','traditional','blast','hammer'], blastMin:155, blastChance:.86 },
+      doom:         { primary:['half','doom'], blastMin:999, blastChance:0 },
+      stoner:       { primary:['groove','stoner','half'], blastMin:999, blastChance:0 },
+      groove:       { primary:['groove','syncopated','half'], blastMin:999, blastChance:0 },
+      nu:           { primary:['syncopated','half','groove'], blastMin:999, blastChance:0 },
+      metalcore:    { primary:['half','syncopated','skank','blast'], blastMin:165, blastChance:.20 },
+      djent:        { primary:['syncopated','half','djent'], blastMin:175, blastChance:.10 },
+      progressive:  { primary:['prog','doublekick','traditional','syncopated'], blastMin:170, blastChance:.25 },
+      deadsquad:    { primary:['traditional','hammer','bomb','gravity'], blastMin:145, blastChance:.92 },
+      polyphia:     { primary:['groove','prog','doublekick'], blastMin:999, blastChance:0 },
+      deathcore:    { primary:['half','bomb','hammer','gravity','traditional'], blastMin:155, blastChance:.62 },
+      hardcore:     { primary:['half','skank','syncopated'], blastMin:170, blastChance:.08 },
+      melodic_hc:   { primary:['skank','half','doublekick','blast'], blastMin:160, blastChance:.28 },
+      modern_hc:    { primary:['syncopated','half','hammer','blast'], blastMin:165, blastChance:.18 },
+      thall:        { primary:['syncopated','half','hammer','bomb'], blastMin:170, blastChance:.12 },
+      power:        { primary:['doublekick','skank','groove'], blastMin:175, blastChance:.12 },
+      brutal:       { primary:['hammer','bomb','gravity','half'], blastMin:125, blastChance:.78 }
+    };
 
-      const isBreakdownFeel = styleId === 'deathcore' || styleId === 'brutal' || styleId === 'doom' || styleId === 'hardcore' || styleId === 'thall';
-      const isBlast = styleId === 'death' || styleId === 'black' || styleId === 'deadsquad' || styleId === 'brutal';
-      const isGroove = styleId === 'groove' || styleId === 'nu' || styleId === 'metalcore' || styleId === 'djent' || styleId === 'polyphia' || styleId === 'melodic_hc' || styleId === 'modern_hc';
+    const DRUM_FEEL_NAMES = {
+      traditional:'TRADITIONAL BLAST',
+      blast:'TRADITIONAL BLAST',
+      skank:'SKANK BEAT',
+      hammer:'HAMMER BLAST',
+      bomb:'BOMB BLAST',
+      gravity:'GRAVITY BLAST',
+      doublekick:'DOUBLE KICK',
+      half:'HALF-TIME',
+      groove:'GROOVE',
+      syncopated:'SYNCOPATED',
+      djent:'DJENT SYNCOPATION',
+      prog:'PROG / VARIABLE ACCENTS',
+      doom:'DOOM / SLUDGE',
+      stoner:'STONER SWING',
+      fill:'FILL'
+    };
 
-      // Kick patterns
-      for (let i = 0; i < total16; i++) {
-        const beat = i % 16; // position in bar
-        // four-on-floor / half-time / double kick feel
-        if (isBlast) {
-          if (i % 2 === 0 || Math.random() < 0.35) grid[i].add('K');
-        } else if (isBreakdownFeel) {
-          // half-time: kick on 1 and 3 (0, 8)
-          if (beat === 0 || beat === 8 || (beat === 4 && Math.random() < 0.3) || (beat === 12 && Math.random() < 0.25))
-            grid[i].add('K');
-        } else if (isGroove) {
-          if (beat === 0 || beat === 8 || beat === 6 || beat === 14 ||
-              (beat === 3 && Math.random() < 0.4) || (beat === 10 && Math.random() < 0.35))
-            grid[i].add('K');
-        } else {
-          // thrash / standard: 1 & 3 + some doubles
-          if (beat === 0 || beat === 8 || beat === 4 || beat === 12 ||
-              (beat % 4 === 2 && Math.random() < 0.25))
-            grid[i].add('K');
+    function weightedFeel(styleId, bpm) {
+      const p = DRUM_STYLE_V25[styleId] || DRUM_STYLE_V25.thrash;
+      const extreme = bpm >= p.blastMin && Math.random() < p.blastChance;
+      if (extreme) {
+        const blastPool = p.primary.filter(x => ['traditional','blast','hammer','bomb','gravity','skank'].includes(x));
+        if (blastPool.length) return randomChoice(blastPool);
+      }
+      return randomChoice(p.primary);
+    }
+
+    function drumAdd(grid, i, key) {
+      if (i >= 0 && i < grid.length) grid[i].add(key);
+    }
+
+    function applyDrumFeel(grid, base, feel, styleId, rhythmEvents) {
+      // One 4/4 bar = 16 sixteenth-note slots.
+      const add = (p,k) => drumAdd(grid,base+p,k);
+
+      if (feel === 'traditional' || feel === 'blast') {
+        // Kick/snare alternate on every 16th; cymbal keeps the continuous pulse.
+        for (let p=0;p<16;p++) {
+          add(p, p%2===0 ? 'K' : 'S');
+          add(p, (p%4===0) ? 'RD' : 'HH');
         }
+      } else if (feel === 'skank') {
+        // Classic fast 2/4 / polka-derived feel:
+        // kick on 8ths, snare on the intervening 8ths, cymbal on both.
+        for (let p=0;p<16;p+=2) add(p,'HH');
+        [0,4,8,12].forEach(p=>add(p,'K'));
+        [2,6,10,14].forEach(p=>add(p,'S'));
+      } else if (feel === 'hammer') {
+        // Kick + snare together on every 8th, cymbal locked to the same pulse.
+        for (let p=0;p<16;p+=2) {
+          add(p,'K'); add(p,'S'); add(p,p%4===0?'CR':'HH');
+        }
+      } else if (feel === 'bomb') {
+        // Double-time kick with snare on the 8th-note layer.
+        for (let p=0;p<16;p++) {
+          add(p,'K');
+          if (p%2===0) add(p,'S');
+          add(p,p%2===0?'RD':'HH');
+        }
+      } else if (feel === 'gravity') {
+        // Gravity/freehand feel: continuous 16th snare + continuous 16th kick.
+        // In MIDI this is the closest practical representation of the technique.
+        for (let p=0;p<16;p++) {
+          add(p,'K'); add(p,'S');
+          add(p,p%4===0?'CH':'RD');
+        }
+      } else if (feel === 'doublekick') {
+        for (let p=0;p<16;p+=2) add(p,'K');
+        [4,12].forEach(p=>add(p,'S'));
+        for (let p=0;p<16;p+=2) add(p,p%8===0?'CR':'HH');
+      } else if (feel === 'half') {
+        add(0,'K'); add(8,'S'); add(10,'K');
+        add(4,'K'); add(12,'K');
+        [0,4,8,12].forEach(p=>add(p,p===8?'CR':'RD'));
+      } else if (feel === 'groove') {
+        [0,3,6,8,10,14].forEach(p=>add(p,'K'));
+        [4,12].forEach(p=>add(p,'S'));
+        for(let p=0;p<16;p+=2) add(p,'HH');
+        add(7,'HO'); add(15,'HO');
+      } else if (feel === 'syncopated' || feel === 'djent') {
+        // Stop/start low-end architecture with snare on the backbeat.
+        [0,3,6,7,10,14].forEach(p=>add(p,'K'));
+        [4,12].forEach(p=>add(p,'S'));
+        [0,2,4,6,8,10,12,14].forEach(p=>add(p,'HH'));
+        [3,7,11,15].forEach(p=>add(p,'CH'));
+      } else if (feel === 'prog') {
+        [0,5,7,10,13,15].forEach(p=>add(p,'K'));
+        [4,12].forEach(p=>add(p,'S'));
+        [0,2,4,6,8,10,12,14].forEach(p=>add(p,'RD'));
+      } else if (feel === 'doom') {
+        [0,8].forEach(p=>add(p,'K'));
+        [4,12].forEach(p=>add(p,'S'));
+        [0,4,8,12].forEach(p=>add(p,'CR'));
+      } else if (feel === 'stoner') {
+        [0,6,8,14].forEach(p=>add(p,'K'));
+        [4,12].forEach(p=>add(p,'S'));
+        for(let p=0;p<16;p+=2) add(p,'HH');
+        add(7,'HO'); add(15,'HO');
       }
 
-      // Snare: backbeat 2 & 4 (beats 4 and 12 in 16th grid)
-      for (let i = 0; i < total16; i++) {
-        const beat = i % 16;
-        if (isBlast) {
-          if (beat === 4 || beat === 12 || (Math.random() < 0.08)) grid[i].add('S');
-        } else if (isBreakdownFeel) {
-          // half-time snare on 3 (beat 8)
-          if (beat === 8 || (beat === 0 && Math.random() < 0.1)) grid[i].add('S');
-        } else {
-          if (beat === 4 || beat === 12) grid[i].add('S');
-          // occasional ghost / flam
-          if ((beat === 3 || beat === 11) && Math.random() < 0.15) grid[i].add('S');
-        }
-      }
-
-      // Toms fills: at end of bars or random accents
-      for (let bar = 0; bar < bars; bar++) {
-        const base = bar * 16;
-        // end-of-bar fill chance
-        if (Math.random() < (isGroove ? 0.35 : 0.25) || bar === bars - 1) {
-          const fillStart = base + 12 + Math.floor(Math.random() * 2);
-          const tomSeq = ['T1', 'T2', 'F'];
-          if (Math.random() < 0.5) tomSeq.reverse();
-          let ti = 0;
-          for (let i = fillStart; i < base + 16 && i < total16; i++) {
-            grid[i].add(tomSeq[ti % tomSeq.length]);
-            ti++;
-            if (Math.random() < 0.4) {
-              // double hit
-              if (i + 1 < base + 16) grid[i + 1].add(tomSeq[ti % tomSeq.length]);
-            }
-          }
-        }
-        // occasional mid-bar tom accent
-        if (Math.random() < 0.2) {
-          const pos = base + [2, 6, 10, 14][Math.floor(Math.random() * 4)];
-          if (pos < total16) grid[pos].add(randomChoice(['T1', 'T2', 'F']));
-        }
-      }
-
-      // Align kicks roughly with guitar rhythm accents if available
-      if (opts.rhythmEvents) {
-        let tick = 0;
-        for (const ev of opts.rhythmEvents) {
-          if (!ev.rest && ev.notes && ev.notes.length && tick < total16) {
-            if (ev.dur >= 2 || ev.power) grid[tick].add('K');
+      // Guitar/riff accents: kick follows strong riff entries, but never destroys
+      // a deliberate blast pattern.
+      if (rhythmEvents && !['traditional','blast','skank','hammer','bomb','gravity'].includes(feel)) {
+        let tick=0;
+        for(const ev of rhythmEvents) {
+          if(!ev.rest && ev.notes?.length && tick<base+16) {
+            const local=tick-base;
+            if(local>=0 && local<16 && (ev.power || ev.dur>=2)) add(local,'K');
           }
           tick += ev.dur;
-          if (tick >= total16) break;
+          if(tick>=base+16) break;
         }
       }
+    }
 
-      // ---- Cymbals: HH, Crash L/R, China, Ride, Bell ----
-      for (let i = 0; i < total16; i++) {
-        const beat = i % 16;
-        const barStart = i % 16 === 0;
+    function addDrumFill(grid, base, styleId, intensity) {
+      const seqs = styleId==='deathcore'||styleId==='brutal'
+        ? [['F','T2','T1','S'],['T2','F','T1','S']]
+        : styleId==='black'||styleId==='deadsquad'
+          ? [['T1','T2','F','S'],['F','T2','T1','S']]
+          : [['T1','T2','F','S'],['T2','T1','F','S']];
+      const seq=randomChoice(seqs);
+      const start=intensity>0.7?12:13;
+      for(let j=0;j<4;j++) drumAdd(grid,base+start+j,seq[j]);
+    }
 
-        // Hi-hat: 8th or 16th pulse (closed), occasional open
-        if (isBlast) {
-          if (i % 2 === 0) grid[i].add('HH');
-          if (beat === 7 || beat === 15) grid[i].add('HO');
-        } else if (isBreakdownFeel) {
-          // sparse hats or ride on half-time
-          if (beat === 0 || beat === 8) grid[i].add('RD');
-          if (beat === 4 || beat === 12) grid[i].add('HH');
-        } else if (isGroove) {
-          if (beat % 2 === 0) grid[i].add('HH');
-          if ((beat === 6 || beat === 14) && Math.random() < 0.4) {
-            grid[i].delete('HH');
-            grid[i].add('HO');
-          }
+    // Drums V25: each bar gets a named vocabulary item instead of a generic
+    // kick/snare randomizer. This makes extreme-metal styles actually switch
+    // between blast families, groove and breakdown language.
+    function generateDrums(opts) {
+      const { styleId, bars, rhythmEvents } = opts;
+      const bpm = parseInt($('tempo').value,10) || 140;
+      const total16 = bars * 16;
+      const grid = Array.from({length:total16},()=>new Set());
+      const feelCounts = {};
+      const profile = DRUM_STYLE_V25[styleId] || DRUM_STYLE_V25.thrash;
+
+      for(let bar=0;bar<bars;bar++) {
+        let feel = weightedFeel(styleId,bpm);
+
+        // Force recognizable genre signatures when the arrangement is long enough.
+        if(styleId==='deadsquad' && bar%3===0 && bpm>=140) feel=randomChoice(['hammer','traditional','bomb']);
+        if(styleId==='death' && bar===0 && bpm>=150) feel=randomChoice(['traditional','bomb']);
+        if(styleId==='black' && bar%2===0 && bpm>=155) feel=randomChoice(['skank','traditional']);
+        if(styleId==='brutal' && bar%2===1 && bpm>=125) feel=randomChoice(['hammer','bomb','gravity']);
+        if(styleId==='deathcore' && bar===0 && bpm>=155) feel=randomChoice(['traditional','bomb']);
+        if(styleId==='doom'||styleId==='stoner'||styleId==='groove'||styleId==='nu'||styleId==='djent'||styleId==='thall'||styleId==='polyphia')
+          feel=weightedFeel(styleId,bpm);
+
+        applyDrumFeel(grid,bar*16,feel,styleId,rhythmEvents);
+        feelCounts[feel]=(feelCounts[feel]||0)+1;
+
+        // Genre-specific cymbal punctuation.
+        const base=bar*16;
+        if(feel==='traditional'||feel==='blast'||feel==='skank'||feel==='hammer'||feel==='bomb'||feel==='gravity') {
+          if(bar===0) drumAdd(grid,base,'CR');
+          if(bar%2===1) drumAdd(grid,base+8,'CH');
+          if(bar===bars-1) drumAdd(grid,base,'CR');
         } else {
-          // thrash / standard: 8th hats
-          if (beat % 2 === 0) grid[i].add('HH');
-          if ((beat === 7 || beat === 15) && Math.random() < 0.35) {
-            grid[i].delete('HH');
-            grid[i].add('HO');
+          drumAdd(grid,base,'CR');
+          if(styleId==='deathcore'||styleId==='modern_hc'||styleId==='thall') drumAdd(grid,base+8,'CH');
+        }
+
+        // Fills only at phrase boundaries; blast bars remain continuous.
+        if(bar===bars-1 || Math.random()<(
+          ['death','black','deadsquad','brutal','deathcore','metalcore','melodic_hc'].includes(styleId)?0.42:0.26
+        )) {
+          if(!['traditional','blast','skank','hammer','bomb','gravity'].includes(feel) || bar===bars-1) {
+            addDrumFill(grid,base,styleId,feelCounts[feel]/Math.max(1,bar+1));
           }
         }
-
-        // Crash on downbeats (bar starts) + accents
-        if (barStart) {
-          grid[i].add(Math.random() < 0.55 ? 'CL' : 'CR');
-        }
-        // crash with snare accents sometimes
-        if ((beat === 4 || beat === 12) && Math.random() < 0.12) {
-          grid[i].add(Math.random() < 0.5 ? 'CL' : 'CR');
-        }
       }
 
-      // China accents (metal staple) — offbeat / with snare
-      for (let bar = 0; bar < bars; bar++) {
-        const base = bar * 16;
-        if (Math.random() < 0.45 || styleId === 'deathcore' || styleId === 'metalcore') {
-          const pos = base + randomChoice([4, 8, 12, 6, 14]);
-          if (pos < total16) grid[pos].add('CH');
-        }
-        // second china chance
-        if (Math.random() < 0.2) {
-          const pos = base + randomChoice([2, 10, 15]);
-          if (pos < total16) grid[pos].add('CH');
-        }
+      // Last-bar ending: let the guitar/riff and drums land together.
+      if(total16>=16) {
+        drumAdd(grid,total16-16,'CR');
+        if(['deathcore','brutal','thall','modern_hc'].includes(styleId)) drumAdd(grid,total16-8,'CH');
       }
 
-      // Ride pattern (when not breakdown) — replace some hats with ride in later bars
-      if (!isBreakdownFeel && bars >= 2) {
-        for (let i = Math.floor(total16 / 2); i < total16; i++) {
-          const beat = i % 16;
-          if (Math.random() < 0.25 && beat % 2 === 0) {
-            grid[i].delete('HH');
-            grid[i].add('RD');
-          }
-          // ride bell accents
-          if ((beat === 0 || beat === 8) && Math.random() < 0.2) grid[i].add('BL');
-        }
-      } else if (isBreakdownFeel) {
-        // breakdown: ride + occasional bell
-        for (let i = 0; i < total16; i++) {
-          const beat = i % 16;
-          if (beat === 0 || beat === 8) grid[i].add('BL');
-        }
-      }
-
-      // Extra crash on last bar for ending impact
-      if (total16 >= 16) {
-        grid[total16 - 16].add('CL');
-        if (Math.random() < 0.5) grid[total16 - 16].add('CR');
-      }
-
-      return { grid, total16 };
+      const feelSummary=Object.entries(feelCounts)
+        .map(([k,v])=>`${DRUM_FEEL_NAMES[k]||k} ×${v}`).join(' • ');
+      return {grid,total16,feelSummary};
     }
 
     function formatDrumTab(drumData, meta) {
@@ -2110,7 +2159,7 @@
         out += DRUM_LABELS[r].padEnd(2, ' ') + '|' + lines[r].join('') + '|\n';
       });
       const st = STYLE_DB[meta.styleId];
-      out += `\n// ${st.name}  |  ${$('tempo').value} BPM  |  ${meta.bars || ''} bars`;
+      out += `\n// ${st.name}  |  ${$('tempo').value} BPM  |  ${meta.bars || ''} bars`;\n      if (drumData.feelSummary) out += `\\n// Feel: ${drumData.feelSummary}`;
       return out;
     }
 
