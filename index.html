@@ -209,6 +209,7 @@
             <option value="doom">Doom / Sludge</option>
             <option value="stoner">Stoner / Desert</option>
             <option value="groove">Groove Metal</option>
+            <option value="moshcore">Groove Moshcore</option>
             <option value="nu">Nu Metal</option>
             <option value="metalcore">Metalcore</option>
             <option value="djent">Djent / Modern Prog</option>
@@ -288,6 +289,12 @@
         <label><input type="checkbox" id="techPinch" checked /> Pinch Harmonic</label>
         <label><input type="checkbox" id="techHopo" checked /> Hammer / Pull</label>
         <label><input type="checkbox" id="techSlide" /> Slide</label>
+        <label><input type="checkbox" id="techEconomy" checked /> Economy Picking</label>
+        <label><input type="checkbox" id="techSlant" checked /> Pick Slanting</label>
+        <label><input type="checkbox" id="techSweep" /> Sweep Picking</label>
+        <label><input type="checkbox" id="techSkip" /> String Skipping</label>
+        <label><input type="checkbox" id="techPanic" /> Panic Chords / Dissonance</label>
+        <label><input type="checkbox" id="techBouncy" /> Bouncy / Percussive Groove</label>
         <label><input type="checkbox" id="odinKs" checked /> Guitar + Bass Keyswitches</label>
       </div>
 
@@ -511,6 +518,25 @@
           [3,1,3,1,4,4]
         ],
         powerChance: 0.85, palmChance: 0.1, preferLow: 0.9
+      },
+      moshcore: {
+        name: 'Groove Moshcore',
+        era: 'Modern groove / pit riff',
+        desc: 'Riff bouncy dan percussive: stop-start chugs, offbeat accents, low-string punches, ruang di antara hit, dan pukulan pendek yang terasa seperti groove mosh pit. Menggabungkan syncopation, palm-mute, disonansi pendek, dan aksen drum.',
+        bands: 'Groove / Metalcore / Hardcore vocabulary',
+        tempo: '90–180 BPM',
+        scales: 'Phrygian, Natural Minor, Chromatic spice',
+        tuningTip: 'Drop C / Drop B / 7-string Drop A',
+        recommended: { key: 'C', scale: 'phrygian', tempo: 125, tuning: 'drop_c', power: true, palm: true, alt: true },
+        rhythms: [
+          [1,1,2,1,2,1,1,3,4],
+          [2,1,1,2,2,1,1,2,4],
+          [1,1,3,1,1,2,1,2,4],
+          [2,2,1,1,2,1,3,4],
+          [1,3,1,1,2,2,1,1,4],
+          [4,1,1,2,1,1,2,4]
+        ],
+        powerChance: 0.86, palmChance: 0.18, preferLow: 0.98
       },
       nu: {
         name: 'Nu Metal',
@@ -918,6 +944,7 @@
       doom:{d:.25,r:.01,s:.10,c:.08,t:.68,m:.35,low:.96,up:.04,rep:.82,p:.92,mut:.20},
       stoner:{d:.48,r:.03,s:.48,c:.08,t:.20,m:.58,low:.88,up:.12,rep:.62,p:.84,mut:.42},
       groove:{d:.58,r:.10,s:.82,c:.20,t:.16,m:.28,low:.91,up:.09,rep:.55,p:.84,mut:.62},
+      moshcore:{d:.50,r:.24,s:.96,c:.34,t:.18,m:.10,low:.995,up:.005,rep:.66,p:.88,mut:.78},
       nu:{d:.45,r:.23,s:.90,c:.32,t:.12,m:.16,low:.97,up:.03,rep:.70,p:.66,mut:.45},
       metalcore:{d:.62,r:.18,s:.76,c:.18,t:.14,m:.52,low:.93,up:.07,rep:.52,p:.80,mut:.70},
       djent:{d:.55,r:.28,s:.97,c:.18,t:.34,m:.18,low:.98,up:.02,rep:.46,p:.72,mut:.82},
@@ -946,6 +973,7 @@
       doom:[0,3,5,6,7,10],
       stoner:[0,3,5,7,10],
       groove:[0,3,5,7,10],
+      moshcore:[0,1,3,6,7,10],
       nu:[0,1,3,6,7,10],
       metalcore:[0,1,3,5,6,7,10],
       djent:[0,1,3,6,7,10],
@@ -961,6 +989,34 @@
       brutal:[0,1,3,6,7,10]
     };
 
+    // V26 technique vocabulary. Each entry controls how often the engine uses
+    // the actual musical construction, not merely a label in the TAB.
+    const RIFF_TECH_PROFILE = {
+      thrash:{economy:.18,slant:.34,sweep:.02,skip:.02,panic:.03,bouncy:.10},
+      thrash_gallop:{economy:.16,slant:.30,sweep:.01,skip:.01,panic:.02,bouncy:.08},
+      death:{economy:.18,slant:.30,sweep:.04,skip:.04,panic:.16,bouncy:.10},
+      melodeath:{economy:.26,slant:.40,sweep:.08,skip:.08,panic:.05,bouncy:.10},
+      black:{economy:.22,slant:.42,sweep:.03,skip:.03,panic:.08,bouncy:.04},
+      doom:{economy:.08,slant:.12,sweep:.01,skip:.01,panic:.16,bouncy:.12},
+      stoner:{economy:.12,slant:.18,sweep:.01,skip:.02,panic:.10,bouncy:.38},
+      groove:{economy:.16,slant:.24,sweep:.01,skip:.04,panic:.10,bouncy:.72},
+      moshcore:{economy:.12,slant:.20,sweep:.00,skip:.04,panic:.18,bouncy:.96},
+      nu:{economy:.10,slant:.18,sweep:.00,skip:.03,panic:.14,bouncy:.78},
+      metalcore:{economy:.20,slant:.30,sweep:.03,skip:.05,panic:.12,bouncy:.58},
+      djent:{economy:.22,slant:.36,sweep:.02,skip:.06,panic:.18,bouncy:.74},
+      progressive:{economy:.42,slant:.52,sweep:.14,skip:.16,panic:.08,bouncy:.26},
+      deadsquad:{economy:.38,slant:.48,sweep:.12,skip:.20,panic:.18,bouncy:.18},
+      polyphia:{economy:.48,slant:.58,sweep:.18,skip:.24,panic:.05,bouncy:.34},
+      deathcore:{economy:.16,slant:.24,sweep:.02,skip:.04,panic:.24,bouncy:.70},
+      hardcore:{economy:.10,slant:.16,sweep:.00,skip:.03,panic:.16,bouncy:.90},
+      melodic_hc:{economy:.20,slant:.28,sweep:.03,skip:.05,panic:.10,bouncy:.62},
+      modern_hc:{economy:.16,slant:.24,sweep:.01,skip:.05,panic:.18,bouncy:.84},
+      thall:{economy:.18,slant:.28,sweep:.02,skip:.05,panic:.30,bouncy:.82},
+      power:{economy:.34,slant:.44,sweep:.10,skip:.08,panic:.03,bouncy:.16},
+      brutal:{economy:.12,slant:.18,sweep:.02,skip:.02,panic:.30,bouncy:.68}
+    };
+    const riffTechProfile = id => RIFF_TECH_PROFILE[id] || RIFF_TECH_PROFILE.thrash;
+
     function buildDurations(style, bars) {
       const id = Object.keys(STYLE_DB).find(k => STYLE_DB[k] === style) || 'thrash';
       const dna = riffDNA23(id), out = [];
@@ -975,6 +1031,15 @@
         if (dna.d < .42 && Math.random() < .7) {
           for (let i=0;i<pat.length-1;i++) if (pat[i]<=2 && pat[i+1]<=2) { pat.splice(i,2,pat[i]+pat[i+1]); break; }
         }
+        if (['groove','moshcore','nu','hardcore','modern_hc','deathcore','thall','djent'].includes(id) &&
+            Math.random() < riffTechProfile(id).bouncy) {
+          pat = randomChoice([
+            [1,1,2,1,2,1,1,3,4],
+            [2,1,1,2,2,1,1,2,4],
+            [1,1,3,1,1,2,1,2,4],
+            [2,2,1,1,2,1,3,4]
+          ]).slice();
+        }
         let sum=pat.reduce((a,x)=>a+x,0);
         if(sum<16) pat.push(16-sum);
         if(sum>16) { let ex=sum-16; for(let i=pat.length-1;i>=0&&ex;i--){const cut=Math.min(ex,Math.max(0,pat[i]-1));pat[i]-=cut;ex-=cut;} }
@@ -985,7 +1050,7 @@
 
     // RIFF_ENGINE_V23
     function generateRhythm(opts) {
-      const {key,scaleKey,styleId,style,bars,tuningKey,usePower,useAlt,useDown,usePalm,usePinch,useHopo,useSlide,durations}=opts;
+      const {key,scaleKey,styleId,style,bars,tuningKey,usePower,useAlt,useDown,usePalm,usePinch,useHopo,useSlide,useEconomy,useSlant,useSweep,useSkip,usePanic,useBouncy,durations}=opts;
       const dna=riffDNA23(styleId), open=TUNINGS[tuningKey], nstr=open.length, root=NOTE_TO_SEMI[key];
       const scale=SCALES[scaleKey]||SCALES.natural_minor, scalePC=getScaleNotes(key,scaleKey), pools=motifPoolsFor(styleId);
       const ultraLow=['deathcore','hardcore','modern_hc','thall','brutal','nu'];
@@ -1076,13 +1141,26 @@
           const isPower=usePower&&rootish&&Math.random()<Math.min(1,pp), notes=[{string:s,fret:f,midi:open[s]+f}];
           if(isPower){const x=fifth(s,f);if(x)notes.push(x);}
 
-          let pick=styleId==='black'?'T':(useDown?'D':(useAlt?(down?'D':'U'):'D')); if(useAlt)down=!down;
+          const prevPickEv=events.length?events[events.length-1]:null;
+          const prevPickStr=prevPickEv?.notes?.length ? prevPickEv.notes[0].string : s;
+          const stringMove=s-prevPickStr;
+          let pick=styleId==='black'?'T':(useDown?'D':(useAlt?(down?'D':'U'):'D'));
+          if(useEconomy && useAlt && prevPickEv?.notes?.length && stringMove!==0) {
+            pick=stringMove>0?'D':'U';
+          } else if(useAlt) {
+            down=!down;
+          }
           let muted=false;
           if(usePalm&&!['doom','stoner','black','polyphia','power'].includes(styleId))
             muted=Math.random()<Math.min(.9,.25+dna.s*.48) && dur<4;
 
           const odinProfile = getOdinGenreProfile(styleId);
+          const techProfile = riffTechProfile(styleId);
           let tech=null;
+          let slant=null;
+          if(useSlant && (useAlt||useDown) && Math.random()<techProfile.slant) {
+            slant=pick==='D'?'DS':'US';
+          }
           if(usePinch&&!muted&&(accent||hard)&&dur>=2&&Math.random()<(.045 + odinProfile.tech*.12))tech='ph';
           if(useHopo&&prev?.notes?.length&&prev.notes[0].string===s&&!tech){
             const df=f-prev.notes[0].fret;
@@ -1094,7 +1172,28 @@
           }
           if(dna.m>.7&&styleId==='deadsquad'&&Math.random()<.08)tech='x';
 
-          events.push({notes,dur,rest:false,pick,muted,power:isPower&&notes.length>1,tech,crossed:!!(prev?.notes?.length&&prev.notes[0].string!==s)});
+          const panicAllowed = usePanic && !muted && (accent||hard||styleId==='deathcore'||styleId==='thall') &&
+            Math.random() < techProfile.panic;
+          if (panicAllowed && !tech) {
+            const dis=randomChoice([1,6,10]);
+            const disPC=(root+dis)%12;
+            const addString=Math.min(nstr-1,s+1);
+            const df=fret(addString,disPC,Math.min(8,max));
+            notes.push({string:addString,fret:df,midi:open[addString]+df});
+            if(Math.random()<.45&&addString+1<nstr){
+              const tf=fret(addString+1,(root+6)%12,Math.min(8,max));
+              notes.push({string:addString+1,fret:tf,midi:open[addString+1]+tf});
+            }
+            tech='panic';
+          }
+          if (useBouncy && !tech && ['groove','moshcore','nu','hardcore','modern_hc','metalcore','deathcore','thall','djent'].includes(styleId) &&
+              Math.random()<techProfile.bouncy) {
+            muted=dur<=2 ? true : muted;
+            if(Math.random()<.72&&notes.length>1) notes.splice(1);
+            tech='bounce';
+          }
+
+          events.push({notes,dur,rest:false,pick,muted,power:isPower&&notes.length>1,tech,slant,crossed:!!(prev?.notes?.length&&prev.notes[0].string!==s)});
           step+=dur;
         }
       }
@@ -1150,6 +1249,12 @@
         [0,0,0,0,5,3], [0,5,0,0,0,3], [0,0,3,5,0,0],
         [0,0,0,7,0,5], [0,0,10,0,0,0], [0,0,0,0,3,0],
         [0,0,5,0,3,0], [0,0,0,5,0,7], [0,3,0,0,5,0]
+      ],
+      moshcore: [
+        [0,0,1,0,0,3], [0,0,0,6,0,0], [0,0,3,0,0,0],
+        [0,1,0,0,3,0], [0,0,0,0,7,0], [0,0,3,1,0,0],
+        [0,0,0,5,0,3], [0,3,0,0,1,0], [0,0,6,0,3,0],
+        [0,0,0,0,0,10], [0,3,0,5,0,0], [0,0,1,6,0,0]
       ],
       groove: [
         [0,0,0,3,0,5], [0,0,5,0,3,0], [0,3,0,5,0,0],
@@ -1222,6 +1327,7 @@
         black: [M.black, M.pent, M.core],
         djent: [M.djent, M.core, M.pent],
         groove: [M.groove, M.pent, M.blues, M.core],
+        moshcore: [M.moshcore, M.hardcore, M.groove, M.core],
         nu: [M.groove, M.pent, M.metalcore, M.core],
         metalcore: [M.metalcore, M.pent, M.hardcore, M.core],
         hardcore: [M.hardcore, M.core, M.pent],
@@ -1531,6 +1637,42 @@
           crossed: !!crossed
         });
       }
+      // Post-pass: turn the advanced picking options into actual string geometry.
+      const retarget=(ev,targetString)=>{
+        if(!ev?.notes?.length||targetString<0||targetString>=nstr)return false;
+        const pc=ev.notes[0].midi%12, nf=fret(targetString,pc,17);
+        ev.notes[0]={string:targetString,fret:nf,midi:open[targetString]+nf};
+        if(ev.power&&ev.notes.length>1){const x=fifth(targetString,nf);ev.notes=x?[ev.notes[0],x]:[ev.notes[0]];}
+        return true;
+      };
+      if(useSweep||useSkip||useEconomy){
+        for(let i=1;i<events.length;i++){
+          const pe=events[i-1], e=events[i];
+          if(e.rest||pe.rest||!e.notes?.length||!pe.notes?.length)continue;
+          if(useSweep&&Math.random()<techProfile.sweep&&i+2<events.length&&!events[i+1].rest&&!events[i+2].rest){
+            const dir=Math.random()<.5?1:-1, base=pe.notes[0].string;
+            const ts=[base+dir,base+2*dir,base+3*dir].filter(x=>x>=0&&x<nstr);
+            if(ts.length===3&&retarget(e,ts[0])&&retarget(events[i+1],ts[1])&&retarget(events[i+2],ts[2])){
+              e.tech='sweep';events[i+1].tech='sweep';events[i+2].tech='sweep';
+              e.pick='S';events[i+1].pick='S';events[i+2].pick='S';
+              e.slant=dir>0?'DS':'US';events[i+1].slant=e.slant;events[i+2].slant=e.slant;i+=2;
+            }
+          } else if(useSkip&&Math.random()<techProfile.skip){
+            const base=pe.notes[0].string,dir=Math.random()<.5?-1:1,target=base+dir*2;
+            if(target>=0&&target<nstr&&retarget(e,target)){e.tech='skip';e.pick=useAlt?(dir>0?'D':'U'):e.pick;}
+          }
+        }
+      }
+      const forceTech=(name,enabled)=>{
+        if(!enabled||events.some(e=>e.tech===name))return;
+        const cs=events.filter(e=>!e.rest&&e.notes?.length&&e.dur<=2);
+        if(!cs.length)return;
+        const e=randomChoice(cs);e.tech=name;
+        if(name==='sweep')e.pick='S';
+      };
+      forceTech('sweep',useSweep);
+      forceTech('skip',useSkip);
+
       // Guarantee pinch-harmonic coverage when enabled:
       // at least one PH in each 4-bar phrase when there is a suitable note.
       // This prevents a random 4% roll from generating a whole riff with zero PH.
@@ -1561,7 +1703,7 @@
 
     // Lead: SHRED / SWEEP + fusion wide intervals (Holdsworth / DeadSquad solo vibe)
     function generateLead(opts) {
-      const { key, scaleKey, tuningKey, useAlt, useDown, usePinch, useHopo, useSlide, bars, styleId } = opts;
+      const { key, scaleKey, tuningKey, useAlt, useDown, usePinch, useHopo, useSlide, useEconomy, useSlant, useSweep, useSkip, bars, styleId } = opts;
       const fusionLead = (styleId === 'deadsquad' || styleId === 'progressive' || styleId === 'polyphia');
       const leadFlavor = {
         thrash:{rest:.04,run:.72,range:[5,13]},thrash_gallop:{rest:.03,run:.78,range:[5,12]},death:{rest:.07,run:.78,range:[4,14]},
@@ -2279,6 +2421,12 @@
       const usePinch = $('techPinch').checked;
       const useHopo = $('techHopo').checked;
       const useSlide = $('techSlide').checked;
+      const useEconomy = $('techEconomy').checked;
+      const useSlant = $('techSlant').checked;
+      const useSweep = $('techSweep').checked;
+      const useSkip = $('techSkip').checked;
+      const usePanic = $('techPanic').checked;
+      const useBouncy = $('techBouncy').checked;
       const doRhythm = $('genRhythm').checked;
       const doLead = $('genLead').checked;
       const doBass = $('genBass').checked;
@@ -2291,7 +2439,7 @@
       }
 
       const durations = buildDurations(style, bars);
-      const opts = { key, scaleKey, styleId, style, bars, tuningKey, usePower, useAlt, useDown, usePalm, usePinch, useHopo, useSlide, durations };
+      const opts = { key, scaleKey, styleId, style, bars, tuningKey, usePower, useAlt, useDown, usePalm, usePinch, useHopo, useSlide, useEconomy, useSlant, useSweep, useSkip, usePanic, useBouncy, durations };
 
       parts = { rhythm: null, lead: null, bass: null, breakdown: null, drums: null };
 
@@ -2377,6 +2525,10 @@
               let fretStr;
               if (ev.tech === 'ghost') fretStr = 'x';
               else if (ev.tech === 'ph') { fretStr = n.fret + 'ph'; hasTech = true; }
+              else if (ev.tech === 'panic') { fretStr = n.fret + 'PC'; hasTech = true; }
+              else if (ev.tech === 'bounce') { fretStr = n.fret + 'B'; hasTech = true; }
+              else if (ev.tech === 'skip') { fretStr = n.fret + 'SK'; hasTech = true; }
+              else if (ev.tech === 'sweep') { fretStr = n.fret + 'SW'; hasTech = true; }
               else if (ev.tech === 'h') { fretStr = 'h' + n.fret; hasTech = true; }
               else if (ev.tech === 'p') { fretStr = 'p' + n.fret; hasTech = true; }
               else if (ev.tech === '/') { fretStr = '/' + n.fret; hasTech = true; }
@@ -2401,9 +2553,9 @@
         }
         let sym = null;
         if (!ev.rest && ev.pick) {
-          if (ev.pick === 'D') sym = '↓';
-          else if (ev.pick === 'U') sym = '↑';
-          else if (ev.pick === 'S') sym = 'S';
+          if (ev.pick === 'D') sym = ev.slant === 'DS' ? '↘' : '↓';
+          else if (ev.pick === 'U') sym = ev.slant === 'US' ? '↗' : '↑';
+          else if (ev.pick === 'S') sym = '⇓';
           else if (ev.pick === 'P') sym = 'P';
         }
         if (sym) {
