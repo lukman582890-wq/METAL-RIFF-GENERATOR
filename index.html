@@ -1004,7 +1004,7 @@
       metalcore:{d:.62,r:.18,s:.76,c:.18,t:.14,m:.52,low:.93,up:.07,rep:.52,p:.80,mut:.70},
       djent:{d:.55,r:.28,s:.97,c:.18,t:.34,m:.18,low:.98,up:.02,rep:.46,p:.72,mut:.82},
       progressive:{d:.72,r:.08,s:.62,c:.22,t:.22,m:.72,low:.52,up:.48,rep:.30,p:.56,mut:.90},
-      deadsquad:{d:.91,r:.08,s:.72,c:.72,t:.48,m:.38,low:.68,up:.32,rep:.22,p:.42,mut:.94},
+      deadsquad:{d:.93,r:.055,s:.78,c:.86,t:.62,m:.34,low:.80,up:.20,rep:.30,p:.52,mut:.88},
       polyphia:{d:.78,r:.04,s:.52,c:.10,t:.06,m:.94,low:.34,up:.66,rep:.22,p:.28,mut:.96},
       deathcore:{d:.42,r:.31,s:.94,c:.36,t:.50,m:.12,low:.995,up:.005,rep:.64,p:.66,mut:.56},
       hardcore:{d:.44,r:.26,s:.86,c:.24,t:.14,m:.12,low:.97,up:.03,rep:.74,p:.78,mut:.40},
@@ -1015,6 +1015,58 @@
       brutal:{d:.64,r:.34,s:.97,c:.46,t:.58,m:.05,low:1,up:0,rep:.70,p:.52,mut:.55}
     };
     const riffDNA23 = id => RIFF_DNA_V23[id] || RIFF_DNA_V23.thrash;
+    // ============================================================
+    // INDO TECH DEATH REFERENCE LIBRARY
+    // Built from the supplied GP5 reference tabs:
+    // - Patriot Moral Prematur (140 BPM)
+    // - Anatomy Of Sin (145 BPM)
+    // This is a transformed vocabulary: rhythmic/pitch/technique DNA,
+    // not a bar-for-bar transcription.
+    // ============================================================
+    const INDO_TECH_DEATH_LIBRARY = {
+      sourceTempoRange:[140,145],
+      sourceTuning:'standard6',
+      rhythmCells:[
+        [1,1,1,1,2,1,1,2,2,1,1,2],
+        [2,2,2,2,1,1,2,1,1,2],
+        [1,1,2,1,1,1,3,1,1,2,1,1],
+        [3,1,1,1,2,1,1,2,1,1,3],
+        [1,2,1,1,2,1,1,2,3,1,1],
+        [4,1,1,1,1,2,1,2,3],
+        [2,1,1,2,1,1,3,1,1,2],
+        [1,1,1,3,1,1,2,1,1,3]
+      ],
+      pitchCells:[
+        [0,0,0,4,5,4,4,4,3,0,3,1,0,1,0],
+        [0,0,0,0,3,5,3,0,1,0],
+        [0,1,0,3,0,6,0,1,0],
+        [0,3,1,0,0,6,5,3,1,0],
+        [0,0,1,0,3,0,6,5,1,0],
+        [0,4,5,4,3,1,0,7,6,3,1,0]
+      ],
+      // Low pedal dominates, but phrases periodically jump to a higher
+      // string/register for contrast instead of staying on one string.
+      stringBias:{low:.78,adjacent:.17,highBurst:.05},
+      articulation:{
+        palmMute:.64,
+        chromaticNeighbor:.34,
+        pinchHarmonic:.18,
+        hammerPull:.24,
+        slide:.18,
+        stringJump:.22,
+        highRegisterBurst:.20,
+        accentDisplacement:.46
+      },
+      phraseGrammar:{
+        repeat:.30,
+        variation:.70,
+        rest:.055,
+        cadence:[0,0,7,10],
+        chromatic:[0,1,3,5,6,7,10,11],
+        preferred:[0,1,3,4,5,6,7,10]
+      }
+    };
+
     // Genre interval grammar V25: keeps generated notes inside a recognizable
     // vocabulary instead of choosing unrelated scale/chromatic notes at random.
     // Relative to the selected root: 0=R, 1=b2, 2=2, 3=b3, 5=4, 6=b5,
@@ -1076,7 +1128,10 @@
       const id = Object.keys(STYLE_DB).find(k => STYLE_DB[k] === style) || 'thrash';
       const dna = riffDNA23(id), out = [];
       for (let b=0; b<bars; b++) {
-        let pat = randomChoice(style.rhythms).slice();
+        const rhythmSource = id === 'deadsquad'
+          ? INDO_TECH_DEATH_LIBRARY.rhythmCells
+          : style.rhythms;
+        let pat = randomChoice(rhythmSource).slice();
         if (id !== 'thrash_gallop' && Math.random() < dna.mut*.5)
           pat = pat.slice(Math.floor(Math.random()*pat.length)).concat(pat.slice(0,Math.floor(Math.random()*pat.length)));
         if (dna.d > .65 && Math.random() < dna.mut*.5) {
@@ -1125,6 +1180,7 @@
       const techProfile = riffTechProfile(styleId);
       const odinProfile = getOdinGenreProfile(styleId);
       const pools = motifPoolsFor(styleId);
+      const indoLib = styleId === 'deadsquad' ? INDO_TECH_DEATH_LIBRARY : null;
       const events = [];
 
       const lowStyles = ['death','deathcore','brutal','hardcore','modern_hc','thall','nu','djent','groove','metalcore','moshcore','doom','stoner'];
@@ -1211,6 +1267,12 @@
           if (Math.random() < .76) return 0;
           return Math.min(1, nstr-1);
         }
+        if (styleId === 'deadsquad' && indoLib) {
+          const r = Math.random();
+          if (r < indoLib.stringBias.low) return 0;
+          if (r < indoLib.stringBias.low + indoLib.stringBias.adjacent) return Math.min(1,nstr-1);
+          return Math.min(nstr-1, Math.max(2, Math.floor(nstr/2)));
+        }
         if (melodicStyles.includes(styleId)) {
           const center = Math.min(nstr-1, Math.max(1, Math.floor(nstr/2)));
           if (prevString != null && Math.random() < .62) {
@@ -1243,8 +1305,16 @@
 
         // Genre-specific spice is sparse and resolves immediately.
         if (idx > 0 && idx < count-1 && Math.random() < Math.min(.10, dna.c*.10)) {
-          const spice = randomChoice(allowedGenreRel());
-          rel = mod12(spice);
+          const spicePool = indoLib
+            ? INDO_TECH_DEATH_LIBRARY.phraseGrammar.preferred
+            : allowedGenreRel();
+          rel = mod12(randomChoice(spicePool));
+        }
+        // Indo tech-death reference DNA: occasional chromatic neighbor or
+        // tritone/b5 color, but never on every note.
+        if (indoLib && idx > 0 && idx < count-1 &&
+            Math.random() < indoLib.articulation.chromaticNeighbor * .20) {
+          rel = mod12(randomChoice(indoLib.phraseGrammar.chromatic));
         }
         return rel;
       }
@@ -1559,6 +1629,18 @@
         [0,2,3,5,7,10], [0,10,7,5,3,0], [0,3,5,7,10,7],
         [0,0,5,7,10,0], [0,7,5,7,3,0], [0,3,5,2,0,0]
       ],
+      indoTechDeath: [
+        [0,0,0,4,5,4,0],
+        [0,1,0,3,0,6,0],
+        [0,0,3,5,3,0,1,0],
+        [0,3,1,0,6,5,3,0],
+        [0,0,1,0,3,0,7,6],
+        [0,4,5,4,3,1,0,7],
+        [0,0,0,6,5,3,1,0],
+        [0,1,3,0,6,0,3,1],
+        [0,0,5,0,3,1,0,10],
+        [0,3,0,1,6,0,5,0]
+      ],
       classic: [
         [0,0,3,5], [0,3,5,7], [0,7,5,3], [0,0,0,7],
         [0,5,3,0], [0,0,7,5], [0,3,0,7], [0,0,5,7],
@@ -1588,7 +1670,7 @@
         modern_hc: [M.djent, M.hardcore, M.metalcore, M.pent],
         deathcore: [M.deathcore, M.hardcore, M.core],
         thall: [M.thall, M.djent, M.core],
-        deadsquad: [M.death, M.progressive, M.harmonic, M.core],
+        deadsquad: [M.indoTechDeath, M.death, M.progressive, M.harmonic, M.core],
         progressive: [M.progressive, M.pent, M.classic, M.harmonic],
         polyphia: [M.polyphia, M.pent, M.progressive, M.classic],
         power: [M.power, M.classic, M.pent, M.harmonic],
