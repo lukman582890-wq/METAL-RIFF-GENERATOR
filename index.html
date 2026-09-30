@@ -1739,6 +1739,27 @@
           last = { string: n.string, fret: n.fret };
         }
       }
+      // Guarantee PH coverage for Lead when the user enabled Pinch Harmonic.
+      // One suitable accent per 4-bar phrase; random PHs can add more.
+      if (usePinch) {
+        const phraseLen = 4 * 16;
+        for (let phraseStart = 0; phraseStart < events.length; phraseStart += phraseLen) {
+          const phraseEnd = Math.min(events.length, phraseStart + phraseLen);
+          if (events.slice(phraseStart, phraseEnd).some(e => e.tech === 'ph')) continue;
+          const candidates = [];
+          for (let j = phraseStart; j < phraseEnd; j++) {
+            const e = events[j];
+            if (!e.rest && e.notes?.length && !e.tech && e.dur >= 2) candidates.push(j);
+          }
+          if (candidates.length) {
+            candidates.sort((a,b) => {
+              const na=events[a].notes[0], nb=events[b].notes[0];
+              return (nb.fret-na.fret) || (events[b].dur-events[a].dur);
+            });
+            events[candidates[0]].tech='ph';
+          }
+        }
+      }
       return events;
     }
 
