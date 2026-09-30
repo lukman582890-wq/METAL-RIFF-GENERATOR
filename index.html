@@ -1199,7 +1199,7 @@
       return best;
     }
 
-    function generateRhythm(opts) {
+    function generateRhythmLegacy(opts) {
       const { key, scaleKey, styleId, style, bars, tuningKey, usePower, useAlt, useDown, usePalm, usePinch, useHopo, useSlide, durations } = opts;
       const openMidi = TUNINGS[tuningKey];
       const numStrings = openMidi.length;
