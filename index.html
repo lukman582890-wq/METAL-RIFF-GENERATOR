@@ -3010,7 +3010,16 @@
 
           let art = basePick;
           let special = false;
-          if (tech === 'ph') { art = ODIN.PINCH_HARM; special = true; }
+          // Odin III has no dedicated "economy", "slant", "sweep" or
+          // "string-skip" keyswitch. Their realization is therefore mapped
+          // to Odin's real pick-direction + string-selection controls.
+          // Sweep is treated as a directional picked articulation so it does
+          // not fall back to an arbitrary latched articulation.
+          if (tech === 'sweep') {
+            art = pick === 'U' ? ODIN.UP_PICKED : ODIN.DOWN_PICKED;
+            special = true;
+          }
+          else if (tech === 'ph') { art = ODIN.PINCH_HARM; special = true; }
           else if (tech === 'nph') { art = ODIN.NASTY_PINCH; special = true; }
           else if (tech === 'nh') { art = ODIN.NATURAL_HARM; special = true; }
           else if (tech === 'h') { art = ODIN.HAMMER_ON; special = true; }
@@ -3050,6 +3059,7 @@
           // Native Odin velocity zones: 127 pinch | 35-126 picked |
           // 25-34 semi-PM | 15-24 closed-PM | 0-14 dead-PM.
           if (tech === 'ph') vel = 127;
+          else if (tech === 'panic') vel = 108 + Math.floor(Math.random() * 12);
           else if (muted) {
             if (art === ODIN.DOWN_MUTE_DEAD || art === ODIN.ALT_MUTE_DEAD || art === ODIN.UP_MUTE_DEAD)
               vel = 8 + Math.floor(Math.random() * 7);
@@ -3061,7 +3071,7 @@
             vel = 72 + Math.floor(Math.random() * 39);
           }
 
-          if (isPower && !special) pushKS(tick - KS_GAP, ODIN.AUTO_POWER);
+          if (isPower && !special && tech !== 'panic' && tech !== 'sweep') pushKS(tick - KS_GAP, ODIN.AUTO_POWER);
 
           const primary = ev.notes.reduce((a, b) => a.string <= b.string ? a : b);
           const si = Math.min(primary.string, strMap.length - 1);
@@ -3071,7 +3081,8 @@
           const largeJump = lastStr != null && Math.abs(si - lastSi) >= 2;
           const accent = (((tick - KS_GAP) % (tpq * 4)) === 0) || (ev.dur >= 4);
           const barAccent = ((tick - KS_GAP) % (tpq * 4)) < KS_GAP;
-          if (lastStr == null || (stringChanged && (largeJump || accent || barAccent || Math.random() < profile.stringMove))) {
+          const forceTechniqueString = tech === 'sweep' || tech === 'skip' || (tech === 'bounce' && stringChanged);
+          if (lastStr == null || (stringChanged && (forceTechniqueString || largeJump || accent || barAccent || Math.random() < profile.stringMove))) {
             pushKS(tick - KS_GAP, strKS);
             lastStr = strKS;
           }
