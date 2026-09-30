@@ -28,12 +28,12 @@ jobs:
       - name: Apply V23 riff engine
         run: |
           python3 scripts/apply-riff-engine-v23.py
-          if git diff --quiet -- index.html; then
+          if git diff --quiet -- index.html && git diff --cached --quiet -- index.html; then
             echo "V23 already applied"
           else
+            git add index.html
             git config user.name "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add index.html
             git commit -m "feat: upgrade riff generation to V23"
             git push
           fi
