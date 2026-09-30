@@ -1500,8 +1500,10 @@
           tech = 'x'; // crossing
         }
 
-        // Pinch — max sparse accents (avoid KS spam)
-        if (usePinch && !muted && tech == null && dur >= 2 && Math.random() < 0.04) {
+        // Pinch Harmonic: the checkbox must produce an audible/visible
+        // articulation reliably. Keep it musical by limiting it to accented,
+        // non-muted notes and use deterministic phrase coverage below.
+        if (usePinch && !muted && tech == null && dur >= 2 && Math.random() < 0.10) {
           tech = 'ph';
         }
 
@@ -1523,6 +1525,31 @@
           muted, power: isPower && notes.length > 1, tech,
           crossed: !!crossed
         });
+      }
+      // Guarantee pinch-harmonic coverage when enabled:
+      // at least one PH in each 4-bar phrase when there is a suitable note.
+      // This prevents a random 4% roll from generating a whole riff with zero PH.
+      if (usePinch) {
+        const phraseLen = 4 * 16;
+        for (let phraseStart = 0; phraseStart < events.length; phraseStart += phraseLen) {
+          const phraseEnd = Math.min(events.length, phraseStart + phraseLen);
+          const hasPH = events.slice(phraseStart, phraseEnd).some(e => e.tech === 'ph');
+          if (!hasPH) {
+            const candidates = [];
+            for (let j = phraseStart; j < phraseEnd; j++) {
+              const e = events[j];
+              if (!e.rest && e.notes?.length && !e.muted && e.dur >= 2 && !e.tech) candidates.push(j);
+            }
+            if (candidates.length) {
+              // Prefer a lower-string accented note; pinch accents read better there.
+              candidates.sort((a,b) => {
+                const na=events[a].notes[0], nb=events[b].notes[0];
+                return (na.string-nb.string) || (events[b].dur-events[a].dur);
+              });
+              events[candidates[0]].tech = 'ph';
+            }
+          }
+        }
       }
       return events;
     }
