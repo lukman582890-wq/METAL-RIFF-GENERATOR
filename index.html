@@ -2115,7 +2115,7 @@
       }
 
       // Convert to events with alt picking
-      let events = [], pickDown = true;
+      let events = [], pickDown = true, last = null;
       for (const n of noteSeq) {
         if (n.rest) {
           events.push({ notes: [], dur: n.dur, rest: true, pick: null, muted: false, power: false, tech: null });
