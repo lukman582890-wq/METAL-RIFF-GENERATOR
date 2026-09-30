@@ -25,18 +25,22 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
-      - name: Apply V23 riff engine
+      - name: Apply legacy V23 riff engine when needed
         run: |
-          python3 scripts/apply-riff-engine-v23.py
-          python3 scripts/fix-v23-duplicate.py
-          if git diff --quiet -- index.html && git diff --cached --quiet -- index.html; then
-            echo "V23 already applied"
+          if grep -q "RIFF_DNA_V23" index.html; then
+            echo "V23/V28 riff engine already present; skip legacy patch"
           else
-            git add index.html
-            git config user.name "github-actions[bot]"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git commit -m "feat: activate V23 riff engine"
-            git push
+            python3 scripts/apply-riff-engine-v23.py
+            python3 scripts/fix-v23-duplicate.py
+            if git diff --quiet -- index.html && git diff --cached --quiet -- index.html; then
+              echo "Legacy V23 already applied"
+            else
+              git add index.html
+              git config user.name "github-actions[bot]"
+              git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+              git commit -m "feat: activate V23 riff engine"
+              git push
+            fi
           fi
 
       - name: Setup Pages
