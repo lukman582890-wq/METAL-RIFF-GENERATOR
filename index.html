@@ -270,7 +270,7 @@
         </div>
         <div class="bands" id="scBands"></div>
         <div style="margin-top:10px">
-          <button class="btn-apply" id="btnApplyPreset" type="button">⚙ Terapkan setting recommended</button>
+          <button class="btn-apply" id="btnApplyPreset" type="button">⚙ Terapkan Recommended + Teknik Genre</button>
         </div>
       </div>
 
@@ -883,19 +883,74 @@
       $('styleCard').classList.add('visible');
     }
 
+    // ===================== GENRE RECOMMENDED PRESET V29 =====================
+    // One genre selection controls the COMPLETE generator preset:
+    // musical settings + generated parts + articulation/technique checkboxes.
+    // The genre data remains the source of truth for key/scale/BPM/tuning;
+    // this table supplies the genre-specific production/technique recipe.
+    const GENRE_RECOMMENDED_V29 = {
+      thrash:       { parts:['rhythm','bass','drums'], power:true, alt:true, down:false, palm:true, pinch:false, hopo:false, slide:false, economy:true, slant:true, sweep:false, skip:false, panic:false, bouncy:false, odin:true },
+      thrash_gallop:{ parts:['rhythm','bass','drums'], power:true, alt:false, down:true, palm:true, pinch:false, hopo:false, slide:false, economy:false, slant:true, sweep:false, skip:false, panic:false, bouncy:false, odin:true },
+      death:        { parts:['rhythm','bass','drums'], power:true, alt:true, down:false, palm:true, pinch:true, hopo:true, slide:true, economy:true, slant:true, sweep:false, skip:false, panic:true, bouncy:false, odin:true },
+      melodeath:    { parts:['rhythm','lead','bass','drums'], power:true, alt:true, down:false, palm:true, pinch:true, hopo:true, slide:true, economy:true, slant:true, sweep:true, skip:true, panic:false, bouncy:false, odin:true },
+      black:        { parts:['rhythm','lead','bass','drums'], power:false, alt:true, down:false, palm:false, pinch:false, hopo:true, slide:true, economy:false, slant:true, sweep:false, skip:false, panic:false, bouncy:false, odin:true },
+      doom:         { parts:['rhythm','bass','drums'], power:true, alt:false, down:true, palm:false, pinch:false, hopo:false, slide:true, economy:false, slant:false, sweep:false, skip:false, panic:true, bouncy:false, odin:true },
+      stoner:       { parts:['rhythm','bass','drums'], power:true, alt:false, down:true, palm:false, pinch:false, hopo:false, slide:true, economy:false, slant:false, sweep:false, skip:false, panic:false, bouncy:true, odin:true },
+      groove:       { parts:['rhythm','bass','drums'], power:true, alt:true, down:false, palm:true, pinch:false, hopo:true, slide:false, economy:true, slant:true, sweep:false, skip:false, panic:false, bouncy:true, odin:true },
+      moshcore:     { parts:['rhythm','bass','breakdown','drums'], power:true, alt:true, down:false, palm:true, pinch:false, hopo:false, slide:false, economy:false, slant:true, sweep:false, skip:false, panic:true, bouncy:true, odin:true },
+      nu:           { parts:['rhythm','bass','drums'], power:true, alt:false, down:true, palm:true, pinch:false, hopo:false, slide:false, economy:false, slant:true, sweep:false, skip:false, panic:true, bouncy:true, odin:true },
+      metalcore:    { parts:['rhythm','lead','bass','breakdown','drums'], power:true, alt:true, down:false, palm:true, pinch:true, hopo:true, slide:true, economy:true, slant:true, sweep:false, skip:false, panic:true, bouncy:true, odin:true },
+      djent:        { parts:['rhythm','bass','breakdown','drums'], power:true, alt:true, down:false, palm:true, pinch:false, hopo:false, slide:true, economy:true, slant:true, sweep:false, skip:true, panic:true, bouncy:true, odin:true },
+      progressive:  { parts:['rhythm','lead','bass','drums'], power:false, alt:true, down:false, palm:true, pinch:true, hopo:true, slide:true, economy:true, slant:true, sweep:true, skip:true, panic:false, bouncy:false, odin:true },
+      deadsquad:    { parts:['rhythm','lead','bass','drums'], power:true, alt:true, down:false, palm:true, pinch:true, hopo:true, slide:true, economy:true, slant:true, sweep:true, skip:true, panic:true, bouncy:false, odin:true },
+      polyphia:     { parts:['rhythm','lead','bass','drums'], power:false, alt:true, down:false, palm:false, pinch:false, hopo:true, slide:true, economy:true, slant:true, sweep:true, skip:true, panic:false, bouncy:true, odin:true },
+      deathcore:    { parts:['rhythm','bass','breakdown','drums'], power:true, alt:true, down:false, palm:true, pinch:true, hopo:false, slide:true, economy:false, slant:true, sweep:false, skip:false, panic:true, bouncy:true, odin:true },
+      hardcore:     { parts:['rhythm','bass','breakdown','drums'], power:true, alt:false, down:true, palm:true, pinch:false, hopo:false, slide:false, economy:false, slant:false, sweep:false, skip:false, panic:true, bouncy:true, odin:true },
+      melodic_hc:   { parts:['rhythm','lead','bass','breakdown','drums'], power:true, alt:true, down:false, palm:true, pinch:true, hopo:true, slide:true, economy:true, slant:true, sweep:true, skip:false, panic:false, bouncy:true, odin:true },
+      modern_hc:    { parts:['rhythm','bass','breakdown','drums'], power:true, alt:true, down:false, palm:true, pinch:false, hopo:false, slide:true, economy:true, slant:true, sweep:false, skip:true, panic:true, bouncy:true, odin:true },
+      thall:        { parts:['rhythm','bass','breakdown','drums'], power:true, alt:true, down:false, palm:true, pinch:true, hopo:false, slide:true, economy:true, slant:true, sweep:false, skip:true, panic:true, bouncy:true, odin:true },
+      power:        { parts:['rhythm','lead','bass','drums'], power:true, alt:true, down:false, palm:false, pinch:true, hopo:true, slide:true, economy:true, slant:true, sweep:true, skip:false, panic:false, bouncy:false, odin:true },
+      brutal:       { parts:['rhythm','bass','breakdown','drums'], power:true, alt:false, down:true, palm:true, pinch:true, hopo:false, slide:true, economy:false, slant:false, sweep:false, skip:false, panic:true, bouncy:true, odin:true }
+    };
+
     function applyPreset() {
-      const s = STYLE_DB[$('style').value];
+      const styleId = $('style').value;
+      const s = STYLE_DB[styleId];
       if (!s || !s.recommended) return;
+
       const r = s.recommended;
+      const g = GENRE_RECOMMENDED_V29[styleId] || GENRE_RECOMMENDED_V29.thrash;
+
+      // Core musical preset.
       $('key').value = r.key;
       $('scale').value = r.scale;
       $('tempo').value = r.tempo;
       $('tempoVal').textContent = r.tempo;
       $('tuning').value = r.tuning;
-      $('powerChord').checked = r.power;
-      $('palmMute').checked = r.palm;
-      $('altPicking').checked = r.alt;
-      showToast('Preset ' + s.name + ' diterapkan');
+
+      // Generated parts.
+      ['genRhythm','genLead','genBass','genBreakdown','genDrums'].forEach(id => $(id).checked = false);
+      g.parts.forEach(part => {
+        const id = 'gen' + part.charAt(0).toUpperCase() + part.slice(1);
+        if ($(id)) $(id).checked = true;
+      });
+
+      // Technique recipe.
+      const checks = {
+        powerChord:g.power, altPicking:g.alt, downstroke:g.down, palmMute:g.palm,
+        techPinch:g.pinch, techHopo:g.hopo, techSlide:g.slide,
+        techEconomy:g.economy, techSlant:g.slant, techSweep:g.sweep,
+        techSkip:g.skip, techPanic:g.panic, techBouncy:g.bouncy, odinKs:g.odin
+      };
+      Object.entries(checks).forEach(([id,value]) => {
+        if ($(id)) $(id).checked = !!value;
+      });
+
+      // Downstroke and alternate are mutually exclusive in the generator.
+      if (g.down) $('altPicking').checked = false;
+
+      updateStyleCard();
+      showToast('Preset ' + s.name + ' + teknik genre diterapkan');
     }
 
     function buildWiki() {
