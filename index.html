@@ -1062,7 +1062,9 @@
           if(['power','polyphia','progressive','melodeath'].includes(styleId)&&Math.random()<dna.up)s=Math.min(nstr-1,2+Math.floor(Math.random()*Math.max(1,nstr-2)));
 
           const prev=events.length?events[events.length-1]:null;
-          if(prev?.notes?.length&&Math.random()<.5&&!['djent','thall','deadsquad','polyphia'].includes(styleId))
+          // Keep metal rhythm phrases on the same low string longer.
+          const stringHopRate = ['black','melodeath','progressive','deadsquad','polyphia'].includes(styleId) ? .24 : .10;
+          if(prev?.notes?.length&&Math.random()<stringHopRate&&!['djent','thall','deadsquad','polyphia'].includes(styleId))
             s=Math.max(0,Math.min(nstr-1,prev.notes[0].string+(Math.random()<.5?-1:1)));
 
           const max=ultraLow.includes(styleId)||['doom','deathcore','thall'].includes(styleId)?5:(['power','progressive','polyphia','melodeath'].includes(styleId)?15:8);
@@ -1079,13 +1081,16 @@
           if(usePalm&&!['doom','stoner','black','polyphia','power'].includes(styleId))
             muted=Math.random()<Math.min(.9,.25+dna.s*.48) && dur<4;
 
+          const odinProfile = getOdinGenreProfile(styleId);
           let tech=null;
-          if(usePinch&&!muted&&(accent||hard)&&dur>=2&&Math.random()<.035)tech='ph';
+          if(usePinch&&!muted&&(accent||hard)&&dur>=2&&Math.random()<(.045 + odinProfile.tech*.12))tech='ph';
           if(useHopo&&prev?.notes?.length&&prev.notes[0].string===s&&!tech){
-            const df=f-prev.notes[0].fret;if(Math.abs(df)<=2&&Math.abs(df)>=1&&Math.random()<(dna.m>.65?.2:.1))tech=df>0?'h':'p';
+            const df=f-prev.notes[0].fret;
+            if(Math.abs(df)<=2&&Math.abs(df)>=1&&Math.random()<(odinProfile.tech*.9 + (dna.m>.65?.08:.04)))tech=df>0?'h':'p';
           }
           if(useSlide&&prev?.notes?.length&&prev.notes[0].string===s&&!tech){
-            const df=f-prev.notes[0].fret;if(Math.abs(df)>=3&&Math.random()<.1)tech=df>0?'/':'\\\\';
+            const df=f-prev.notes[0].fret;
+            if(Math.abs(df)>=3&&Math.random()<(.05 + odinProfile.tech*.55))tech=df>0?'/':'\\';
           }
           if(dna.m>.7&&styleId==='deadsquad'&&Math.random()<.08)tech='x';
 
@@ -2765,6 +2770,22 @@
       t._timer = setTimeout(() => { t.style.opacity = '0'; }, 2200);
     }
 
+    // ===================== ODIN III GENRE PERFORMANCE PROFILES =====================
+    const ODIN_GENRE_PROFILE = {
+      thrash:{pm:.52,tight:.18,tech:.08,stringMove:.14}, thrash_gallop:{pm:.58,tight:.20,tech:.07,stringMove:.12},
+      death:{pm:.62,tight:.38,tech:.10,stringMove:.10}, melodeath:{pm:.46,tight:.28,tech:.14,stringMove:.22},
+      black:{pm:.03,tight:.00,tech:.18,stringMove:.32}, doom:{pm:.38,tight:.62,tech:.08,stringMove:.08},
+      stoner:{pm:.28,tight:.72,tech:.10,stringMove:.12}, groove:{pm:.58,tight:.42,tech:.08,stringMove:.12},
+      nu:{pm:.64,tight:.36,tech:.05,stringMove:.06}, metalcore:{pm:.70,tight:.58,tech:.10,stringMove:.08},
+      djent:{pm:.78,tight:.72,tech:.13,stringMove:.05}, progressive:{pm:.34,tight:.28,tech:.18,stringMove:.24},
+      deadsquad:{pm:.54,tight:.36,tech:.22,stringMove:.28}, polyphia:{pm:.18,tight:.18,tech:.24,stringMove:.38},
+      deathcore:{pm:.82,tight:.78,tech:.14,stringMove:.06}, hardcore:{pm:.68,tight:.65,tech:.07,stringMove:.06},
+      melodic_hc:{pm:.62,tight:.48,tech:.11,stringMove:.12}, modern_hc:{pm:.72,tight:.62,tech:.10,stringMove:.06},
+      thall:{pm:.84,tight:.82,tech:.15,stringMove:.04}, power:{pm:.42,tight:.22,tech:.08,stringMove:.16},
+      brutal:{pm:.86,tight:.86,tech:.12,stringMove:.04}
+    };
+    const getOdinGenreProfile = id => ODIN_GENRE_PROFILE[id] || ODIN_GENRE_PROFILE.thrash;
+
     function buildTrackEvents(partEvents, opts) {
       // Returns array of {t, type, note, vel} for one instrument part
       const { useOdin, useAlt, isTremoloStyle, isGuitar, isBass } = opts;
@@ -2817,6 +2838,7 @@
             - Auto Power only on power chords without special tech
             - String select only when string changes
           */
+          const profile = getOdinGenreProfile(styleId);
           const basePick = isTremoloStyle ? ODIN.TREMOLO
             : (useAlt ? ODIN.ALT_PICKED : ODIN.DOWN_PICKED);
 
@@ -2840,22 +2862,49 @@
           else if (tech === '/') { art = ODIN.SLIDE_FAST_TO_UP_C2; special = true; }
           else if (tech === '\\') { art = ODIN.SLIDE_FAST_TO_DOWN_C2; special = true; }
 
+          // Use Odin's mapped palm-mute families for genre-specific tightness.
+          if (!special && muted) {
+            const r = Math.random();
+            if (profile.tight < .30) {
+              art = r < .72 ? ODIN.ALT_MUTE_SEMI : ODIN.DOWN_MUTE_SEMI;
+            } else if (profile.tight < .65) {
+              art = r < .45 ? ODIN.ALT_MUTE_SEMI
+                : (r < .82 ? ODIN.DOWN_MUTE_CLOSED : ODIN.UP_MUTE_CLOSED);
+            } else {
+              art = r < .28 ? ODIN.DOWN_MUTE_SEMI
+                : (r < .68 ? ODIN.DOWN_MUTE_CLOSED : ODIN.DOWN_MUTE_DEAD);
+            }
+          }
+
           if (art !== lastArt) {
             pushKS(tick - KS_GAP, art);
             lastArt = art;
           }
 
-          // Velocity zones (native Odin): 127 pinch | 35–126 pick | 25–34 PM
+          // Native Odin velocity zones: 127 pinch | 35-126 picked |
+          // 25-34 semi-PM | 15-24 closed-PM | 0-14 dead-PM.
           if (tech === 'ph') vel = 127;
-          else if (muted) vel = 27 + Math.floor(Math.random() * 7);
-          else vel = 85 + Math.floor(Math.random() * 25);
+          else if (muted) {
+            if (art === ODIN.DOWN_MUTE_DEAD || art === ODIN.ALT_MUTE_DEAD || art === ODIN.UP_MUTE_DEAD)
+              vel = 8 + Math.floor(Math.random() * 7);
+            else if (art === ODIN.DOWN_MUTE_CLOSED || art === ODIN.ALT_MUTE_CLOSED || art === ODIN.UP_MUTE_CLOSED)
+              vel = 17 + Math.floor(Math.random() * 7);
+            else
+              vel = 27 + Math.floor(Math.random() * 7);
+          } else {
+            vel = 72 + Math.floor(Math.random() * 39);
+          }
 
           if (isPower && !special) pushKS(tick - KS_GAP, ODIN.AUTO_POWER);
 
           const primary = ev.notes.reduce((a, b) => a.string <= b.string ? a : b);
           const si = Math.min(primary.string, strMap.length - 1);
           const strKS = strMap[si];
-          if (strKS !== lastStr) {
+          const stringChanged = strKS !== lastStr;
+          const lastSi = lastStr == null ? -99 : strMap.indexOf(lastStr);
+          const largeJump = lastStr != null && Math.abs(si - lastSi) >= 2;
+          const barAccent = ((tick - KS_GAP) % (tpq * 4)) < KS_GAP;
+          if (lastStr == null || (stringChanged && (largeJump || accent || barAccent || Math.random() < profile.stringMove))) {
             pushKS(tick - KS_GAP, strKS);
             lastStr = strKS;
           }
@@ -2904,10 +2953,10 @@
           }
           for (const n of notesToPlay) {
             let note = Math.max(0, Math.min(127, n.midi | 0));
-            // Guitar notes must stay above KS zone 0–35
+            // Odin III KS map occupies MIDI 0..47 (C-2..B2).
+            // C3 / MIDI 48 is the safe performance floor.
             if (useOdin && isGuitar) {
-              // KS occupy 0–59; keep performance notes at C3 (60)+ 
-              while (note < 60) note += 12;
+              while (note < 48) note += 12;
             }
             if (useOdin && isBass && note < 20) note += 12;
             events.push({ t: tick, type: 'on', note, vel });
@@ -3004,7 +3053,7 @@
         tempoTrack.push(0x00, 0xFF, 0x2F, 0x00);
         tracks.push(tempoTrack);
 
-        const baseOpts = { useOdin, useAlt, isTremoloStyle };
+        const baseOpts = { useOdin, useAlt, isTremoloStyle, styleId };
 
         if (parts.rhythm) {
           const ev = buildTrackEvents(parts.rhythm, { ...baseOpts, isGuitar: true });
