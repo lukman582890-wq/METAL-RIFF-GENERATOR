@@ -360,7 +360,7 @@
          Velocity: 70–109 (picked) / 28–33 (palm mute) sesuai velocity trigger Odin.
     </div>
 
-    <footer>Metal Riff Generator v3 • 14 Subgenre Encyclopedia • Client-side</footer>
+    <footer>Metal Riff Generator v24 • Genre-aware multi-part engine • Client-side</footer>
   </div>
 
   <script>
@@ -1347,6 +1347,10 @@
 
       for (let i = 0; i < durations.length; i++) {
         const dur = durations[i];
+        if (Math.random() < bassFlavor.rest && i > 0 && dur <= 2) {
+          events.push({ notes: [], dur, rest: true, pick: null, muted: false, power: false, tech: null });
+          continue;
+        }
         if (usePalm && Math.random() < style.palmChance * 0.5) {
           events.push({ notes: [], dur, rest: true, pick: null, muted: false, power: false });
           continue;
@@ -1479,6 +1483,15 @@
     function generateLead(opts) {
       const { key, scaleKey, tuningKey, useAlt, bars, styleId } = opts;
       const fusionLead = (styleId === 'deadsquad' || styleId === 'progressive' || styleId === 'polyphia');
+      const leadFlavor = {
+        thrash:{rest:.04,run:.72,range:[5,13]},thrash_gallop:{rest:.03,run:.78,range:[5,12]},death:{rest:.07,run:.78,range:[4,14]},
+        melodeath:{rest:.03,run:.42,range:[6,17]},black:{rest:.01,run:.92,range:[5,18]},doom:{rest:.12,run:.08,range:[3,10]},
+        stoner:{rest:.08,run:.18,range:[4,13]},groove:{rest:.10,run:.28,range:[4,12]},nu:{rest:.18,run:.18,range:[3,10]},
+        metalcore:{rest:.12,run:.38,range:[4,14]},djent:{rest:.22,run:.18,range:[4,12]},progressive:{rest:.05,run:.48,range:[5,18]},
+        deadsquad:{rest:.04,run:.70,range:[5,18]},polyphia:{rest:.03,run:.34,range:[7,19]},deathcore:{rest:.20,run:.12,range:[3,10]},
+        hardcore:{rest:.18,run:.10,range:[3,9]},melodic_hc:{rest:.08,run:.36,range:[5,15]},modern_hc:{rest:.20,run:.14,range:[3,10]},
+        thall:{rest:.26,run:.08,range:[3,9]},power:{rest:.03,run:.48,range:[6,18]},brutal:{rest:.24,run:.08,range:[3,9]}
+      }[styleId] || {rest:.06,run:.4,range:[5,15]};
       const openMidi = TUNINGS[tuningKey];
       const numStrings = openMidi.length;
       const scaleSemis = getScaleNotes(key, scaleKey);
@@ -1577,9 +1590,9 @@
         const r = Math.random();
         let phrase;
         const startStr = Math.floor(numStrings / 2) + Math.floor(Math.random() * Math.max(1, numStrings - Math.floor(numStrings / 2)));
-        const startFret = 7 + Math.floor(Math.random() * 6);
+        const startFret = leadFlavor.range[0] + Math.floor(Math.random() * Math.max(1, leadFlavor.range[1] - leadFlavor.range[0] + 1));
 
-        if (fusionLead && r < 0.28) {
+        if (fusionLead && r < (styleId === 'polyphia' ? 0.45 : 0.32)) {
           // Holdsworth-ish wide interval leaps (4ths/5ths/minor 6ths across strings)
           phrase = [];
           let s = startStr, f = startFret;
@@ -1597,7 +1610,7 @@
             if (Math.random() < 0.5) s = Math.max(0, Math.min(numStrings - 1, s + (Math.random() < 0.5 ? 1 : -1)));
             if (f < 5) f = 5; if (f > 17) f = 17;
           }
-        } else if (r < 0.35) {
+        } else if (r < 0.35 + leadFlavor.run * 0.25) {
           phrase = makeSweep(Math.max(0, startStr - 2), 4 + Math.floor(Math.random() * 3));
         } else if (r < 0.65) {
           phrase = makeRun(startStr, startFret, 6 + Math.floor(Math.random() * 6), Math.random() < 0.5 ? 1 : -1);
@@ -1610,7 +1623,7 @@
         }
 
         // optional short rest between phrases
-        if (noteSeq.length && Math.random() < 0.3) {
+        if (noteSeq.length && Math.random() < leadFlavor.rest) {
           const restDur = Math.min(2, total16 - filled);
           if (restDur > 0) {
             noteSeq.push({ rest: true, dur: restDur });
@@ -1645,7 +1658,17 @@
 
     // Bass: SLAP style – tightly locked to rhythm guitar roots (same pitch class)
     function generateBass(opts) {
-      const { key, scaleKey, tuningKey, durations, rhythmEvents } = opts;
+      const { key, scaleKey, tuningKey, durations, rhythmEvents, styleId, usePalm } = opts;
+      const bassFlavor = {
+        thrash:{slap:.10,pop:.08,ghost:.03,rest:.02},thrash_gallop:{slap:.08,pop:.06,ghost:.02,rest:.01},
+        death:{slap:.04,pop:.04,ghost:.08,rest:.04},melodeath:{slap:.14,pop:.20,ghost:.02,rest:.02},black:{slap:.02,pop:.02,ghost:.05,rest:.01},
+        doom:{slap:.02,pop:.02,ghost:.08,rest:.10},stoner:{slap:.12,pop:.18,ghost:.03,rest:.05},groove:{slap:.34,pop:.22,ghost:.06,rest:.04},
+        nu:{slap:.42,pop:.25,ghost:.08,rest:.10},metalcore:{slap:.20,pop:.12,ghost:.06,rest:.05},djent:{slap:.16,pop:.08,ghost:.10,rest:.12},
+        progressive:{slap:.18,pop:.30,ghost:.03,rest:.03},deadsquad:{slap:.14,pop:.28,ghost:.05,rest:.03},polyphia:{slap:.28,pop:.42,ghost:.02,rest:.02},
+        deathcore:{slap:.14,pop:.03,ghost:.12,rest:.15},hardcore:{slap:.25,pop:.06,ghost:.10,rest:.12},melodic_hc:{slap:.18,pop:.18,ghost:.04,rest:.06},
+        modern_hc:{slap:.22,pop:.06,ghost:.10,rest:.12},thall:{slap:.08,pop:.02,ghost:.15,rest:.18},power:{slap:.06,pop:.30,ghost:.02,rest:.02},
+        brutal:{slap:.06,pop:.01,ghost:.16,rest:.18}
+      }[styleId] || {slap:.12,pop:.10,ghost:.04,rest:.03};
       const openMidi = BASS_TUNINGS[tuningKey] || BASS_TUNINGS.standard6;
       const numStrings = openMidi.length;
       const scaleSemis = getScaleNotes(key, scaleKey);
@@ -1727,7 +1750,7 @@
         const mode = Math.random();
 
         // Ghost (~10%)
-        if (mode < 0.1) {
+        if (mode < bassFlavor.ghost) {
           const g = findPitchClass(pc, true);
           events.push({
             notes: [{ string: g.string, fret: g.fret, midi: g.midi }],
@@ -1737,7 +1760,7 @@
         }
 
         // Slap root (~50%)
-        if (mode < 0.6) {
+        if (mode < bassFlavor.ghost + bassFlavor.slap) {
           const p = findPitchClass(pc, true);
           events.push({
             notes: [{ string: p.string, fret: p.fret, midi: p.midi }],
@@ -1747,7 +1770,7 @@
         }
 
         // Pop octave/same PC high (~25%)
-        if (mode < 0.85) {
+        if (mode < bassFlavor.ghost + bassFlavor.slap + bassFlavor.pop) {
           const p = findPop(pc);
           events.push({
             notes: [{ string: p.string, fret: p.fret, midi: p.midi }],
@@ -1780,18 +1803,17 @@
       const total16 = bars * 16;
 
       // Classic breakdown rhythm cells (half-time / syncopated chugs)
-      const cells = [
-        [4, 4, 4, 4],           // straight half-time
-        [4, 2, 2, 4, 4],
-        [3, 3, 2, 4, 4],
-        [4, 4, 2, 1, 1, 4],
-        [2, 2, 4, 2, 2, 4],
-        [4, 1, 1, 2, 4, 4],
-        [3, 1, 4, 3, 1, 4],
-        [8, 4, 4],              // long stomp
-        [4, 4, 1, 1, 1, 1, 4],
-        [2, 1, 1, 2, 2, 4, 4]
-      ];
+      const BREAKDOWN_CELLS = {
+        thrash:[[2,2,2,2,4,4],[1,1,2,1,1,4,4]],thrash_gallop:[[1,1,2,1,1,2,4,4],[2,2,2,2,2,2,4,2]],
+        death:[[2,1,1,2,2,4,4],[1,1,1,1,2,2,4,4]],melodeath:[[2,2,4,2,2,4],[4,2,2,4,4]],black:[[4,4,4,4],[2,2,4,4,4]],
+        doom:[[8,4,4],[6,4,6],[8,8]],stoner:[[4,2,2,4,4],[6,2,4,4]],groove:[[4,2,2,4,4],[2,2,4,2,2,4]],
+        nu:[[4,1,1,2,4,4],[2,2,4,2,2,4]],metalcore:[[4,1,1,2,4,4],[2,1,1,2,2,4,4]],djent:[[2,1,1,2,4,2,4],[1,1,2,1,3,1,2,4]],
+        progressive:[[3,2,1,4,2,4],[2,3,3,4,4]],deadsquad:[[1,1,2,1,1,2,2,2,4],[2,1,1,2,1,3,1,4]],
+        polyphia:[[2,2,3,1,2,2,4],[1,2,1,2,3,3,4]],deathcore:[[8,4,4],[4,1,1,4,6],[3,1,4,4,4]],
+        hardcore:[[4,2,2,4,4],[2,2,4,4,4]],melodic_hc:[[4,2,2,4,4],[2,1,1,2,2,4,4]],modern_hc:[[2,1,1,2,4,2,4],[1,1,2,4,1,1,2,4]],
+        thall:[[8,1,1,2,4],[4,1,1,6,4],[3,1,4,2,6]],power:[[4,2,2,4,4],[2,2,2,2,4,4]],brutal:[[8,4,4],[4,1,1,4,6],[2,2,4,2,2,4]]
+      };
+      const cells = BREAKDOWN_CELLS[styleId] || BREAKDOWN_CELLS.thrash;
 
       let durations = [];
       let rem = total16;
@@ -2832,7 +2854,7 @@
           tracks.push(eventsToTrackBytes(ev, 'Rhythm Guitar', useOdin ? null : 30));
         }
         if (parts.lead) {
-          const ev = buildTrackEvents(parts.lead, { ...baseOpts, isGuitar: true, isTremoloStyle: false });
+          const ev = buildTrackEvents(parts.lead, { ...baseOpts, isGuitar: true, isTremoloStyle });
           tracks.push(eventsToTrackBytes(ev, 'Lead Guitar', useOdin ? null : 29));
         }
         if (parts.bass) {
@@ -2883,17 +2905,22 @@
     }
 
     function copyTab() {
-      const chunks = [];
-      if (parts.rhythm) chunks.push($('tabRhythm').textContent);
-      if (parts.lead) chunks.push($('tabLead').textContent);
-      if (parts.bass) chunks.push($('tabBass').textContent);
-      if (parts.breakdown) chunks.push($('tabBreakdown').textContent);
-      if (parts.drums) chunks.push($('tabDrums').textContent);
-      const text = chunks.join('\n\n') || 'No parts';
-      navigator.clipboard.writeText(text).then(() => {
-        const btn = $('btnCopy'); const old = btn.textContent;
-        btn.textContent = '✓ COPIED!'; setTimeout(() => btn.textContent = old, 1400);
-      });
+      const chunks=[];
+      if(parts.rhythm)chunks.push($('tabRhythm').textContent);
+      if(parts.lead)chunks.push($('tabLead').textContent);
+      if(parts.bass)chunks.push($('tabBass').textContent);
+      if(parts.breakdown)chunks.push($('tabBreakdown').textContent);
+      if(parts.drums)chunks.push($('tabDrums').textContent);
+      const text=chunks.join('\n\n')||'No parts';
+      const done=()=>{const b=$('btnCopy'),old=b.textContent;b.textContent='✓ COPIED!';setTimeout(()=>b.textContent=old,1400);};
+      if(navigator.clipboard&&window.isSecureContext)navigator.clipboard.writeText(text).then(done).catch(()=>copyFallback(text,done));
+      else copyFallback(text,done);
+    }
+    function copyFallback(text,done){
+      const ta=document.createElement('textarea');ta.value=text;ta.style.position='fixed';ta.style.left='-9999px';
+      document.body.appendChild(ta);ta.focus();ta.select();
+      try{document.execCommand('copy');done();}catch(e){showToast('Clipboard gagal — copy manual dari TAB');}
+      finally{document.body.removeChild(ta);}
     }
 
     // ===================== INIT =====================
