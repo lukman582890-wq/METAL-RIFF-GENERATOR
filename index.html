@@ -3060,8 +3060,18 @@
       }
     }
 
+    // Whitelist Admin / Owner Emails (Free Unlimited Forever)
+    const ADMIN_EMAILS = [
+      'lukman582890@gmail.com'
+    ];
+
     function setCurrentUser(user) {
       if (user) {
+        // Automatically grant lifetime PRO UNLIMITED to Owner/Admin
+        if (user.email && ADMIN_EMAILS.includes(user.email.toLowerCase())) {
+          user.isPro = true;
+          user.isAdmin = true;
+        }
         localStorage.setItem('mrg_current_user', JSON.stringify(user));
       } else {
         localStorage.removeItem('mrg_current_user');
@@ -3123,7 +3133,7 @@
 
         if (isPro) {
           quotaBadge.className = 'quota-badge member';
-          quotaBadge.innerHTML = `⭐ <strong>PRO UNLIMITED</strong>`;
+          quotaBadge.innerHTML = user.isAdmin ? `👑 <strong>OWNER UNLIMITED</strong>` : `⭐ <strong>PRO UNLIMITED</strong>`;
         } else {
           const left = Math.max(0, MEMBER_LIMIT - used);
           quotaCount.textContent = left;
