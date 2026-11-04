@@ -3440,9 +3440,43 @@
     }
 
     // ===================== AUDIO =====================
+    // Real Metal Sample Buffers & Loader (djen.co architecture)
+    const SAMPLE_BUFFERS = {};
+    const SAMPLE_URLS = {
+      'kick': 'samples/drums/kick.wav',
+      'snare': 'samples/drums/snare.wav',
+      'hihat-closed': 'samples/drums/hihat-closed.wav',
+      'hihat-open': 'samples/drums/hihat-open.wav',
+      'crash': 'samples/drums/crash-left.wav',
+      'china': 'samples/drums/china-left.wav',
+      'guitar-muted': 'samples/guitar/sixth-0-muted.mp3',
+      'guitar-open': 'samples/guitar/sixth-0-open.mp3',
+      'guitar-chord': 'samples/guitar/sixth-0-chord.mp3'
+    };
+
+    let samplesLoaded = false;
+    async function loadMetalSamples() {
+      if (samplesLoaded || !audioCtx) return;
+      samplesLoaded = true;
+      for (const [key, url] of Object.entries(SAMPLE_URLS)) {
+        try {
+          const resp = await fetch(url);
+          if (resp.ok) {
+            const arrBuf = await resp.arrayBuffer();
+            audioCtx.decodeAudioData(arrBuf, (buf) => {
+              SAMPLE_BUFFERS[key] = buf;
+            });
+          }
+        } catch(e) {
+          console.warn('Could not load sample:', key, e);
+        }
+      }
+    }
+
     function ensureAudio() {
       if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
       if (audioCtx.state === 'suspended') audioCtx.resume();
+      loadMetalSamples();
     }
     function playNote(midi, startTime, durationSec, velocity = 0.2) {
       if (midi == null) return;
