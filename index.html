@@ -3494,7 +3494,7 @@
         }
       }
 
-      const key = ${type}-;
+      const key = type + '-' + nearestPitch;
       const semitoneShift = midi - nearestPitch;
       const playbackRate = Math.pow(2, semitoneShift / 12);
       return { key, playbackRate };
@@ -3504,19 +3504,28 @@
     async function loadMetalSamples() {
       if (samplesLoaded || !audioCtx) return;
       samplesLoaded = true;
-      for (const [key, url] of Object.entries(SAMPLE_URLS)) {
+      const promises = Object.entries(SAMPLE_URLS).map(async ([key, url]) => {
         try {
           const resp = await fetch(url);
           if (resp.ok) {
             const arrBuf = await resp.arrayBuffer();
-            audioCtx.decodeAudioData(arrBuf, (buf) => {
-              SAMPLE_BUFFERS[key] = buf;
+            // Handle both Promise-based and callback decodeAudioData
+            return new Promise((resolve) => {
+              audioCtx.decodeAudioData(arrBuf, (buf) => {
+                SAMPLE_BUFFERS[key] = buf;
+                resolve();
+              }, (err) => {
+                console.warn('Decode error for', key, err);
+                resolve();
+              });
             });
           }
         } catch(e) {
           console.warn('Could not load sample:', key, e);
         }
-      }
+      });
+      await Promise.all(promises);
+      console.log('Metal samples loaded successfully:', Object.keys(SAMPLE_BUFFERS).length);
     }
 
     function ensureAudio() {
