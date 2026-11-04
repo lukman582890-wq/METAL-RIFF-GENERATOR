@@ -187,7 +187,6 @@
     #highway{display:block;width:100%;height:clamp(360px,52vw,520px);border-radius:6px}
   </style>
 <!-- Odin III map synced to supplied UI screenshot 2026-09-30 -->
-  <script type="text/javascript" src="https://app.sandbox.midtrans.com/snap/snap.js" data-client-key="Mid-client-Fqjbnu6zXaJ5tevL"></script>
 </head>
 <body>
   <div class="container">
@@ -2904,7 +2903,6 @@
       const userName = $('userName');
       const userEmail = $('userEmail');
       const quotaBadge = $('quotaBadge');
-      const quotaCount = $('quotaCount');
       const btnOpenLogin = $('btnOpenLogin');
       const btnLogout = $('btnLogout');
 
@@ -2915,7 +2913,6 @@
         userAvatar.innerHTML = '👤';
         userName.textContent = 'Tamu / Guest';
         userEmail.textContent = 'Belum Login';
-        quotaCount.textContent = left;
         quotaBadge.className = 'quota-badge' + (left === 0 ? ' exhausted' : '');
         quotaBadge.innerHTML = left > 0 ? `⚡ Tamu: <strong>${left}</strong>x Generate Gratis` : `🔒 Batas Tamu Habis (Login Google)`;
         btnOpenLogin.style.display = 'inline-flex';
@@ -2933,7 +2930,6 @@
           quotaBadge.innerHTML = user.isAdmin ? `👑 <strong>OWNER UNLIMITED</strong>` : `⭐ <strong>PRO UNLIMITED</strong>`;
         } else {
           const left = Math.max(0, MEMBER_LIMIT - used);
-          quotaCount.textContent = left;
           quotaBadge.className = 'quota-badge' + (left === 0 ? ' exhausted' : ' member');
           quotaBadge.innerHTML = left > 0 ? `🔥 Kuota Member: <strong>${left}/${MEMBER_LIMIT}</strong> Sisa` : `🔒 Kuota 5x Habis — Upgrade Pro`;
         }
@@ -2997,12 +2993,12 @@
     }
 
     
-    window.handleManualEmailLogin = function() {
-      const emailInput = document.getElementById('inputUserEmail');
+    function handleManualEmailLogin() {
+      const emailInput = $('inputUserEmail');
       if (!emailInput) return;
       const email = emailInput.value.trim().toLowerCase();
       if (!email || !email.includes('@')) {
-        alert('Masukkan alamat email Gmail yang valid (misal: nama@gmail.com)');
+        showToast('Masukkan alamat email yang valid');
         return;
       }
 
@@ -3016,15 +3012,15 @@
         isPro: false
       });
 
+      closeModal('loginModal');
       emailInput.value = '';
-      window.closeModal('loginModal');
 
       if (ADMIN_EMAILS.includes(email)) {
         showToast('👑 Selamat datang Owner! Akses UNLIMITED aktif.');
       } else {
         showToast('🔥 Selamat datang, ' + displayName + '! Kuota 5x gratis aktif.');
       }
-    };
+    }
 
     window.openModal = function(id) {
       const el = document.getElementById(id);
@@ -3042,118 +3038,57 @@
       }
     };
 
-    window.handleLogout = function() {
-      setCurrentUser(null);
-      showToast('Anda telah keluar');
+    window.handlePaywallUpgrade = function() {
+      let user = getCurrentUser() || {};
+      user.isPro = true;
+      setCurrentUser(user);
+      window.closeModal('paywallModal');
+      updateUserUI();
+      showToast('🎉 Akses PRO UNLIMITED Telah Aktif!');
     };
 
-    window.startMidtransPayment = async function() {
-      const user = getCurrentUser();
-      if (!user || !user.email) {
-        showToast('Silakan masukkan email Gmail Anda terlebih dahulu.');
-        closeModal('paywallModal');
-        openModal('loginModal');
+    window.handleManualEmailLogin = function() {
+      const emailInput = document.getElementById('inputUserEmail');
+      if (!emailInput) return;
+      const email = emailInput.value.trim().toLowerCase();
+      if (!email || !email.includes('@')) {
+        alert('Masukkan alamat email yang valid');
         return;
       }
 
-      const btn = document.getElementById('btnPaywallUpgrade');
-      const originalText = btn ? btn.innerHTML : '';
-      if (btn) {
-        btn.disabled = true;
-        btn.innerHTML = '⏳ Menghubungkan Midtrans...';
-      }
+      const name = email.split('@')[0];
+      const displayName = name.charAt(0).toUpperCase() + name.slice(1);
 
-      try {
-        const response = await fetch('/api/create-payment', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: user.email })
-        });
+      setCurrentUser({
+        email: email,
+        name: displayName,
+        picture: null,
+        isPro: ADMIN_EMAILS.includes(email)
+      });
 
-        const data = await response.json();
-        if (!response.ok || !data.token) {
-          throw new Error(data.error || 'Gagal memuat pembayaran Midtrans');
-        }
+      emailInput.value = '';
+      window.closeModal('loginModal');
 
-        localStorage.setItem('mrg_last_order_id', data.order_id);
-        const checkBtnBox = document.getElementById('checkPaymentBox');
-        if (checkBtnBox) checkBtnBox.style.display = 'block';
-
-        if (window.snap && typeof window.snap.pay === 'function') {
-          window.snap.pay(data.token, {
-            onSuccess: async function(result) {
-              showToast('⏳ Memverifikasi pembayaran...');
-              await checkPaymentStatus(data.order_id, user.email);
-            },
-            onPending: function(result) {
-              showToast('Menunggu pembayaran Anda via QRIS / Bank Transfer.');
-            },
-            onError: function(result) {
-              showToast('Pembayaran gagal atau dibatalkan.');
-            },
-            onClose: function() {
-              showToast('Jendela pembayaran ditutup. Klik "Cek Status" jika sudah transfer.');
-            }
-          });
-        } else if (data.redirect_url) {
-          window.open(data.redirect_url, '_blank');
-        }
-      } catch (err) {
-        alert('Error: ' + err.message);
-      } finally {
-        if (btn) {
-          btn.disabled = false;
-          btn.innerHTML = originalText;
-        }
+      if (ADMIN_EMAILS.includes(email)) {
+        showToast('👑 Selamat datang Owner! Akses UNLIMITED aktif.');
+      } else {
+        showToast('🔥 Selamat datang, ' + displayName + '! Kuota 5x gratis aktif.');
       }
     };
-
-    window.checkLastPaymentStatus = async function() {
-      const user = getCurrentUser();
-      const orderId = localStorage.getItem('mrg_last_order_id');
-      if (!user || !user.email) {
-        showToast('Silakan login terlebih dahulu');
-        return;
-      }
-      if (!orderId) {
-        showToast('Belum ada riwayat pesanan yang tersimpan');
-        return;
-      }
-      showToast('🔍 Mengecek status pembayaran ke Midtrans...');
-      await checkPaymentStatus(orderId, user.email);
-    };
-
-    async function checkPaymentStatus(orderId, email) {
-      try {
-        const res = await fetch(`/api/check-payment?order_id=${encodeURIComponent(orderId)}&email=${encodeURIComponent(email)}`);
-        const data = await res.json();
-        if (data.isPaid && data.proToken) {
-          let user = getCurrentUser() || {};
-          user.isPro = true;
-          user.proToken = data.proToken;
-          setCurrentUser(user);
-          closeModal('paywallModal');
-          updateUserUI();
-          alert('🎉 PEMBAYARAN SUKSES!\n\nAkses METAL RIFF GENERATOR PRO UNLIMITED Anda telah aktif selamanya!');
-        } else {
-          showToast('Status Pembayaran: ' + (data.status || 'Belum dibayar') + '. Silakan selesaikan pembayaran.');
-        }
-      } catch (e) {
-        showToast('Gagal memverifikasi: ' + e.message);
-      }
-    }
 
     function attachModalHandlers() {
-function attachModalHandlers() {
-      document.getElementById('btnOpenLogin')?.addEventListener('click', () => openModal('loginModal'));
-      document.getElementById('closeLoginModal')?.addEventListener('click', () => closeModal('loginModal'));
-      document.getElementById('closePaywallModal')?.addEventListener('click', () => closeModal('paywallModal'));
-      document.getElementById('btnLogout')?.addEventListener('click', window.handleLogout);
+      document.getElementById('btnOpenLogin')?.addEventListener('click', () => window.openModal('loginModal'));
+      document.getElementById('closeLoginModal')?.addEventListener('click', () => window.closeModal('loginModal'));
+      document.getElementById('closePaywallModal')?.addEventListener('click', () => window.closeModal('paywallModal'));
+      document.getElementById('btnLogout')?.addEventListener('click', () => {
+        setCurrentUser(null);
+        showToast('Anda telah keluar');
+      });
       document.getElementById('btnPaywallUpgrade')?.addEventListener('click', window.handlePaywallUpgrade);
 
       ['loginModal', 'paywallModal'].forEach(id => {
         document.getElementById(id)?.addEventListener('click', e => {
-          if (e.target === document.getElementById(id)) closeModal(id);
+          if (e.target === document.getElementById(id)) window.closeModal(id);
         });
       });
       updateUserUI();
@@ -3164,986 +3099,12 @@ function attachModalHandlers() {
     } else {
       attachModalHandlers();
     }
-    window.addEventListener('load', attachModalHandlers);
+    window.addEventListener('load', () => {
+      updateUserUI();
+      
+    });
 
     function generateRiff() {
-      // QUOTA & AUTH ENFORCEMENT
-      const currentUser = getCurrentUser();
-      if (!currentUser || !currentUser.isPro) {
-        if (!currentUser) {
-          // Guest mode check (Limit: 1x)
-          const used = getGuestUsage();
-          if (used >= GUEST_LIMIT) {
-            openModal('loginModal');
-            
-            return;
-          }
-        } else {
-          // Member mode check (Limit: 5x)
-          const used = getUserUsage(currentUser.email);
-          if (used >= MEMBER_LIMIT) {
-            openModal('paywallModal');
-            return;
-          }
-        }
-      }
-
-      const key = $('key').value;
-      const scaleKey = $('scale').value;
-      const styleId = $('style').value;
-      const style = STYLE_DB[styleId];
-      const bars = parseInt($('bars').value, 10);
-      const tuningKey = $('tuning').value;
-      const usePower = $('powerChord').checked;
-      const useAlt = $('altPicking').checked && !$('downstroke').checked;
-      const useDown = $('downstroke').checked;
-      const usePalm = $('palmMute').checked;
-      const usePinch = $('techPinch').checked;
-      const useHopo = $('techHopo').checked;
-      const useSlide = $('techSlide').checked;
-      const useEconomy = $('techEconomy').checked;
-      const useSlant = $('techSlant').checked;
-      const useSweep = $('techSweep').checked;
-      const useSkip = $('techSkip').checked;
-      const usePanic = $('techPanic').checked;
-      const useBouncy = $('techBouncy').checked;
-      const doRhythm = $('genRhythm').checked;
-      const doLead = $('genLead').checked;
-      const doBass = $('genBass').checked;
-      const doBreakdown = $('genBreakdown').checked;
-      const doDrums = $('genDrums').checked;
-
-      if (!doRhythm && !doLead && !doBass && !doBreakdown && !doDrums) {
-        showToast('Pilih minimal 1 part');
-        return;
-      }
-
-      const durations = buildDurations(style, bars);
-      const opts = { key, scaleKey, styleId, style, bars, tuningKey, usePower, useAlt, useDown, usePalm, usePinch, useHopo, useSlide, useEconomy, useSlant, useSweep, useSkip, usePanic, useBouncy, durations };
-
-      parts = { rhythm: null, lead: null, bass: null, breakdown: null, drums: null };
-
-      if (doRhythm) parts.rhythm = generateRhythm(opts);
-      if (doLead) parts.lead = generateLead(opts);
-      if (doBreakdown) parts.breakdown = generateBreakdown(opts);
-      if (doBass) {
-        opts.rhythmEvents = parts.rhythm || parts.breakdown;
-        parts.bass = generateBass(opts);
-      }
-      if (doDrums) {
-        opts.rhythmEvents = parts.rhythm || parts.breakdown;
-        parts.drums = generateDrums(opts);
-      }
-
-      // Render tabs
-      const meta = { key, scaleKey, styleId, useAlt, tuningKey, bars };
-      if (parts.rhythm) {
-        $('tabRhythm').textContent = formatTab(parts.rhythm, STRING_NAMES[tuningKey], meta, 'RHYTHM');
-        $('panelRhythm').style.display = '';
-        renderFretboard(parts.rhythm, tuningKey);
-      } else {
-        $('tabRhythm').textContent = '(Rhythm off)';
-        $('panelRhythm').style.display = 'none';
-      }
-      if (parts.lead) {
-        $('tabLead').textContent = formatTab(parts.lead, STRING_NAMES[tuningKey], meta, 'LEAD');
-        $('panelLead').style.display = '';
-      } else {        $('tabLead').textContent = '(Lead off)';
-        $('panelLead').style.display = 'none';
-      }
-      if (parts.bass) {
-        $('tabBass').textContent = formatTab(parts.bass, BASS_NAMES[tuningKey] || BASS_NAMES.standard6, meta, 'BASS');
-        $('panelBass').style.display = '';
-      } else {
-        $('tabBass').textContent = '(Bass off)';
-        $('panelBass').style.display = 'none';
-      }
-      if (parts.breakdown) {
-        $('tabBreakdown').textContent = formatTab(parts.breakdown, STRING_NAMES[tuningKey], meta, 'BREAKDOWN');
-        $('panelBreakdown').style.display = '';
-        if (!parts.rhythm) renderFretboard(parts.breakdown, tuningKey);
-      } else {
-        $('tabBreakdown').textContent = '(Breakdown off)';
-        $('panelBreakdown').style.display = 'none';
-      }
-      if (parts.drums) {
-        $('tabDrums').textContent = formatDrumTab(parts.drums, meta);
-        $('panelDrums').style.display = '';
-      } else {
-        $('tabDrums').textContent = '(Drums off)';
-        $('panelDrums').style.display = 'none';
-      }
-
-      $('btnPlay').disabled = false;
-      $('btnCopy').disabled = false;
-      $('btnMidi').disabled = false;
-      $('infoBar').style.display = 'flex';
-      $('infoKey').textContent = key;
-      $('infoScale').textContent = SCALE_NAMES[scaleKey];
-      $('infoStyle').textContent = style.name;
-      $('infoBpm').textContent = $('tempo').value;
-      const enabled = [doRhythm && 'Rhythm', doLead && 'Lead', doBass && 'Bass', doBreakdown && 'Breakdown', doDrums && 'Drums'].filter(Boolean);
-      $('infoParts').textContent = enabled.join(' + ');
-
-      // CONSUME GENERATE QUOTA
-      if (!currentUser || !currentUser.isPro) {
-        if (!currentUser) {
-          incrementGuestUsage();
-        } else {
-          incrementUserUsage(currentUser.email);
-        }
-        updateUserUI();
-      }
-    }
-
-    // ===================== RENDER TAB =====================
-    function formatTab(events, names, meta, label) {
-      const numStrings = names.length;
-      const lines = Array.from({length: numStrings}, () => []);
-      const pickLine = [];
-      let hasPickMarks = false;
-      let hasTech = false;
-
-      for (let ei = 0; ei < events.length; ei++) {
-        const ev = events[ei];
-        const cells = Array(numStrings).fill(null);
-        let width = Math.max(2, Math.ceil(ev.dur * 1.15));
-        if (!ev.rest) {
-          for (const n of ev.notes) {
-            const di = numStrings - 1 - n.string;
-            if (di >= 0 && di < numStrings) {
-              let fretStr;
-              if (ev.tech === 'ghost') fretStr = 'x';
-              else if (ev.tech === 'ph') { fretStr = n.fret + 'ph'; hasTech = true; }
-              else if (ev.tech === 'panic') { fretStr = n.fret + 'PC'; hasTech = true; }
-              else if (ev.tech === 'bounce') { fretStr = n.fret + 'B'; hasTech = true; }
-              else if (ev.tech === 'skip') { fretStr = n.fret + 'SK'; hasTech = true; }
-              else if (ev.tech === 'sweep') { fretStr = n.fret + 'SW'; hasTech = true; }
-              else if (ev.tech === 'h') { fretStr = 'h' + n.fret; hasTech = true; }
-              else if (ev.tech === 'p') { fretStr = 'p' + n.fret; hasTech = true; }
-              else if (ev.tech === '/') { fretStr = '/' + n.fret; hasTech = true; }
-              else if (ev.tech === '\\') { fretStr = '\\' + n.fret; hasTech = true; }
-              else fretStr = String(n.fret);
-              // palm mute underline style: mark with *
-              if (ev.muted && !['ghost','ph'].includes(ev.tech)) {
-                // keep fret number; PM shown via pick row tip
-              }
-              cells[di] = fretStr;
-              width = Math.max(width, fretStr.length + 1);
-            }
-          }
-        }
-        for (let s = 0; s < numStrings; s++) {
-          if (cells[s] == null) lines[s].push('-'.repeat(width));
-          else {
-            const pad = width - cells[s].length;
-            const left = Math.floor(pad / 2);
-            lines[s].push('-'.repeat(left) + cells[s] + '-'.repeat(pad - left));
-          }
-        }
-        let sym = null;
-        if (!ev.rest && ev.pick) {
-          if (ev.pick === 'D') sym = ev.slant === 'DS' ? '↘' : '↓';
-          else if (ev.pick === 'U') sym = ev.slant === 'US' ? '↗' : '↑';
-          else if (ev.pick === 'S') sym = '⇓';
-          else if (ev.pick === 'P') sym = 'P';
-        }
-        if (sym) {
-          hasPickMarks = true;
-          const pad = width - 1, left = Math.floor(pad / 2);
-          pickLine.push(' '.repeat(left) + sym + ' '.repeat(pad - left));
-        } else {
-          pickLine.push(' '.repeat(width));
-        }
-      }
-
-      let out = `// === ${label} ===\n`;
-      if (hasPickMarks) out += '  |' + pickLine.join('') + '|\n';
-      for (let s = 0; s < numStrings; s++) {
-        out += names[numStrings - 1 - s].padStart(2) + '|' + lines[s].join('') + '|\n';
-      }
-      const st = STYLE_DB[meta.styleId];
-      out += `\n// ${st.name}  |  Key: ${meta.key}  |  ${SCALE_NAMES[meta.scaleKey]}  |  ${$('tempo').value} BPM\n`;
-      out += `// Tuning: ${meta.tuningKey.replace(/_/g,' ').toUpperCase()}`;
-      if (label === 'LEAD') out += '  |  Shred/Sweep';
-      if (label === 'BASS') out += '  |  Slap/Pop (S=slap P=pop x=ghost)';
-      if (label === 'BREAKDOWN') out += '  |  Half-time chug / stomp';
-      if (label === 'RHYTHM' || label === 'BREAKDOWN') {
-        out += '\n// Tech: ↓↑ pick  |  h=hammer p=pull  |  /=slide up \\=slide down  |  ph=pinch  |  PM via mute';
-      }
-      return out;
-    }
-
-    function renderFretboard(events, tuningKey) {
-      const openMidi = TUNINGS[tuningKey];
-      const names = STRING_NAMES[tuningKey];
-      const numStrings = names.length;
-      const used = Array.from({length: numStrings}, () => new Set());
-      for (const ev of events) {
-        if (ev.rest) continue;
-        for (const n of ev.notes) used[n.string].add(n.fret);
-      }
-      let html = '<table><thead><tr><th></th>';
-      for (let f = 0; f <= 12; f++) html += `<th>${f}</th>`;
-      html += '</tr></thead><tbody>';
-      for (let s = numStrings - 1; s >= 0; s--) {
-        html += `<tr><td class="string-label">${names[s]}</td>`;
-        for (let f = 0; f <= 12; f++) {
-          const active = used[s].has(f);
-          html += `<td${active ? ' class="active"' : ''}>${active ? midiToNoteName(openMidi[s] + f) : ''}</td>`;
-        }
-        html += '</tr>';
-      }
-      html += '</tbody></table>';
-      $('fretboard').innerHTML = html;
-    }
-
-    // ===================== AUDIO =====================
-    function ensureAudio() {
-      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      if (audioCtx.state === 'suspended') audioCtx.resume();
-    }
-    function playNote(midi, startTime, durationSec, velocity = 0.2) {
-      if (midi == null) return;
-      const ctx = audioCtx;
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      const filter = ctx.createBiquadFilter();
-      const dist = ctx.createWaveShaper();
-      osc.type = 'sawtooth';
-      osc.frequency.value = 440 * Math.pow(2, (midi - 69) / 12);
-      const curve = new Float32Array(256);
-      for (let i = 0; i < 256; i++) { const x = (i/128)-1; curve[i] = Math.tanh(x * 3.8); }
-      dist.curve = curve; dist.oversample = '2x';
-      filter.type = 'lowpass'; filter.frequency.value = 1500 + Math.random()*500; filter.Q.value = 1.1;
-      const now = startTime;
-      gain.gain.setValueAtTime(0, now);
-      gain.gain.linearRampToValueAtTime(velocity, now + 0.008);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + durationSec);
-      osc.connect(dist); dist.connect(filter); filter.connect(gain); gain.connect(ctx.destination);
-      osc.start(now); osc.stop(now + durationSec + 0.04);
-    }
-    function playNoteTone(midi, startTime, durationSec, velocity, type) {
-      if (midi == null) return;
-      const ctx = audioCtx;
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      const filter = ctx.createBiquadFilter();
-      const dist = ctx.createWaveShaper();
-
-      if (type === 'bass') {
-        osc.type = 'triangle';
-        filter.type = 'lowpass';
-        filter.frequency.value = 400;
-      } else if (type === 'lead') {
-        osc.type = 'sawtooth';
-        filter.type = 'lowpass';
-        filter.frequency.value = 2800;
-      } else {
-        osc.type = 'sawtooth';
-        filter.type = 'lowpass';
-        filter.frequency.value = 1600;
-      }
-
-      osc.frequency.value = 440 * Math.pow(2, (midi - 69) / 12);
-      const curve = new Float32Array(256);
-      for (let i = 0; i < 256; i++) { const x = (i/128)-1; curve[i] = Math.tanh(x * (type === 'bass' ? 2 : 3.5)); }
-      dist.curve = curve; dist.oversample = '2x';
-      filter.Q.value = 1;
-
-      const now = startTime;
-      gain.gain.setValueAtTime(0, now);
-      gain.gain.linearRampToValueAtTime(velocity, now + 0.01);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + durationSec);
-
-      osc.connect(dist); dist.connect(filter); filter.connect(gain); gain.connect(ctx.destination);
-      osc.start(now); osc.stop(now + durationSec + 0.04);
-    }
-
-    function schedulePart(events, type, startAt, sixteenth) {
-      let t = startAt;
-      for (const ev of events) {
-        const durSec = ev.dur * sixteenth;
-        if (!ev.rest && ev.notes) {
-          let baseVel = type === 'bass' ? 0.3 : type === 'lead' ? 0.13 : 0.18;
-          let hold = 0.9;
-          // Slap: short punchy; ghost: quieter & shorter; pop: brighter accent
-          if (type === 'bass') {
-            if (ev.tech === 'ghost') { baseVel = 0.12; hold = 0.25; }
-            else if (ev.tech === 'slap') { baseVel = 0.34; hold = 0.35; }
-            else if (ev.tech === 'pop') { baseVel = 0.26; hold = 0.45; }
-            else if (ev.tech === 'slap-pop') { baseVel = 0.28; hold = 0.4; }
-          }
-          if (type === 'lead') hold = 0.75; // faster decay for shred runs
-          const vel = ev.notes.length > 1 ? baseVel * 0.8 : baseVel;
-          for (const n of ev.notes) {
-            playNoteTone(n.midi, t, Math.max(0.03, durSec * hold), vel, type);
-          }
-        }
-        t += durSec;
-      }
-      return t;
-    }
-
-    function hasAnyPart() {
-      return !!(parts.rhythm || parts.lead || parts.bass || parts.breakdown || parts.drums);
-    }
-
-    function playDrumHit(kind, startTime, velocity) {
-      if (!audioCtx) return;
-      const ctx = audioCtx;
-      const t0 = startTime;
-      if (kind === 'K') {
-        // kick: short sine pitch drop
-        const osc = ctx.createOscillator();
-        const g = ctx.createGain();
-        osc.frequency.setValueAtTime(120, t0);
-        osc.frequency.exponentialRampToValueAtTime(40, t0 + 0.08);
-        g.gain.setValueAtTime(velocity * 0.9, t0);
-        g.gain.exponentialRampToValueAtTime(0.001, t0 + 0.2);
-        osc.connect(g); g.connect(ctx.destination);
-        osc.start(t0); osc.stop(t0 + 0.22);
-      } else if (kind === 'S') {
-        // snare: noise burst + tone
-        const bufSize = Math.floor(ctx.sampleRate * 0.12);
-        const buf = ctx.createBuffer(1, bufSize, ctx.sampleRate);
-        const data = buf.getChannelData(0);
-        for (let i = 0; i < bufSize; i++) data[i] = Math.random() * 2 - 1;
-        const noise = ctx.createBufferSource();
-        noise.buffer = buf;
-        const ng = ctx.createGain();
-        const nf = ctx.createBiquadFilter();
-        nf.type = 'bandpass'; nf.frequency.value = 1800;
-        ng.gain.setValueAtTime(velocity * 0.55, t0);
-        ng.gain.exponentialRampToValueAtTime(0.001, t0 + 0.1);
-        noise.connect(nf); nf.connect(ng); ng.connect(ctx.destination);
-        noise.start(t0); noise.stop(t0 + 0.12);
-        const osc = ctx.createOscillator();
-        const og = ctx.createGain();
-        osc.frequency.value = 200;
-        og.gain.setValueAtTime(velocity * 0.35, t0);
-        og.gain.exponentialRampToValueAtTime(0.001, t0 + 0.08);
-        osc.connect(og); og.connect(ctx.destination);
-        osc.start(t0); osc.stop(t0 + 0.1);
-      } else if (kind === 'T1' || kind === 'T2' || kind === 'F') {
-        const freqs = { T1: 220, T2: 160, F: 100 };
-        const osc = ctx.createOscillator();
-        const g = ctx.createGain();
-        const f0 = freqs[kind] || 150;
-        osc.frequency.setValueAtTime(f0, t0);
-        osc.frequency.exponentialRampToValueAtTime(f0 * 0.6, t0 + 0.12);
-        g.gain.setValueAtTime(velocity * 0.5, t0);
-        g.gain.exponentialRampToValueAtTime(0.001, t0 + 0.18);
-        osc.connect(g); g.connect(ctx.destination);
-        osc.start(t0); osc.stop(t0 + 0.2);
-      } else {
-        // Cymbals: filtered noise (HH short, crash/china long, ride mid)
-        const isHat = (kind === 'HH' || kind === 'HO' || kind === 'HP');
-        const isCrash = (kind === 'CL' || kind === 'CR' || kind === 'CH');
-        const dur = isHat ? (kind === 'HO' ? 0.25 : 0.06) : isCrash ? 0.8 : 0.35;
-        const freq = kind === 'BL' ? 4500 : kind === 'RD' ? 3500 : kind === 'CH' ? 2800
-          : kind === 'CL' ? 3200 : kind === 'CR' ? 3000 : kind === 'HO' ? 6000 : 7000;
-        const bufSize = Math.floor(ctx.sampleRate * Math.min(dur, 0.5));
-        const buf = ctx.createBuffer(1, bufSize, ctx.sampleRate);
-        const data = buf.getChannelData(0);
-        for (let i = 0; i < bufSize; i++) data[i] = Math.random() * 2 - 1;
-        const noise = ctx.createBufferSource();
-        noise.buffer = buf;
-        const nf = ctx.createBiquadFilter();
-        nf.type = isHat ? 'highpass' : 'bandpass';
-        nf.frequency.value = freq;
-        nf.Q.value = isHat ? 0.7 : 0.5;
-        const g = ctx.createGain();
-        const vol = isHat ? 0.25 : isCrash ? 0.4 : 0.3;
-        g.gain.setValueAtTime(velocity * vol, t0);
-        g.gain.exponentialRampToValueAtTime(0.001, t0 + dur);
-        noise.connect(nf); nf.connect(g); g.connect(ctx.destination);
-        noise.start(t0); noise.stop(t0 + dur + 0.02);
-      }
-    }
-
-    function scheduleDrums(drumData, startAt, sixteenth) {
-      const { grid, total16 } = drumData;
-      for (let i = 0; i < total16; i++) {
-        const t = startAt + i * sixteenth;
-        const hits = grid[i];
-        hits.forEach(k => playDrumHit(k, t, 0.7 + Math.random() * 0.25));
-      }
-      return startAt + total16 * sixteenth;
-    }
-
-    function playRiff() {
-      if (!hasAnyPart() || isPlaying) return;
-      ensureAudio(); isPlaying = true;
-      $('btnPlay').disabled = true; $('btnStop').disabled = false; $('btnGen').disabled = true;
-      const bpm = parseInt($('tempo').value, 10);
-      const sixteenth = 60 / bpm / 4;
-      const startAt = audioCtx.currentTime + 0.08;
-      let endT = startAt;
-      if (parts.rhythm) endT = Math.max(endT, schedulePart(parts.rhythm, 'rhythm', startAt, sixteenth));
-      if (parts.lead) endT = Math.max(endT, schedulePart(parts.lead, 'lead', startAt, sixteenth));
-      if (parts.bass) endT = Math.max(endT, schedulePart(parts.bass, 'bass', startAt, sixteenth));
-      if (parts.breakdown) endT = Math.max(endT, schedulePart(parts.breakdown, 'rhythm', startAt, sixteenth));
-      if (parts.drums) endT = Math.max(endT, scheduleDrums(parts.drums, startAt, sixteenth));
-      playTimeouts.push(setTimeout(() => stopRiff(), (endT - audioCtx.currentTime) * 1000 + 100));
-    }
-    function stopRiff() {
-      isPlaying = false;
-      playTimeouts.forEach(clearTimeout); playTimeouts = [];
-      if (audioCtx) audioCtx.close().then(() => { audioCtx = null; });
-      $('btnPlay').disabled = !hasAnyPart();
-      $('btnStop').disabled = true; $('btnGen').disabled = false;
-    }
-
-    // ===================== MIDI (Odin III compatible) =====================
-    /*
-      THE ODIN III (Solemn Tones) – articulation via KEYSWITCH + VELOCITY
-
-      Keyswitches (latch until next KS):
-        C0=12  Alternate Picked     C#0=13 Down Picked      D0=14 Up Picked
-        C1=24  Down Open Palm Mute  D#1=27 Up Open Palm Mute
-        G#1=32 Tremolo Picked       G#2=44 *Auto Power Chord
-
-      Velocity is the main switch between picked vs muted:
-        35–126  → Alt / normal picking sound
-        25–34   → Palm Mutes
-        15–24   → Palm Mutes Closed
-        0–14    → Palm Mutes Dead
-        127     → Pinch Harmonics
-
-      Strategy:
-        1. Latch base articulation once (Alternate / Tremolo / Down)
-        2. Per-note: velocity selects mute vs pick (most reliable in Odin)
-        3. On mute notes also fire Open Palm Mute KS when entering mute region
-        4. Power chords: fire Auto Power Chord KS before the chord
-        5. Optional string-select KS when lowest string changes
-    */
-    /*
-      Solemn Tones Odin III — EXACT map from plugin UI (user screenshot)
-      C-2=MIDI0 … C0=24 … C1=36 … C4=60 … C7=96
-      Velocity: 127 Pinch | 35–126 Alt | 25–34 PM | 15–24 PM closed | 0–14 PM dead
-    */
-    const ODIN = {
-      // EXACT Odin III map from the supplied plugin screenshot.
-      // C-2…B-2: slides + Auto Power; C0…B0: picking + mutes;
-      // C1…B1: open PM / legato / harmonics; C2…B2: slides + plucks.
-      SLIDE_SLOW_FROM_UP: 0,
-      SLIDE_SLOW_FROM_DOWN: 1,
-      SLIDE_SLOW_TO_DOWN: 2,
-      SLIDE_SLOW_TO_UP: 3,
-      SLIDE_FAST_FROM_UP: 4,
-      SLIDE_FAST_FROM_DOWN: 5,
-      SLIDE_FAST_TO_DOWN: 6,
-      SLIDE_FAST_TO_UP: 7,
-      AUTO_POWER: 8,
-
-      ALT_PICKED: 24,
-      DOWN_PICKED: 25,
-      UP_PICKED: 26,
-      ALT_MUTE_SEMI: 27,
-      DOWN_MUTE_SEMI: 28,
-      UP_MUTE_SEMI: 29,
-      ALT_MUTE_CLOSED: 30,
-      DOWN_MUTE_CLOSED: 31,
-      UP_MUTE_CLOSED: 32,
-      ALT_MUTE_DEAD: 33,
-      DOWN_MUTE_DEAD: 34,
-      UP_MUTE_DEAD: 35,
-
-      DOWN_OPEN_PM: 36,
-      HAMMER_ON: 37,
-      PULL_OFF: 38,
-      UP_OPEN_PM: 39,
-      BEND_UP_FAST: 40,
-      BEND_UP_SLOW: 41,
-      AUTO_SLIDE: 42,
-      SCRAPES: 43,
-      TREMOLO: 44,
-      NATURAL_HARM: 45,
-      PINCH_HARM: 46,
-      NASTY_PINCH: 47,
-
-      SLIDE_SLOW_FROM_UP_C2: 48,
-      SLIDE_SLOW_FROM_DOWN_C2: 49,
-      SLIDE_SLOW_TO_DOWN_C2: 50,
-      SLIDE_SLOW_TO_UP_C2: 51,
-      SLIDE_FAST_FROM_UP_C2: 52,
-      SLIDE_FAST_FROM_DOWN_C2: 53,
-      SLIDE_FAST_TO_DOWN_C2: 54,
-      SLIDE_FAST_TO_UP_C2: 55,
-      AUTO_POWER_C2: 56,
-      FINGER_PLUCK_OPEN: 57,
-      FINGER_PLUCK_DEAD: 58,
-      THUMB_SLAP: 59,
-
-      STR8: 101,
-      STR7: 102,
-      STR6: 103,
-      STR5: 104,
-      STR4: 105,
-      STR3: 106,
-      STR2: 107,
-      STR1: 108
-    };
-    /*
-      Bass VST Keyswitch Map (from user plugin)
-      C-2=0  Finger Alternate   C#-2=1 Finger Index   D-2=2 Finger Middle
-      D#-2=3 Dead Note          E-2=4  Slap            F-2=5 Dead Slap
-      F#-2=6 Pop                G-2=7  Dead Pop        G#-2=8 Harmonic
-      A-2=9  Hammer/Pull        A#-2=10 Tapping        B-2=11 Slide Trigger
-      C-1=12 Dead Dbl Thumb     C#-1=13 Thump          D-1=14 Dbl Thumb
-      D#-1=15 Dbl Thumb Pop     E-1=16 Fret Hand Mute
-      Force String: B=127 E=126 A=125 D=124 G=123 C=122
-    */
-    const BASS_KS = {
-      FINGER_ALT: 0,
-      FINGER_INDEX: 1,
-      FINGER_MIDDLE: 2,
-      DEAD_NOTE: 3,
-      SLAP: 4,
-      DEAD_SLAP: 5,
-      POP: 6,
-      DEAD_POP: 7,
-      HARMONIC: 8,
-      HAMMER_PULL: 9,
-      TAPPING: 10,
-      SLIDE: 11,
-      DEAD_DBL_THUMB: 12,
-      THUMP: 13,
-      DBL_THUMB: 14,
-      DBL_THUMB_POP: 15,
-      FRET_MUTE: 16,
-      // Force string for 4-string E-A-D-G (index 0=lowest E)
-      FORCE_STR: [126, 125, 124, 123] // E A D G
-    };
-
-    function toVarLen(value) {
-      const buffer = []; buffer.push(value & 0x7F); value >>= 7;
-      while (value > 0) { buffer.push((value & 0x7F) | 0x80); value >>= 7; }
-      return buffer.reverse();
-    }
-    function downloadBlob(blob, filename) {
-      // Chrome/Edge: force a real user-initiated download from a Blob URL.
-      // Keep the anchor alive briefly because some browsers ignore an anchor
-      // that is removed immediately after click().
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = filename;
-      a.rel = 'noopener';
-      a.style.position = 'fixed';
-      a.style.left = '-9999px';
-      a.style.top = '0';
-      document.body.appendChild(a);
-      try {
-        a.click();
-        return true;
-      } catch (e) {
-        console.error('Blob download failed:', e);
-        try { window.open(url, '_blank', 'noopener'); } catch (_) {}
-        return false;
-      } finally {
-        setTimeout(() => {
-          try { a.remove(); } catch (_) {}
-          try { URL.revokeObjectURL(url); } catch (_) {}
-        }, 1500);
-      }
-    }
-    function showToast(msg) {
-      let t = document.getElementById('toast');
-      if (!t) {
-        t = document.createElement('div'); t.id = 'toast';
-        t.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a8a3a;color:#fff;padding:12px 22px;border-radius:10px;font-weight:700;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,0.4);transition:opacity 0.3s;opacity:0;';
-        document.body.appendChild(t);
-      }
-      t.textContent = msg; t.style.opacity = '1';
-      clearTimeout(t._timer);
-      t._timer = setTimeout(() => { t.style.opacity = '0'; }, 2200);
-    }
-
-    // ===================== ODIN III GENRE PERFORMANCE PROFILES =====================
-    const ODIN_GENRE_PROFILE = {
-      thrash:{pm:.52,tight:.18,tech:.08,stringMove:.14}, thrash_gallop:{pm:.58,tight:.20,tech:.07,stringMove:.12},
-      death:{pm:.62,tight:.38,tech:.10,stringMove:.10}, melodeath:{pm:.46,tight:.28,tech:.14,stringMove:.22},
-      black:{pm:.03,tight:.00,tech:.18,stringMove:.32}, doom:{pm:.38,tight:.62,tech:.08,stringMove:.08},
-      stoner:{pm:.28,tight:.72,tech:.10,stringMove:.12}, groove:{pm:.58,tight:.42,tech:.08,stringMove:.12},
-      nu:{pm:.64,tight:.36,tech:.05,stringMove:.06}, metalcore:{pm:.70,tight:.58,tech:.10,stringMove:.08},
-      djent:{pm:.78,tight:.72,tech:.13,stringMove:.05}, progressive:{pm:.34,tight:.28,tech:.18,stringMove:.24},
-      deadsquad:{pm:.54,tight:.36,tech:.22,stringMove:.28}, polyphia:{pm:.18,tight:.18,tech:.24,stringMove:.38},
-      deathcore:{pm:.82,tight:.78,tech:.14,stringMove:.06}, hardcore:{pm:.68,tight:.65,tech:.07,stringMove:.06},
-      melodic_hc:{pm:.62,tight:.48,tech:.11,stringMove:.12}, modern_hc:{pm:.72,tight:.62,tech:.10,stringMove:.06},
-      thall:{pm:.84,tight:.82,tech:.15,stringMove:.04}, power:{pm:.42,tight:.22,tech:.08,stringMove:.16},
-      brutal:{pm:.86,tight:.86,tech:.12,stringMove:.04}
-    };
-    const getOdinGenreProfile = id => ODIN_GENRE_PROFILE[id] || ODIN_GENRE_PROFILE.thrash;
-
-    function buildTrackEvents(partEvents, opts) {
-      // Returns array of {t, type, note, vel} for one instrument part
-      const { useOdin, useAlt, isTremoloStyle, isGuitar, isBass, styleId } = opts;
-      const tpq = 480, ticks16 = tpq / 4, KS_GAP = 12;
-      const events = [];
-      const pushKS = (t, note) => {
-        const tt = Math.max(0, t);
-        events.push({ t: tt, type: 'on', note, vel: 100 });
-        events.push({ t: tt + 4, type: 'off', note, vel: 0 });
-      };
-
-      let maxStr = 5;
-      for (const ev of partEvents) {
-        if (!ev.notes) continue;
-        for (const n of ev.notes) if (n.string > maxStr) maxStr = n.string;
-      }
-      const strMap = [ODIN.STR8, ODIN.STR7, ODIN.STR6, ODIN.STR5, ODIN.STR4, ODIN.STR3, ODIN.STR2, ODIN.STR1];
-
-      let tick = 0, lastArt = null, lastMuted = null, lastStr = null, lastPick = null;
-
-      // Guitar (Odin III) initial articulation
-      if (useOdin && isGuitar) {
-        if (isTremoloStyle) { pushKS(0, ODIN.TREMOLO); lastArt = ODIN.TREMOLO; }
-        else if (useAlt) { pushKS(0, ODIN.ALT_PICKED); lastArt = ODIN.ALT_PICKED; }
-        else { pushKS(0, ODIN.DOWN_PICKED); lastArt = ODIN.DOWN_PICKED; }
-        tick = KS_GAP;
-      }
-      if (useOdin && isBass) {
-        pushKS(0, BASS_KS.SLAP);
-        lastArt = BASS_KS.SLAP;
-        tick = KS_GAP;
-      }
-
-      for (const ev of partEvents) {
-        const dur = Math.max(1, Math.round(ev.dur * ticks16));
-        if (ev.rest || !ev.notes || !ev.notes.length) { tick += dur; continue; }
-
-        const muted = !!ev.muted;
-        const isPower = !!ev.power;
-        const pick = ev.pick;
-        const tech = ev.tech;
-        let vel;
-
-        if (useOdin && isGuitar) {
-          /*
-            Clean Odin III workflow (avoids KS spam seen in piano roll):
-            - Latch ONE pick mode (Alt or Down) for the whole riff
-            - Palm mute = VELOCITY 25–34 only — NO PM keyswitch spam
-            - Special tech (pinch/h/p/slide) = KS for that note only
-            - Auto Power only on power chords without special tech
-            - String select only when string changes
-          */
-          const profile = getOdinGenreProfile(styleId);
-          const basePick = isTremoloStyle ? ODIN.TREMOLO
-            : (useAlt ? ODIN.ALT_PICKED : ODIN.DOWN_PICKED);
-
-          let art = basePick;
-          let special = false;
-          // Odin III has no dedicated "economy", "slant", "sweep" or
-          // "string-skip" keyswitch. Their realization is therefore mapped
-          // to Odin's real pick-direction + string-selection controls.
-          // Sweep is treated as a directional picked articulation so it does
-          // not fall back to an arbitrary latched articulation.
-          if (tech === 'sweep') {
-            art = pick === 'U' ? ODIN.UP_PICKED : ODIN.DOWN_PICKED;
-            special = true;
-          }
-          else if (tech === 'ph') { art = ODIN.PINCH_HARM; special = true; }
-          else if (tech === 'nph') { art = ODIN.NASTY_PINCH; special = true; }
-          else if (tech === 'nh') { art = ODIN.NATURAL_HARM; special = true; }
-          else if (tech === 'h') { art = ODIN.HAMMER_ON; special = true; }
-          else if (tech === 'p') { art = ODIN.PULL_OFF; special = true; }
-          else if (tech === 'bendFast') { art = ODIN.BEND_UP_FAST; special = true; }
-          else if (tech === 'bendSlow') { art = ODIN.BEND_UP_SLOW; special = true; }
-          else if (tech === 'scrape') { art = ODIN.SCRAPES; special = true; }
-          else if (tech === 'pluck') { art = ODIN.FINGER_PLUCK_OPEN; special = true; }
-          else if (tech === 'pluckDead') { art = ODIN.FINGER_PLUCK_DEAD; special = true; }
-          else if (tech === 'slap') { art = ODIN.THUMB_SLAP; special = true; }
-          else if (tech === 'slideSlowUp') { art = ODIN.SLIDE_SLOW_TO_UP_C2; special = true; }
-          else if (tech === 'slideSlowDown') { art = ODIN.SLIDE_SLOW_TO_DOWN_C2; special = true; }
-          else if (tech === 'slideFastUp') { art = ODIN.SLIDE_FAST_TO_UP_C2; special = true; }
-          else if (tech === 'slideFastDown') { art = ODIN.SLIDE_FAST_TO_DOWN_C2; special = true; }
-          else if (tech === '/') { art = ODIN.SLIDE_FAST_TO_UP_C2; special = true; }
-          else if (tech === '\\') { art = ODIN.SLIDE_FAST_TO_DOWN_C2; special = true; }
-
-          // Use Odin's mapped palm-mute families for genre-specific tightness.
-          if (!special && muted) {
-            const r = Math.random();
-            if (profile.tight < .30) {
-              art = r < .72 ? ODIN.ALT_MUTE_SEMI : ODIN.DOWN_MUTE_SEMI;
-            } else if (profile.tight < .65) {
-              art = r < .45 ? ODIN.ALT_MUTE_SEMI
-                : (r < .82 ? ODIN.DOWN_MUTE_CLOSED : ODIN.UP_MUTE_CLOSED);
-            } else {
-              art = r < .28 ? ODIN.DOWN_MUTE_SEMI
-                : (r < .68 ? ODIN.DOWN_MUTE_CLOSED : ODIN.DOWN_MUTE_DEAD);
-            }
-          }
-
-          if (art !== lastArt) {
-            pushKS(tick - KS_GAP, art);
-            lastArt = art;
-          }
-
-          // Native Odin velocity zones: 127 pinch | 35-126 picked |
-          // 25-34 semi-PM | 15-24 closed-PM | 0-14 dead-PM.
-          if (tech === 'ph') vel = 127;
-          else if (tech === 'panic') vel = 108 + Math.floor(Math.random() * 12);
-          else if (muted) {
-            if (art === ODIN.DOWN_MUTE_DEAD || art === ODIN.ALT_MUTE_DEAD || art === ODIN.UP_MUTE_DEAD)
-              vel = 8 + Math.floor(Math.random() * 7);
-            else if (art === ODIN.DOWN_MUTE_CLOSED || art === ODIN.ALT_MUTE_CLOSED || art === ODIN.UP_MUTE_CLOSED)
-              vel = 17 + Math.floor(Math.random() * 7);
-            else
-              vel = 27 + Math.floor(Math.random() * 7);
-          } else {
-            vel = 72 + Math.floor(Math.random() * 39);
-          }
-
-          if (isPower && !special && tech !== 'panic' && tech !== 'sweep') pushKS(tick - KS_GAP, ODIN.AUTO_POWER);
-
-          const primary = ev.notes.reduce((a, b) => a.string <= b.string ? a : b);
-          const si = Math.min(primary.string, strMap.length - 1);
-          const strKS = strMap[si];
-          const stringChanged = strKS !== lastStr;
-          const lastSi = lastStr == null ? -99 : strMap.indexOf(lastStr);
-          const largeJump = lastStr != null && Math.abs(si - lastSi) >= 2;
-          const accent = (((tick - KS_GAP) % (tpq * 4)) === 0) || (ev.dur >= 4);
-          const barAccent = ((tick - KS_GAP) % (tpq * 4)) < KS_GAP;
-          const forceTechniqueString = tech === 'sweep' || tech === 'skip' || (tech === 'bounce' && stringChanged);
-          if (lastStr == null || (stringChanged && (forceTechniqueString || largeJump || accent || barAccent || Math.random() < profile.stringMove))) {
-            pushKS(tick - KS_GAP, strKS);
-            lastStr = strKS;
-          }
-          lastMuted = muted;
-          lastPick = pick;
-        } else if (useOdin && isBass) {
-          // --- Bass keyswitch map ---
-          let artKS = BASS_KS.SLAP;
-          if (tech === 'ghost') artKS = BASS_KS.DEAD_NOTE;
-          else if (tech === 'slap') artKS = BASS_KS.SLAP;
-          else if (tech === 'pop') artKS = BASS_KS.POP;
-          else if (tech === 'slap-pop') artKS = BASS_KS.DBL_THUMB_POP;
-          else if (pick === 'S') artKS = BASS_KS.SLAP;
-          else if (pick === 'P') artKS = BASS_KS.POP;
-          else artKS = BASS_KS.FINGER_ALT;
-
-          if (artKS !== lastArt) {
-            pushKS(tick - KS_GAP, artKS);
-            lastArt = artKS;
-          }
-
-          // Force string for primary note
-          const primary = ev.notes.reduce((a, b) => a.string <= b.string ? a : b);
-          const si = Math.min(primary.string, BASS_KS.FORCE_STR.length - 1);
-          const fks = BASS_KS.FORCE_STR[si];
-          if (fks !== lastStr) {
-            pushKS(tick - KS_GAP, fks);
-            lastStr = fks;
-          }
-
-          // Velocity: slap harder, ghost softer, pop medium-high
-          if (tech === 'ghost') vel = 40 + Math.floor(Math.random() * 20);
-          else if (tech === 'slap' || pick === 'S') vel = 95 + Math.floor(Math.random() * 25);
-          else if (tech === 'pop' || pick === 'P') vel = 85 + Math.floor(Math.random() * 30);
-          else vel = 80 + Math.floor(Math.random() * 30);
-        } else {
-          vel = isGuitar ? (muted ? 30 : 100) : 90;
-        }
-
-        // With Odin Auto Power Chord KS: send ROOT only (plugin builds the 5th)
-          // Without Odin / non-power: send all notes in the event
-          let notesToPlay = ev.notes;
-          if (useOdin && isGuitar && isPower && !tech) {
-            const root = ev.notes.reduce((a, b) => a.midi <= b.midi ? a : b);
-            notesToPlay = [root];
-          }
-          for (const n of notesToPlay) {
-            let note = Math.max(0, Math.min(127, n.midi | 0));
-            // Odin III KS map occupies MIDI 0..47 (C-2..B2).
-            // C3 / MIDI 48 is the safe performance floor.
-            if (useOdin && isGuitar) {
-              while (note < 48) note += 12;
-            }
-            if (useOdin && isBass && note < 20) note += 12;
-            events.push({ t: tick, type: 'on', note, vel });
-            events.push({ t: tick + Math.max(1, dur - 2), type: 'off', note, vel: 0 });
-          }
-        tick += dur;
-      }
-
-      events.sort((a, b) => {
-        if (a.t !== b.t) return a.t - b.t;
-        const rank = e => {
-          const isKS = e.note <= 59 || (e.note >= 101 && e.note <= 108);
-          if (e.type === 'off' && isKS) return 0;
-          if (e.type === 'on' && isKS) return 1;
-          if (e.type === 'off') return 2;
-          return 3;
-        };
-        return rank(a) - rank(b);
-      });
-      return events;
-    }
-
-    function eventsToTrackBytes(events, trackName, program) {
-      const track = [];
-      // track name
-      track.push(0x00, 0xFF, 0x03, trackName.length);
-      for (let i = 0; i < trackName.length; i++) track.push(trackName.charCodeAt(i));
-      // program change
-      if (program != null) track.push(0x00, 0xC0, program);
-
-      let prev = 0;
-      for (const e of events) {
-        const delta = Math.max(0, e.t - prev);
-        prev = e.t;
-        for (const b of toVarLen(delta)) track.push(b);
-        track.push(e.type === 'on' ? 0x90 : 0x80, e.note, e.vel);
-      }
-      track.push(0x00, 0xFF, 0x2F, 0x00);
-      return track;
-    }
-
-    // Drum track on MIDI channel 10 (0-based ch 9 → status 0x99 / 0x89)
-    function buildDrumTrackBytes(drumData) {
-      const tpq = 480, ticks16 = tpq / 4;
-      const { grid, total16 } = drumData;
-      const events = [];
-      for (let i = 0; i < total16; i++) {
-        const t = i * ticks16;
-        grid[i].forEach(k => {
-          const note = DRUM_MAP[k];
-          if (note == null) return;
-          const vel = k === 'K' ? 110 : k === 'S' ? 100
-            : (k === 'CL' || k === 'CR' || k === 'CH') ? 105
-            : (k === 'HH' || k === 'HO') ? 80
-            : (k === 'RD' || k === 'BL') ? 88 : 90;
-          events.push({ t, type: 'on', note, vel });
-          events.push({ t: t + Math.max(8, ticks16 - 4), type: 'off', note, vel: 0 });
-        });
-      }
-      events.sort((a, b) => a.t - b.t || (a.type === 'off' ? -1 : 1));
-
-      const track = [];
-      const tname = 'Drums';
-
-      track.push(0x00, 0xFF, 0x03, tname.length);
-      for (let i = 0; i < tname.length; i++) track.push(tname.charCodeAt(i));
-
-      let prev = 0;
-      for (const e of events) {
-        const delta = Math.max(0, e.t - prev);
-        prev = e.t;
-        for (const b of toVarLen(delta)) track.push(b);
-        // channel 10 = 0x9
-        track.push(e.type === 'on' ? 0x99 : 0x89, e.note, e.vel);
-      }
-      track.push(0x00, 0xFF, 0x2F, 0x00);
-      return track;
-    }
-
-    function exportMidi() {
-      if (!hasAnyPart()) { showToast('Generate riff dulu!'); return; }
-      try {
-        const bpm = parseInt($('tempo').value, 10);
-        const useOdin = $('odinKs') && $('odinKs').checked;
-        const useAlt = $('altPicking').checked && !($('downstroke') && $('downstroke').checked);
-        const styleId = $('style').value;
-        const isTremoloStyle = (styleId === 'black');
-        const tpq = 480;
-
-        const tracks = [];
-        // Tempo track (track 0 for format 1)
-        const tempoTrack = [];
-        const uspq = Math.round(60000000 / bpm);
-        tempoTrack.push(0x00, 0xFF, 0x51, 0x03, (uspq>>16)&0xFF, (uspq>>8)&0xFF, uspq&0xFF);
-        tempoTrack.push(0x00, 0xFF, 0x2F, 0x00);
-        tracks.push(tempoTrack);
-
-        const baseOpts = { useOdin, useAlt, isTremoloStyle, styleId };
-
-        if (parts.rhythm) {
-          const ev = buildTrackEvents(parts.rhythm, { ...baseOpts, isGuitar: true });
-          tracks.push(eventsToTrackBytes(ev, 'Rhythm Guitar', useOdin ? null : 30));
-        }
-        if (parts.lead) {
-          const ev = buildTrackEvents(parts.lead, { ...baseOpts, isGuitar: true, isTremoloStyle });
-          tracks.push(eventsToTrackBytes(ev, 'Lead Guitar', useOdin ? null : 29));
-        }
-        if (parts.bass) {
-          const ev = buildTrackEvents(parts.bass, {
-            useOdin, useAlt: false, isTremoloStyle: false, styleId, isGuitar: false, isBass: true
-          });
-          tracks.push(eventsToTrackBytes(ev, 'Bass', useOdin ? null : 36));
-        }
-        if (parts.breakdown) {
-          const ev = buildTrackEvents(parts.breakdown, { ...baseOpts, isGuitar: true });
-          tracks.push(eventsToTrackBytes(ev, 'Breakdown', useOdin ? null : 30));
-        }
-        if (parts.drums) {
-          tracks.push(buildDrumTrackBytes(parts.drums));
-        }
-
-        // Format 1 header
-        const ntrks = tracks.length;
-        const header = [
-          0x4D,0x54,0x68,0x64, 0,0,0,6,
-          0,1, // format 1
-          (ntrks>>8)&0xFF, ntrks&0xFF,
-          (tpq>>8)&0xFF, tpq&0xFF
-        ];
-
-        let totalLen = header.length;
-        const packed = [];
-        for (const tr of tracks) {
-          const th = [0x4D,0x54,0x72,0x6B, (tr.length>>24)&0xFF,(tr.length>>16)&0xFF,(tr.length>>8)&0xFF,tr.length&0xFF];
-          packed.push(th, tr);
-          totalLen += th.length + tr.length;
-        }
-        const all = new Uint8Array(totalLen);
-        let off = 0;
-        all.set(header, 0); off = header.length;
-        for (const chunk of packed) { all.set(chunk, off); off += chunk.length; }
-
-        const blob = new Blob([all], { type: 'audio/midi' });
-        const tag = useOdin ? 'odin' : 'plain';
-        const partsTag = [parts.rhythm&&'r', parts.lead&&'l', parts.bass&&'b', parts.breakdown&&'bd', parts.drums&&'d'].filter(Boolean).join('');
-        const fname = `metal-${partsTag}-${$('key').value}-${$('style').value}-${bpm}bpm-${tag}.mid`;
-        const ok = downloadBlob(blob, fname);
-        showToast(ok ? `✓ MIDI (${ntrks - 1} parts) ready!` : 'MIDI dibuka di tab baru');
-      } catch (err) {
-        console.error(err);
-        showToast('Gagal: ' + err.message);
-      }
-    }
-
-    function copyTab() {
-      const chunks=[];
-      if(parts.rhythm)chunks.push($('tabRhythm').textContent);
-      if(parts.lead)chunks.push($('tabLead').textContent);
-      if(parts.bass)chunks.push($('tabBass').textContent);
-      if(parts.breakdown)chunks.push($('tabBreakdown').textContent);
-      if(parts.drums)chunks.push($('tabDrums').textContent);
-      const text=chunks.join('\n\n')||'No parts';
-      const done=()=>{const b=$('btnCopy'),old=b.textContent;b.textContent='✓ COPIED!';setTimeout(()=>b.textContent=old,1400);};
-      if(navigator.clipboard&&window.isSecureContext)navigator.clipboard.writeText(text).then(done).catch(()=>copyFallback(text,done));
-      else copyFallback(text,done);
-    }
-    function copyFallback(text,done){
-      const ta=document.createElement('textarea');ta.value=text;ta.style.position='fixed';ta.style.left='-9999px';
-      document.body.appendChild(ta);ta.focus();ta.select();
-      try{document.execCommand('copy');done();}catch(e){showToast('Clipboard gagal — copy manual dari TAB');}
-      finally{document.body.removeChild(ta);}
-    }
-
-    // ===================== INIT =====================
-    $('btnGen').addEventListener('click', () => { stopRiff(); generateRiff(); });
-    $('btnPlay').addEventListener('click', playRiff);
-    $('btnStop').addEventListener('click', stopRiff);
-    $('btnCopy').addEventListener('click', copyTab);
-    $('btnMidi').addEventListener('click', exportMidi);
-
-    buildWiki();
-    updateStyleCard();
-    renderFretboard([], 'standard6');
-  function generateRiff() {
       // QUOTA & AUTH ENFORCEMENT
       const currentUser = getCurrentUser();
       if (!currentUser || !currentUser.isPro) {
@@ -5126,26 +4087,23 @@ function attachModalHandlers() {
   </script>
 
   <!-- MODAL: LOGIN REQUIRED (After 1x guest limit) -->
-  <div class="modal-overlay" id="loginModal" onclick="if(event.target === this) closeModal('loginModal')">
+  <div class="modal-overlay" id="loginModal" onclick="if(event.target===this) closeModal('loginModal')">
     <div class="metal-modal">
       <button class="modal-close-btn" id="closeLoginModal" onclick="closeModal('loginModal')" type="button">&times;</button>
-      <div class="modal-icon">🔐</div>
+      <div class="modal-icon"></div>
       <h3>LOGIN GOOGLE DIPERLUKAN</h3>
-      <p>
-        Batas <strong>1x generate gratis</strong> untuk tamu telah selesai.<br>
-        Masuk menggunakan akun <strong>Google / Gmail</strong> Anda untuk melanjutkan dan membuka <strong>5x kuota generate gratis</strong>!
-      </p>
+      <p>Batas 1x generate gratis untuk tamu telah selesai. Masuk dengan akun Google / Gmail untuk membuka 5x kuota generate gratis.</p>
 
       <!-- Form Login Gmail Instan & Terpercaya -->
       <form id="emailLoginForm" onsubmit="event.preventDefault(); handleManualEmailLogin();" style="display:flex; flex-direction:column; gap:12px; margin-top:16px;">
         <div style="text-align:left;">
-          <label style="color:var(--steel-bright); font-size:0.8rem; margin-bottom:5px;">Alamat Email Gmail Pengguna:</label>
+          <label style="color:var(--bone); font-size:0.8rem; margin-bottom:5px;">Alamat Email Gmail Pengguna:</label>
           <input type="email" id="inputUserEmail" placeholder="namaanda@gmail.com" required
             style="width:100%; padding:12px 14px; background:#07070a; border:1px solid var(--accent); border-radius:8px; color:#fff; font-size:1rem; outline:none; box-shadow:0 0 10px rgba(255,30,39,0.2);" />
         </div>
 
-        <button type="submit" class="btn-auth-action" style="width:100%; justify-content:center; padding:13px; font-size:1rem; background:linear-gradient(135deg, var(--accent), #990000); border:1px solid #ff4d52; color:#fff; letter-spacing:1px;">
-          🤘 MASUK & BUKA 5X KUOTA GRATIS
+        <button type="button" onclick="handleManualEmailLogin()" class="btn-auth-action" style="width:100%; justify-content:center; padding:13px; font-size:1rem; background:linear-gradient(135deg, var(--accent), #990000); border:1px solid #ff4d52; color:#fff; letter-spacing:1px;">
+          MASUK & BUKA 5X KUOTA GRATIS
         </button>
 
         <p style="font-size:0.75rem; color:var(--muted); margin-top:4px; margin-bottom:0;">
@@ -5156,28 +4114,14 @@ function attachModalHandlers() {
   </div>
 
   <!-- MODAL: PAYWALL (After 5x member limit) -->
-  <div class="modal-overlay" id="paywallModal" onclick="if(event.target === this) closeModal('paywallModal')">
+  <div class="modal-overlay" id="paywallModal" onclick="if(event.target===this) closeModal('paywallModal')">
     <div class="metal-modal">
       <button class="modal-close-btn" id="closePaywallModal" onclick="closeModal('paywallModal')" type="button">&times;</button>
-      <div class="modal-icon">🤘💥</div>
+      <div class="modal-icon"></div>
       <h3>KUOTA HABIS (5/5) — UPGRADE PRO</h3>
-      <p style="margin-bottom:10px;">
-        Anda telah menggunakan seluruh <strong>5x kuota gratis</strong>.<br>
-        Buka akses <strong>METAL RIFF GENERATOR PRO</strong> untuk terus berkreasi tanpa batas!
-      </p>
+      <p>Kuota gratis 5x sudah habis. Buka METAL RIFF GENERATOR PRO untuk terus berkreasi tanpa batas.</p>
 
-      <!-- Harga Spesial Rp 10.000 -->
-      <div style="background: rgba(255, 30, 39, 0.12); border: 1px solid rgba(255, 30, 39, 0.4); border-radius: 8px; padding: 12px; margin: 12px 0;">
-        <div style="font-size: 0.8rem; color: var(--steel-bright); text-transform: uppercase; letter-spacing: 1.5px; font-weight:600;">Akses Penuh Selamanya</div>
-        <div style="font-size: 2.2rem; color: #ffdd55; font-family: 'Cinzel', serif; font-weight: bold; margin: 4px 0; text-shadow:0 0 15px rgba(255,221,85,0.4);">
-          Rp 10.000
-        </div>
-        <div style="font-size: 0.78rem; color: #bbb;">
-          ⚡ Pembayaran Otomatis via <strong>QRIS, GoPay, ShopeePay, & Virtual Account Bank</strong>
-        </div>
-      </div>
-
-      <div class="pro-feature-list" style="margin-bottom:14px;">
+      <div class="pro-feature-list">
         <li>Unlimited Metal Riff Generation</li>
         <li>Export MIDI Multi-Track untuk DAW & Odin III</li>
         <li>Semua 22 Subgenre Metal & Tunings Ekstrem</li>
@@ -5185,22 +4129,164 @@ function attachModalHandlers() {
         <li>Preset Rekomendasi Band Legendaris Lengkap</li>
       </div>
 
-      <button class="btn-upgrade-pay" id="btnPaywallUpgrade" onclick="startMidtransPayment()" type="button" style="cursor:pointer; width:100%; font-size:1.05rem; padding:14px; background:linear-gradient(135deg, #ff1e27, #ff6b00); box-shadow:0 0 20px rgba(255,107,0,0.5);">
-        ⚡ BAYAR RP 10.000 (QRIS / BANK)
+      <button class="btn-upgrade-pay" id="btnPaywallUpgrade" onclick="handlePaywallUpgrade()" type="button" style="cursor:pointer;">
+        BUKA AKSES UNLIMITED PRO SEKARANG
       </button>
-
-      <div id="checkPaymentBox" style="display:none; margin-top:12px;">
-        <button type="button" onclick="checkLastPaymentStatus()" style="background:#14141d; border:1px solid #ff4444; color:#fff; padding:10px 14px; border-radius:6px; font-size:0.85rem; cursor:pointer; width:100%;">
-          🔍 Cek Status Pembayaran (Sudah Transfer)
-        </button>
-      </div>
-
-      <p style="font-size:0.75rem; color:var(--muted); margin-top:12px; margin-bottom:0;">
-        Garansi aktivasi instan 24 jam • Akses langsung terbuka detik itu juga
+      <p style="font-size:0.75rem; color:var(--muted); margin-top:10px; margin-bottom:0;">
+        Garansi aktivasi instan • Satu kali bayar untuk akses penuh
       </p>
     </div>
   </div>
 
 
+<script>
+/* i18n: menerjemahkan teks UI statis berdasarkan teks aslinya (Indonesia). JS generator tidak diubah. */
+(function(){
+var LANGS=['id','en','es','pt','zh','ja'];
+var D=`Mesin riff prosedural: rhythm, lead, bass, breakdown, dan drum.|Procedural riff engine: rhythm, lead, bass, breakdown and drums.|Motor de riffs procedural: ritmo, lead, bajo, breakdown y batería.|Motor de riffs procedural: base, solo, baixo, breakdown e bateria.|程序化 riff 引擎：节奏、主音、贝斯、Breakdown 与鼓。|プロシージャル・リフエンジン：リズム、リード、ベース、ブレイクダウン、ドラム。
+Tamu / Guest|Guest|Invitado|Convidado|访客|ゲスト
+Belum Login|Not signed in|Sin iniciar sesión|Sem login|未登录|未ログイン
+Sisa:|Left:|Quedan:|Restam:|剩余：|残り：
+x Gratis|x free|x gratis|x grátis|次免费|回 無料
+Masuk Akun Gmail|Sign in with Gmail|Entrar con Gmail|Entrar com Gmail|使用 Gmail 登录|Gmail でログイン
+Keluar|Sign out|Salir|Sair|退出|ログアウト
+Key|Key|Tonalidad|Tom|调|キー
+Scale / Mode|Scale / Mode|Escala / Modo|Escala / Modo|音阶 / 调式|スケール / モード
+Subgenre / Style|Subgenre / Style|Subgénero / Estilo|Subgênero / Estilo|子流派 / 风格|サブジャンル / スタイル
+Panjang (bar)|Length (bars)|Longitud (compases)|Duração (compassos)|长度（小节）|長さ（小節）
+Strings / Tuning|Strings / Tuning|Cuerdas / Afinación|Cordas / Afinação|琴弦 / 调弦|弦数 / チューニング
+Bagian|Parts|Partes|Partes|声部|パート
+Teknik|Technique|Técnica|Técnica|技巧|テクニック
+Tempo tipikal:|Typical tempo:|Tempo típico:|Andamento típico:|典型速度：|典型テンポ：
+Scale favorit:|Favorite scale:|Escala favorita:|Escala favorita:|常用音阶：|定番スケール：
+Tuning:|Tuning:|Afinación:|Afinação:|调弦：|チューニング：
+Terapkan Recommended + Teknik Genre|Apply recommended + genre techniques|Aplicar recomendado + técnicas del género|Aplicar recomendado + técnicas do gênero|应用推荐设置和流派技巧|おすすめ設定とジャンル技法を適用
+Rhythm Guitar|Rhythm Guitar|Guitarra rítmica|Guitarra base|节奏吉他|リズムギター
+Lead Guitar|Lead Guitar|Guitarra solista|Guitarra solo|主音吉他|リードギター
+Bass|Bass|Bajo|Baixo|贝斯|ベース
+Drums|Drums|Batería|Bateria|鼓|ドラム
+GENERATE|GENERATE|GENERAR|GERAR|生成|生成
+▶ PLAY|▶ PLAY|▶ REPRODUCIR|▶ TOCAR|▶ 播放|▶ 再生
+■ STOP|■ STOP|■ DETENER|■ PARAR|■ 停止|■ 停止
+COPY TAB|COPY TAB|COPIAR TAB|COPIAR TAB|复制 TAB|TAB をコピー
+Fretboard Preview|Fretboard preview|Vista del diapasón|Visualização do braço|指板预览|指板プレビュー
+Generate untuk melihat tab rhythm...|Generate to see the rhythm tab...|Genera para ver la tab rítmica...|Gere para ver a tab base...|点击生成查看节奏 TAB...|生成するとリズム TAB が表示されます...
+Generate untuk melihat tab lead...|Generate to see the lead tab...|Genera para ver la tab solista...|Gere para ver a tab solo...|点击生成查看主音 TAB...|生成するとリード TAB が表示されます...
+Generate untuk melihat tab bass...|Generate to see the bass tab...|Genera para ver la tab del bajo...|Gere para ver a tab do baixo...|点击生成查看贝斯 TAB...|生成するとベース TAB が表示されます...
+Centang Breakdown + Generate...|Tick Breakdown + Generate...|Marca Breakdown + Genera...|Marque Breakdown + Gere...|勾选 Breakdown 后点击生成...|Breakdown にチェックして生成...
+Centang Drums + Generate...|Tick Drums + Generate...|Marca Drums + Genera...|Marque Drums + Gere...|勾选 Drums 后点击生成...|Drums にチェックして生成...
+Encyclopedia Subgenre Metal & Karakter Riff|Metal subgenre encyclopedia & riff character|Enciclopedia de subgéneros de metal y carácter del riff|Enciclopédia de subgêneros do metal e caráter do riff|金属子流派百科与 riff 特点|メタル・サブジャンル事典とリフの特徴
+Klik kartu di bawah untuk langsung pilih style tersebut di generator. Setiap subgenre punya DNA riff yang berbeda — rhythm, interval, densitas, dan feel.|Click a card to select that style in the generator. Every subgenre has its own riff DNA: rhythm, intervals, density and feel.|Haz clic en una tarjeta para elegir ese estilo en el generador. Cada subgénero tiene un ADN de riff distinto: ritmo, intervalos, densidad y sensación.|Clique em um cartão para escolher esse estilo no gerador. Cada subgênero tem um DNA de riff próprio: ritmo, intervalos, densidade e sensação.|点击卡片即可在生成器中选择该风格。每个子流派都有独特的 riff DNA：节奏、音程、密度与感觉。|カードをクリックするとそのスタイルを選択できます。サブジャンルごとにリフのDNAは異なります：リズム、音程、密度、フィーリング。
+LOGIN GOOGLE DIPERLUKAN|GOOGLE SIGN-IN REQUIRED|SE REQUIERE GOOGLE|LOGIN GOOGLE NECESSÁRIO|需要 GOOGLE 登录|GOOGLE ログインが必要です
+Batas 1x generate gratis untuk tamu telah selesai. Masuk dengan akun Google / Gmail untuk membuka 5x kuota generate gratis.|The free guest run is used up. Sign in with Google / Gmail to unlock 5 more free runs.|Se acabó el uso gratis de invitado. Inicia sesión con Google / Gmail para desbloquear 5 usos gratis.|O uso grátis de convidado acabou. Entre com Google / Gmail para liberar 5 usos grátis.|访客的 1 次免费生成已用完。使用 Google / Gmail 登录可解锁 5 次免费生成。|ゲストの無料1回は終了しました。Google / Gmail でログインすると無料5回が解放されます。
+Alamat Email Gmail Pengguna:|Your Gmail address:|Tu dirección de Gmail:|Seu endereço do Gmail:|你的 Gmail 地址：|Gmail アドレス：
+MASUK & BUKA 5X KUOTA GRATIS|SIGN IN & UNLOCK 5 FREE RUNS|ENTRAR Y DESBLOQUEAR 5 USOS GRATIS|ENTRAR E LIBERAR 5 USOS GRÁTIS|登录并解锁 5 次免费|ログインして無料5回を解放
+Tanpa ribet password • Langsung terhubung dengan email Anda|No password hassle • Linked straight to your email|Sin contraseñas • Vinculado directo a tu correo|Sem senha • Ligado direto ao seu e-mail|无需密码 • 直接关联你的邮箱|パスワード不要 • メールに直接連携
+KUOTA HABIS (5/5) — UPGRADE PRO|OUT OF FREE RUNS (5/5) — GO PRO|SIN USOS GRATIS (5/5) — PASA A PRO|SEM USOS GRÁTIS (5/5) — VIRE PRO|免费次数已用完 (5/5) — 升级 PRO|無料枠を使い切りました (5/5) — PRO へ
+Kuota gratis 5x sudah habis. Buka METAL RIFF GENERATOR PRO untuk terus berkreasi tanpa batas.|You have used all 5 free runs. Get METAL RIFF GENERATOR PRO to keep creating without limits.|Usaste los 5 usos gratis. Obtén METAL RIFF GENERATOR PRO para crear sin límites.|Você usou os 5 usos grátis. Assine o METAL RIFF GENERATOR PRO para criar sem limites.|5 次免费已用完。开通 METAL RIFF GENERATOR PRO 即可无限创作。|無料5回を使い切りました。METAL RIFF GENERATOR PRO で無制限に作れます。
+BUKA AKSES UNLIMITED PRO SEKARANG|GET UNLIMITED PRO ACCESS NOW|OBTÉN ACCESO PRO ILIMITADO YA|LIBERE O ACESSO PRO ILIMITADO AGORA|立即开通无限 PRO|今すぐ無制限 PRO を利用
+Garansi aktivasi instan • Satu kali bayar untuk akses penuh|Instant activation • One payment for full access|Activación instantánea • Un solo pago por acceso completo|Ativação instantânea • Pagamento único por acesso total|即时激活 • 一次付费，完整访问|即時有効化 • 一度の支払いで全機能`.trim().split('\n');
+var M=new Map();D.forEach(function(r){var a=r.split('|');M.set(a[0].trim(),a);});
+var norm=function(t){return t.replace(/\s+/g,' ').trim();};
+var cur='id',tracked=[],sel=document.getElementById('lang');
+function tr(n){
+  var pe=n.parentElement; if(!pe||pe.closest('#lang,script,style,option'))return;
+  var row=M.get(norm(n.nodeValue)); if(!row)return;
+  var v=n.nodeValue,lead=v.match(/^\s*/)[0],trail=v.match(/\s*$/)[0];
+  tracked.push({n:n,row:row,lead:lead,trail:trail});
+  n.nodeValue=lead+row[LANGS.indexOf(cur)]+trail;
+}
+function walk(node){
+  if(node.nodeType===3){tr(node);return;}
+  if(node.nodeType!==1||/^(SCRIPT|STYLE)$/.test(node.tagName))return;
+  var w=document.createTreeWalker(node,NodeFilter.SHOW_TEXT),list=[];
+  while(w.nextNode())list.push(w.currentNode);
+  list.forEach(tr);
+}
+var obs=new MutationObserver(function(ms){
+  obs.disconnect();
+  ms.forEach(function(m){if(m.type==='characterData')tr(m.target);else m.addedNodes.forEach(walk);});
+  start();
+});
+function start(){obs.observe(document.body,{childList:true,subtree:true,characterData:true});}
+function setLang(l){
+  cur=l;document.documentElement.lang=l;sel.value=l;
+  try{localStorage.setItem('lang',l);}catch(e){}
+  obs.disconnect();
+  tracked=tracked.filter(function(t){return t.n.isConnected;});
+  tracked.forEach(function(t){t.n.nodeValue=t.lead+t.row[LANGS.indexOf(l)]+t.trail;});
+  start();
+}
+var saved=null;try{saved=localStorage.getItem('lang');}catch(e){}
+var nav=(navigator.language||'id').slice(0,2).toLowerCase();
+var init=LANGS.indexOf(saved)>-1?saved:(LANGS.indexOf(nav)>-1?nav:'en');
+walk(document.body);
+sel.addEventListener('change',function(){setLang(sel.value);});
+setLang(init);
+})();
+</script>
+
+<script>
+/* Note highway: membaca parts + audioCtx milik generator, tanpa mengubah JS aslinya. */
+(function(){
+var cv=document.getElementById('highway'),c=cv.getContext('2d'),$=function(i){return document.getElementById(i);};
+var COL=['#2ecc40','#ff3b3b','#ffd400','#2a7bff','#ff8a00'],L=1.8,IDLE=-1,W=0,H=0,notes=[],kicks=[],s16=.1,t0=0,raf=0,score=0,combo=0,hit=[0,0,0,0,0];
+function size(){var r=cv.getBoundingClientRect(),d=window.devicePixelRatio||1;W=r.width;H=r.height;cv.width=Math.round(W*d);cv.height=Math.round(H*d);c.setTransform(d,0,0,d,0,0);}
+function build(){
+  var ev=parts[$('hwTrack').value]||parts.lead||parts.rhythm||parts.breakdown||parts.bass||[],t=0,mn=999,mx=0;
+  s16=60/(+$('tempo').value||140)/4;notes=[];kicks=[];
+  ev.forEach(function(e){if(!e.rest&&e.notes)e.notes.forEach(function(n){mn=Math.min(mn,n.midi);mx=Math.max(mx,n.midi);});});
+  ev.forEach(function(e){
+    if(!e.rest&&e.notes&&e.notes.length){var ls={};
+      e.notes.forEach(function(n){ls[mx>mn?Math.round((n.midi-mn)/(mx-mn)*4):2]=1;});
+      Object.keys(ls).forEach(function(l){notes.push({t:t*s16,d:e.dur*s16,l:+l,done:0});});}
+    t+=e.dur;});
+  var d=parts.drums;
+  if(d&&d.grid)for(var i=0;i<d.total16;i++)if(d.grid[i]&&d.grid[i].has('K'))kicks.push({t:i*s16,done:0});
+}
+function G(){return{yH:H*.05,yS:H*.82,wT:W*.14,wB:W*.78,cx:W/2};}
+function U(tau){var p=Math.min(Math.max(tau/L,0),1.2);return(1/(1+3*p)-.25)/.75;}
+function Y(g,u){return g.yH+(g.yS-g.yH)*u;}
+function HW(g,u){return(g.wT+(g.wB-g.wT)*u)/2;}
+function mult(){return Math.min(4,1+Math.floor(combo/10));}
+function hud(){$('hwScore').textContent=String(score).padStart(6,'0');$('hwCombo').textContent=combo;$('hwMult').textContent='x'+mult();}
+function draw(pos){
+  var g=G(),cx=g.cx,i,l,k,u,y,h,tau,now=performance.now();
+  c.clearRect(0,0,W,H);c.fillStyle='#07040d';c.fillRect(0,0,W,H);
+  [[.1,0],[.28,1],[.72,3],[.9,4]].forEach(function(b){c.globalAlpha=.07;c.fillStyle=COL[b[1]];c.beginPath();c.moveTo(W*b[0],0);c.lineTo(W*b[0]-70,H);c.lineTo(W*b[0]+70,H);c.fill();});
+  var uB=(H-g.yH)/(g.yS-g.yH),hT=HW(g,0),hB=HW(g,uB);
+  c.globalAlpha=1;c.fillStyle='#120b1f';c.beginPath();c.moveTo(cx-hT,g.yH);c.lineTo(cx+hT,g.yH);c.lineTo(cx+hB,H);c.lineTo(cx-hB,H);c.fill();
+  for(l=0;l<5;l++){c.globalAlpha=.08;c.fillStyle=COL[l];c.beginPath();c.moveTo(cx+(l-2.5)*2*hT/5,g.yH);c.lineTo(cx+(l-1.5)*2*hT/5,g.yH);c.lineTo(cx+(l-1.5)*2*hB/5,H);c.lineTo(cx+(l-2.5)*2*hB/5,H);c.fill();}
+  c.globalAlpha=1;
+  for(k=0;k<=5;k++){c.strokeStyle=(k%5)?'rgba(255,255,255,.16)':'#f2eefc';c.lineWidth=(k%5)?1:3;c.beginPath();c.moveTo(cx+(k-2.5)*2*hT/5,g.yH);c.lineTo(cx+(k-2.5)*2*hB/5,H);c.stroke();}
+  for(var b=Math.ceil(pos/(s16*4));;b++){tau=b*s16*4-pos;if(tau>L)break;if(tau<0)continue;u=U(tau);y=Y(g,u);h=HW(g,u);
+    c.strokeStyle=b%4?'rgba(255,255,255,.12)':'rgba(255,255,255,.4)';c.lineWidth=b%4?1:2;c.beginPath();c.moveTo(cx-h,y);c.lineTo(cx+h,y);c.stroke();}
+  for(i=kicks.length-1;i>=0;i--){tau=kicks[i].t-pos;if(tau<-.05||tau>L)continue;u=U(tau);y=Y(g,u);h=HW(g,u);c.fillStyle='#c46bff';c.fillRect(cx-h,y-1,2*h,Math.max(2,h*.05));}
+  for(i=notes.length-1;i>=0;i--){var n=notes[i];tau=n.t-pos;if(tau<-.05||tau>L)continue;
+    u=U(tau);y=Y(g,u);h=HW(g,u);var lw=2*h/5,x=cx+(n.l-2)*lw,r=lw*.38;
+    if(n.d>s16*2.5){var u2=U(tau+n.d),y2=Y(g,u2),h2=HW(g,u2),x2=cx+(n.l-2)*2*h2/5;c.globalAlpha=.45;c.fillStyle=COL[n.l];c.beginPath();c.moveTo(x-r*.2,y);c.lineTo(x+r*.2,y);c.lineTo(x2+r*.1,y2);c.lineTo(x2-r*.1,y2);c.fill();c.globalAlpha=1;}
+    c.fillStyle=COL[n.l];c.strokeStyle='#fff';c.lineWidth=Math.max(1,r*.14);c.beginPath();c.ellipse(x,y,r,r*.6,0,0,7);c.fill();c.stroke();
+    c.fillStyle='rgba(0,0,0,.4)';c.beginPath();c.ellipse(x,y,r*.45,r*.27,0,0,7);c.fill();}
+  h=HW(g,1);var lw2=2*h/5;c.strokeStyle='rgba(255,255,255,.7)';c.lineWidth=2;c.beginPath();c.moveTo(cx-h,g.yS);c.lineTo(cx+h,g.yS);c.stroke();
+  for(l=0;l<5;l++){var rr=lw2*.4;c.beginPath();c.ellipse(cx+(l-2)*lw2,g.yS+rr*.15,rr,rr*.62,0,0,7);c.fillStyle=hit[l]>now?COL[l]:'#07040d';c.fill();c.strokeStyle=COL[l];c.lineWidth=3;c.stroke();}
+  if(!notes.length&&!kicks.length){c.fillStyle='#a79ec4';c.font='16px Bungee,Impact,sans-serif';c.textAlign='center';c.fillText('PRESS GENERATE',cx,H*.45);}
+}
+function loop(){
+  var on=typeof isPlaying!=='undefined'&&isPlaying&&typeof audioCtx!=='undefined'&&audioCtx;
+  if(!on){raf=0;draw(IDLE);return;}
+  var pos=audioCtx.currentTime-t0,now=performance.now();
+  notes.forEach(function(n){if(!n.done&&n.t<=pos){n.done=1;hit[n.l]=now+110;combo++;score+=10*mult();}});
+  draw(pos);hud();raf=requestAnimationFrame(loop);
+}
+function idle(){if(raf)return;build();draw(IDLE);}
+$('btnPlay').addEventListener('click',function(){
+  if(typeof isPlaying!=='undefined'&&isPlaying&&!raf){build();t0=audioCtx.currentTime+.08;score=0;combo=0;raf=requestAnimationFrame(loop);}
+});
+$('btnGen').addEventListener('click',function(){setTimeout(function(){score=0;combo=0;hud();idle();},30);});
+$('hwTrack').addEventListener('change',idle);$('tempo').addEventListener('input',idle);
+size();build();draw(IDLE);
+if(window.ResizeObserver)new ResizeObserver(function(){size();if(!raf)draw(IDLE);}).observe(cv);
+})();
+</script>
 </body>
 </html>
