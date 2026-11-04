@@ -187,6 +187,7 @@
     #highway{display:block;width:100%;height:clamp(360px,52vw,520px);border-radius:6px}
   </style>
 <!-- Odin III map synced to supplied UI screenshot 2026-09-30 -->
+  <script type="text/javascript" src="https://app.sandbox.midtrans.com/snap/snap.js" data-client-key="Mid-client-Fqjbnu6zXaJ5tevL"></script>
 </head>
 <body>
   <div class="container">
@@ -3038,14 +3039,84 @@
       }
     };
 
-    window.handlePaywallUpgrade = function() {
-      let user = getCurrentUser() || {};
-      user.isPro = true;
-      setCurrentUser(user);
-      window.closeModal('paywallModal');
-      updateUserUI();
-      showToast('🎉 Akses PRO UNLIMITED Telah Aktif!');
+    window.handlePaywallUpgrade = async function() {
+      const user = getCurrentUser();
+      if (!user || !user.email) {
+        showToast('Silakan masukkan email Anda terlebih dahulu.');
+        window.closeModal('paywallModal');
+        window.openModal('loginModal');
+        return;
+      }
+
+      const btn = document.getElementById('btnPaywallUpgrade');
+      const originalText = btn ? btn.innerHTML : '';
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '⏳ Menghubungkan Midtrans...';
+      }
+
+      try {
+        const response = await fetch('/api/create-payment', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: user.email })
+        });
+
+        const data = await response.json();
+        if (!response.ok || !data.token) {
+          throw new Error(data.error || 'Gagal memuat pembayaran Midtrans');
+        }
+
+        localStorage.setItem('mrg_last_order_id', data.order_id);
+
+        if (window.snap && typeof window.snap.pay === 'function') {
+          window.snap.pay(data.token, {
+            onSuccess: async function(result) {
+              showToast('⏳ Memverifikasi pembayaran...');
+              await checkPaymentStatus(data.order_id, user.email);
+            },
+            onPending: function(result) {
+              showToast('Menunggu pembayaran Anda via QRIS / Bank Transfer.');
+            },
+            onError: function(result) {
+              showToast('Pembayaran gagal atau dibatalkan.');
+            },
+            onClose: function() {
+              showToast('Jendela pembayaran ditutup.');
+            }
+          });
+        } else if (data.redirect_url) {
+          window.open(data.redirect_url, '_blank');
+        }
+      } catch (err) {
+        alert('Error: ' + err.message);
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = originalText;
+        }
+      }
     };
+
+    async function checkPaymentStatus(orderId, email) {
+      try {
+        const res = await fetch(`/api/check-payment?order_id=${encodeURIComponent(orderId)}&email=${encodeURIComponent(email)}`);
+        const data = await res.json();
+        if (data.isPaid && data.proToken) {
+          let user = getCurrentUser() || {};
+          user.isPro = true;
+          user.proToken = data.proToken;
+          setCurrentUser(user);
+          window.closeModal('paywallModal');
+          updateUserUI();
+          alert('🎉 PEMBAYARAN SUKSES!\n\nAkses METAL RIFF GENERATOR PRO UNLIMITED Anda telah aktif selamanya!');
+        } else {
+          showToast('Status Pembayaran: ' + (data.status || 'Belum selesai'));
+        }
+      } catch (e) {
+        showToast('Gagal memverifikasi: ' + e.message);
+      }
+    }
 
     window.handleManualEmailLogin = function() {
       const emailInput = document.getElementById('inputUserEmail');
