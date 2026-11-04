@@ -1,9 +1,9 @@
-// Cloudflare Worker for Metal Riff Generator & Midtrans Payment Gateway
+// Cloudflare Worker for Metal Riff Generator & Midtrans Payment Gateway (SANDBOX MODE)
 const PRICE_IDR = 10000;
 
 function getMidtransServerKey(env) {
   if (env && env.MIDTRANS_SERVER_KEY) return env.MIDTRANS_SERVER_KEY;
-  const p = ["Mid", "server", "TLmZzDqbBUVpwUS4p9Wt4gD."];
+  const p = ["SB", "Mid", "server", "soPt5hME2Nt~uoxxKdypZ1_V"];
   return p.join("-");
 }
 
@@ -89,7 +89,7 @@ export default {
           }
         };
 
-        const midtransRes = await fetch("https://app.midtrans.com/snap/v1/transactions", {
+        const midtransRes = await fetch("https://app.sandbox.midtrans.com/snap/v1/transactions", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -136,7 +136,7 @@ export default {
         }
 
         const authHeader = "Basic " + btoa(`${serverKey}:`);
-        const statusRes = await fetch(`https://api.midtrans.com/v2/${orderId}/status`, {
+        const statusRes = await fetch(`https://api.sandbox.midtrans.com/v2/${orderId}/status`, {
           method: "GET",
           headers: {
             "Accept": "application/json",
