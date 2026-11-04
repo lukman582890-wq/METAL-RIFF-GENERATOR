@@ -1,0 +1,5 @@
+# Sensitive keys
+Metal_Riff_Generator_api_key.txt
+client_secret*.json
+*.pem
+.env

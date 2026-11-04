@@ -1,6 +1,7 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "metal-riff-generator",
+  "main": "worker.js",
   "compatibility_date": "2026-11-03",
   "assets": {
     "directory": "."

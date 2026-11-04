@@ -449,6 +449,7 @@
 
   </style>
 <!-- Odin III map synced to supplied UI screenshot 2026-09-30 -->
+  <script type="text/javascript" src="https://app.midtrans.com/snap/snap.js" data-client-key="Mid-client-F9nIWGTCWjX5ZC-y"></script>
 </head>
 <body>
   <div class="container">
@@ -3241,35 +3242,101 @@
       showToast('Anda telah keluar');
     };
 
-    window.handlePaywallUpgrade = function() {
-      let user = getCurrentUser();
-      if (!user) {
-        user = {
-          email: 'pro-member@metal.com',
-          name: 'Pro Member',
-          picture: null,
-          isPro: true
-        };
-      } else {
-        user.isPro = true;
+    window.startMidtransPayment = async function() {
+      const user = getCurrentUser();
+      if (!user || !user.email) {
+        showToast('Silakan masukkan email Gmail Anda terlebih dahulu.');
+        closeModal('paywallModal');
+        openModal('loginModal');
+        return;
       }
-      setCurrentUser(user);
-      closeModal('paywallModal');
-      updateUserUI();
-      showToast('🎉 Akses PRO UNLIMITED Berhasil Diaktifkan!');
+
+      const btn = document.getElementById('btnPaywallUpgrade');
+      const originalText = btn ? btn.innerHTML : '';
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '⏳ Menghubungkan Midtrans...';
+      }
+
+      try {
+        const response = await fetch('/api/create-payment', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: user.email })
+        });
+
+        const data = await response.json();
+        if (!response.ok || !data.token) {
+          throw new Error(data.error || 'Gagal memuat pembayaran Midtrans');
+        }
+
+        localStorage.setItem('mrg_last_order_id', data.order_id);
+        const checkBtnBox = document.getElementById('checkPaymentBox');
+        if (checkBtnBox) checkBtnBox.style.display = 'block';
+
+        if (window.snap && typeof window.snap.pay === 'function') {
+          window.snap.pay(data.token, {
+            onSuccess: async function(result) {
+              showToast('⏳ Memverifikasi pembayaran...');
+              await checkPaymentStatus(data.order_id, user.email);
+            },
+            onPending: function(result) {
+              showToast('Menunggu pembayaran Anda via QRIS / Bank Transfer.');
+            },
+            onError: function(result) {
+              showToast('Pembayaran gagal atau dibatalkan.');
+            },
+            onClose: function() {
+              showToast('Jendela pembayaran ditutup. Klik "Cek Status" jika sudah transfer.');
+            }
+          });
+        } else if (data.redirect_url) {
+          window.open(data.redirect_url, '_blank');
+        }
+      } catch (err) {
+        alert('Error: ' + err.message);
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = originalText;
+        }
+      }
     };
 
-    window.handleResetQuotaForTesting = function() {
+    window.checkLastPaymentStatus = async function() {
       const user = getCurrentUser();
-      if (user && user.email) {
-        localStorage.removeItem('mrg_usage_' + user.email.toLowerCase());
+      const orderId = localStorage.getItem('mrg_last_order_id');
+      if (!user || !user.email) {
+        showToast('Silakan login terlebih dahulu');
+        return;
       }
-      localStorage.removeItem('mrg_guest_usage');
-      closeModal('paywallModal');
-      closeModal('loginModal');
-      updateUserUI();
-      showToast('🔄 Kuota berhasil di-reset ke 0/5 untuk testing!');
+      if (!orderId) {
+        showToast('Belum ada riwayat pesanan yang tersimpan');
+        return;
+      }
+      showToast('🔍 Mengecek status pembayaran ke Midtrans...');
+      await checkPaymentStatus(orderId, user.email);
     };
+
+    async function checkPaymentStatus(orderId, email) {
+      try {
+        const res = await fetch(`/api/check-payment?order_id=${encodeURIComponent(orderId)}&email=${encodeURIComponent(email)}`);
+        const data = await res.json();
+        if (data.isPaid && data.proToken) {
+          let user = getCurrentUser() || {};
+          user.isPro = true;
+          user.proToken = data.proToken;
+          setCurrentUser(user);
+          closeModal('paywallModal');
+          updateUserUI();
+          alert('🎉 PEMBAYARAN SUKSES!\n\nAkses METAL RIFF GENERATOR PRO UNLIMITED Anda telah aktif selamanya!');
+        } else {
+          showToast('Status Pembayaran: ' + (data.status || 'Belum dibayar') + '. Silakan selesaikan pembayaran.');
+        }
+      } catch (e) {
+        showToast('Gagal memverifikasi: ' + e.message);
+      }
+    }
 
     function attachModalHandlers() {
       document.getElementById('btnOpenLogin')?.addEventListener('click', () => openModal('loginModal'));
@@ -4308,12 +4375,23 @@
       <button class="modal-close-btn" id="closePaywallModal" onclick="closeModal('paywallModal')" type="button">&times;</button>
       <div class="modal-icon">🤘💥</div>
       <h3>KUOTA HABIS (5/5) — UPGRADE PRO</h3>
-      <p>
+      <p style="margin-bottom:10px;">
         Anda telah menggunakan seluruh <strong>5x kuota gratis</strong>.<br>
         Buka akses <strong>METAL RIFF GENERATOR PRO</strong> untuk terus berkreasi tanpa batas!
       </p>
 
-      <div class="pro-feature-list">
+      <!-- Harga Spesial Rp 10.000 -->
+      <div style="background: rgba(255, 30, 39, 0.12); border: 1px solid rgba(255, 30, 39, 0.4); border-radius: 8px; padding: 12px; margin: 12px 0;">
+        <div style="font-size: 0.8rem; color: var(--steel-bright); text-transform: uppercase; letter-spacing: 1.5px; font-weight:600;">Akses Penuh Selamanya</div>
+        <div style="font-size: 2.2rem; color: #ffdd55; font-family: 'Cinzel', serif; font-weight: bold; margin: 4px 0; text-shadow:0 0 15px rgba(255,221,85,0.4);">
+          Rp 10.000
+        </div>
+        <div style="font-size: 0.78rem; color: #bbb;">
+          ⚡ Pembayaran Otomatis via <strong>QRIS, GoPay, ShopeePay, & Virtual Account Bank</strong>
+        </div>
+      </div>
+
+      <div class="pro-feature-list" style="margin-bottom:14px;">
         <li>Unlimited Metal Riff Generation</li>
         <li>Export MIDI Multi-Track untuk DAW & Odin III</li>
         <li>Semua 22 Subgenre Metal & Tunings Ekstrem</li>
@@ -4321,17 +4399,18 @@
         <li>Preset Rekomendasi Band Legendaris Lengkap</li>
       </div>
 
-      <button class="btn-upgrade-pay" id="btnPaywallUpgrade" onclick="handlePaywallUpgrade()" type="button" style="cursor:pointer; width:100%;">
-        ⚡ BUKA AKSES UNLIMITED PRO SEKARANG
+      <button class="btn-upgrade-pay" id="btnPaywallUpgrade" onclick="startMidtransPayment()" type="button" style="cursor:pointer; width:100%; font-size:1.05rem; padding:14px; background:linear-gradient(135deg, #ff1e27, #ff6b00); box-shadow:0 0 20px rgba(255,107,0,0.5);">
+        ⚡ BAYAR RP 10.000 (QRIS / BANK)
       </button>
 
-      <div style="margin-top:14px; display:flex; justify-content:center; gap:10px;">
-        <button type="button" onclick="handleResetQuotaForTesting()" style="background:#141419; border:1px solid #444; color:var(--steel-bright); padding:7px 14px; border-radius:6px; font-size:0.8rem; cursor:pointer;">
-          🔄 Reset Kuota (Mode Testing)
+      <div id="checkPaymentBox" style="display:none; margin-top:12px;">
+        <button type="button" onclick="checkLastPaymentStatus()" style="background:#14141d; border:1px solid #ff4444; color:#fff; padding:10px 14px; border-radius:6px; font-size:0.85rem; cursor:pointer; width:100%;">
+          🔍 Cek Status Pembayaran (Sudah Transfer)
         </button>
       </div>
-      <p style="font-size:0.75rem; color:var(--muted); margin-top:10px; margin-bottom:0;">
-        Garansi aktivasi instan • Satu kali bayar untuk akses penuh
+
+      <p style="font-size:0.75rem; color:var(--muted); margin-top:12px; margin-bottom:0;">
+        Garansi aktivasi instan 24 jam • Akses langsung terbuka detik itu juga
       </p>
     </div>
   </div>
