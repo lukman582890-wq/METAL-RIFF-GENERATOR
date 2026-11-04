@@ -1521,8 +1521,10 @@
             else if (df <= -1 && df >= -3) tech = 'p';
           }
 
-          if (useSlide && prevString === s && !muted && !tech && Math.abs(f - prevFret) >= 3) {
-            tech = f > prevFret ? '/' : '\\';
+          // Slide gitar: aktif jika useSlide dicentang, frekuensi lebih responsif
+          if (useSlide && !muted && !tech && (Math.abs(f - prevFret) >= 2 || Math.random() < 0.25)) {
+            const isUp = f >= prevFret;
+            tech = isUp ? '/' : '\\';
           }
 
           // Pinch Harmonic: screaming squeals placed at turnaround accents or long notes
@@ -1532,19 +1534,16 @@
             }
           }
 
-          // Panic Chord / Dissonance (tritone / minor 2nd clash) for Deathcore / Beatdown / Thall
-          if (usePanic && !muted && (styleId === 'deathcore' || styleId === 'modern_hc' || styleId === 'thall' || styleId === 'djent') && isAccentBeat) {
-            if (Math.random() < techProfile.panic * 0.7) {
-              const clashPC = mod12(root + randomChoice([1, 6]));
-              const nextStr = Math.min(nstr - 1, s + 1);
-              const clashFret = fretForPC(nextStr, clashPC, f, 8);
-              notes = [
-                { string: s, fret: f, midi: open[s] + f },
-                { string: nextStr, fret: clashFret, midi: open[nextStr] + clashFret }
-              ];
-              tech = 'panic';
-              isPower = false;
-            }
+          // Panic Chord / Dissonance (tritone / minor 2nd clash) - aktif di semua subgenre jika dicentang
+          if (usePanic && !muted && !tech && (isAccentBeat || isCadenceNote || Math.random() < 0.28)) {
+            const clashInterval = randomChoice([1, 6, 11]); // minor 2nd, tritone, major 7th
+            const clashMidi = (open[s] + f) + clashInterval;
+            notes = [
+              { string: s, fret: f, midi: open[s] + f },
+              { string: Math.min(nstr - 1, s + 1), fret: f + clashInterval, midi: clashMidi }
+            ];
+            tech = 'panic';
+            isPower = false;
           }
 
           // Bouncy groove staccato
@@ -3553,7 +3552,7 @@
       osc.connect(dist); dist.connect(filter); filter.connect(gain); gain.connect(ctx.destination);
       osc.start(now); osc.stop(now + durationSec + 0.04);
     }
-    function playNoteTone(midi, startTime, durationSec, velocity, type) {
+    function playNoteTone(midi, startTime, durationSec, velocity, type, tech, slant) {
       if (midi == null || !audioCtx) return;
       const ctx = audioCtx;
       const t0 = startTime;
@@ -3561,10 +3560,15 @@
       // Real Studio Metal Guitar playback (custom Death Metal samples)
       // Articulation selection:
       // - type === 'lead' -> lead articulation
-      // - durationSec <= 0.32 or short note -> palm mute (pm)
+      // - tech === 'panic' -> open powerchord/lead for dissonant clash
+      // - durationSec <= 0.32 and not panic/slide -> palm mute (pm)
       // - otherwise -> power chord (chord)
       let sampleType = 'chord';
       if (type === 'lead') {
+        sampleType = 'lead';
+      } else if (tech === 'panic') {
+        sampleType = 'chord';
+      } else if (tech === '/' || tech === '\\') {
         sampleType = 'lead';
       } else if (durationSec <= 0.32) {
         sampleType = 'pm';
@@ -3575,14 +3579,30 @@
         try {
           const src = ctx.createBufferSource();
           src.buffer = SAMPLE_BUFFERS[sampleKey];
-          src.playbackRate.value = sampleRate;
+          
+          // Audio effects for techniques:
+          // 1. SLIDE (pitch slide up/down)
+          if (tech === '/') {
+            src.playbackRate.setValueAtTime(sampleRate * 0.88, t0);
+            src.playbackRate.exponentialRampToValueAtTime(sampleRate * 1.14, t0 + Math.max(0.08, durationSec * 0.85));
+          } else if (tech === '\\') {
+            src.playbackRate.setValueAtTime(sampleRate * 1.15, t0);
+            src.playbackRate.exponentialRampToValueAtTime(sampleRate * 0.88, t0 + Math.max(0.08, durationSec * 0.85));
+          } else {
+            src.playbackRate.value = sampleRate;
+          }
 
           const outGain = ctx.createGain();
           // Boosted studio level for metal punch: Palm mute 1.7x, Lead 1.5x, Power Chord 1.8x
-          const vol = velocity * (sampleType === 'pm' ? 1.70 : sampleType === 'lead' ? 1.50 : 1.80);
+          // Pick slanting gives micro attack accent: DS (downslant) punchier, US (upslant) sharper
+          let slantMultiplier = 1.0;
+          if (slant === 'DS') slantMultiplier = 1.12;
+          else if (slant === 'US') slantMultiplier = 0.95;
+
+          const vol = velocity * (sampleType === 'pm' ? 1.70 : sampleType === 'lead' ? 1.50 : 1.80) * slantMultiplier;
           
           outGain.gain.setValueAtTime(0.001, t0);
-          outGain.gain.linearRampToValueAtTime(vol, t0 + 0.003);
+          outGain.gain.linearRampToValueAtTime(vol, t0 + (slant === 'DS' ? 0.002 : 0.004));
           
           const sustainEnd = t0 + Math.max(0.04, durationSec - 0.02);
           outGain.gain.setValueAtTime(vol, sustainEnd);
@@ -3681,7 +3701,7 @@
           if (type === 'lead') hold = 0.85;
           const vel = ev.notes.length > 1 ? baseVel * 0.9 : baseVel;
           for (const n of ev.notes) {
-            playNoteTone(n.midi, t, Math.max(0.03, durSec * hold), vel, type);
+            playNoteTone(n.midi, t, Math.max(0.03, durSec * hold), vel, type, ev.tech, ev.slant);
           }
         }
         t += durSec;
