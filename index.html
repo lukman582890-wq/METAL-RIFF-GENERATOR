@@ -3040,6 +3040,8 @@
     };
 
     window.handlePaywallUpgrade = async function() {
+      if (window._isSnapOpening) return;
+
       const user = getCurrentUser();
       if (!user || !user.email) {
         showToast('Silakan masukkan email Anda terlebih dahulu.');
@@ -3052,8 +3054,9 @@
       const originalText = btn ? btn.innerHTML : '';
       if (btn) {
         btn.disabled = true;
-        btn.innerHTML = '⏳ Menghubungkan Midtrans...';
+        btn.innerHTML = '⏳ Menyiapkan Pembayaran...';
       }
+      window._isSnapOpening = true;
 
       try {
         const response = await fetch('/api/create-payment', {
@@ -3069,32 +3072,59 @@
 
         localStorage.setItem('mrg_last_order_id', data.order_id);
 
+        // Remove any stale Snap iframe from DOM before calling snap.pay
+        const oldSnap = document.getElementById('snap-midtrans');
+        if (oldSnap) {
+          try { oldSnap.remove(); } catch(e) {}
+        }
+
+        // Close our dark paywall modal so it does not conflict with or block Midtrans Snap
+        window.closeModal('paywallModal');
+
         if (window.snap && typeof window.snap.pay === 'function') {
-          window.snap.pay(data.token, {
-            onSuccess: async function(result) {
-              showToast('⏳ Memverifikasi pembayaran...');
-              await checkPaymentStatus(data.order_id, user.email);
-            },
-            onPending: function(result) {
-              showToast('Menunggu pembayaran Anda via QRIS / Bank Transfer.');
-            },
-            onError: function(result) {
-              showToast('Pembayaran gagal atau dibatalkan.');
-            },
-            onClose: function() {
-              showToast('Jendela pembayaran ditutup.');
+          try {
+            window.snap.pay(data.token, {
+              onSuccess: async function(result) {
+                window._isSnapOpening = false;
+                showToast('⏳ Memverifikasi pembayaran...');
+                await checkPaymentStatus(data.order_id, user.email);
+              },
+              onPending: function(result) {
+                window._isSnapOpening = false;
+                showToast('Menunggu pembayaran Anda via QRIS / Bank Transfer.');
+              },
+              onError: function(result) {
+                window._isSnapOpening = false;
+                window.openModal('paywallModal');
+                showToast('Pembayaran gagal atau dibatalkan.');
+              },
+              onClose: function() {
+                window._isSnapOpening = false;
+                window.openModal('paywallModal');
+                showToast('Jendela pembayaran ditutup.');
+              }
+            });
+          } catch(snapErr) {
+            console.warn('snap.pay failed:', snapErr);
+            // Fallback to direct Midtrans redirection URL if popup transition errors
+            if (data.redirect_url) {
+              window.open(data.redirect_url, '_blank');
             }
-          });
+          }
         } else if (data.redirect_url) {
           window.open(data.redirect_url, '_blank');
         }
       } catch (err) {
+        window.openModal('paywallModal');
         alert('Error: ' + err.message);
       } finally {
-        if (btn) {
-          btn.disabled = false;
-          btn.innerHTML = originalText;
-        }
+        setTimeout(() => {
+          window._isSnapOpening = false;
+          if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+          }
+        }, 1500);
       }
     };
 
