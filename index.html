@@ -3226,74 +3226,72 @@
       }
     }
 
-    function openModal(id) {
-      const el = $(id);
+    window.openModal = function(id) {
+      const el = document.getElementById(id);
       if (el) el.classList.add('active');
-    }
-    function closeModal(id) {
-      const el = $(id);
+    };
+
+    window.closeModal = function(id) {
+      const el = document.getElementById(id);
       if (el) el.classList.remove('active');
-    }
+    };
 
-    // Modal triggers & event listeners
-    $('btnOpenLogin')?.addEventListener('click', () => {
-      openModal('loginModal');
-      
-    });
-    $('closeLoginModal')?.addEventListener('click', () => closeModal('loginModal'));
-    $('closePaywallModal')?.addEventListener('click', () => closeModal('paywallModal'));
-
-    $('btnLogout')?.addEventListener('click', () => {
+    window.handleLogout = function() {
       setCurrentUser(null);
       showToast('Anda telah keluar');
-    });
+    };
 
-    // Direct Google Login fallback / simulation for immediate testing
-    $('btnGoogleDirect')?.addEventListener('click', () => {
-      if (window.google && window.google.accounts && window.google.accounts.id && GOOGLE_CLIENT_ID !== "159968250091-9ho6ue16el5guukcgcq14fn84mkcdo9p.apps.googleusercontent.com") {
-        window.google.accounts.id.prompt();
+    window.handlePaywallUpgrade = function() {
+      let user = getCurrentUser();
+      if (!user) {
+        user = {
+          email: 'pro-member@metal.com',
+          name: 'Pro Member',
+          picture: null,
+          isPro: true
+        };
       } else {
-        const email = prompt("Masukkan email Gmail Anda untuk login:", "metalhead@gmail.com");
-        if (email && email.includes('@')) {
-          const name = email.split('@')[0];
-          setCurrentUser({
-            email: email.trim().toLowerCase(),
-            name: name.charAt(0).toUpperCase() + name.slice(1),
-            picture: null,
-            isPro: false
-          });
-          closeModal('loginModal');
-          showToast('Selamat datang, ' + name + '! Kuota 5x aktif.');
-        }
+        user.isPro = true;
       }
-    });
-
-    $('btnPaywallUpgrade')?.addEventListener('click', () => {
-      // Custom payment handler / link (e.g. Midtrans, Mayar, Stripe, WhatsApp Admin)
-      const user = getCurrentUser();
-      const email = user ? user.email : 'guest';
-      const confirmPro = confirm("Simulasi Pembayaran Sukses?\\n\\nKlik OK untuk aktivasi instant UNLIMITED PRO, atau hubungi link payment Anda!");
-      if (confirmPro) {
-        if (user) {
-          user.isPro = true;
-          setCurrentUser(user);
-        }
-        closeModal('paywallModal');
-        showToast('🎉 Akses PRO UNLIMITED Telah Aktif!');
-      }
-    });
-
-    // Close on overlay backdrop click
-    ['loginModal', 'paywallModal'].forEach(id => {
-      $(id)?.addEventListener('click', e => {
-        if (e.target === $(id)) closeModal(id);
-      });
-    });
-
-    window.addEventListener('load', () => {
+      setCurrentUser(user);
+      closeModal('paywallModal');
       updateUserUI();
-      
-    });
+      showToast('🎉 Akses PRO UNLIMITED Berhasil Diaktifkan!');
+    };
+
+    window.handleResetQuotaForTesting = function() {
+      const user = getCurrentUser();
+      if (user && user.email) {
+        localStorage.removeItem('mrg_usage_' + user.email.toLowerCase());
+      }
+      localStorage.removeItem('mrg_guest_usage');
+      closeModal('paywallModal');
+      closeModal('loginModal');
+      updateUserUI();
+      showToast('🔄 Kuota berhasil di-reset ke 0/5 untuk testing!');
+    };
+
+    function attachModalHandlers() {
+      document.getElementById('btnOpenLogin')?.addEventListener('click', () => openModal('loginModal'));
+      document.getElementById('closeLoginModal')?.addEventListener('click', () => closeModal('loginModal'));
+      document.getElementById('closePaywallModal')?.addEventListener('click', () => closeModal('paywallModal'));
+      document.getElementById('btnLogout')?.addEventListener('click', window.handleLogout);
+      document.getElementById('btnPaywallUpgrade')?.addEventListener('click', window.handlePaywallUpgrade);
+
+      ['loginModal', 'paywallModal'].forEach(id => {
+        document.getElementById(id)?.addEventListener('click', e => {
+          if (e.target === document.getElementById(id)) closeModal(id);
+        });
+      });
+      updateUserUI();
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', attachModalHandlers);
+    } else {
+      attachModalHandlers();
+    }
+    window.addEventListener('load', attachModalHandlers);
 
     function generateRiff() {
       // QUOTA & AUTH ENFORCEMENT
@@ -4275,9 +4273,9 @@
   </script>
 
   <!-- MODAL: LOGIN REQUIRED (After 1x guest limit) -->
-  <div class="modal-overlay" id="loginModal">
+  <div class="modal-overlay" id="loginModal" onclick="if(event.target === this) closeModal('loginModal')">
     <div class="metal-modal">
-      <button class="modal-close-btn" id="closeLoginModal">&times;</button>
+      <button class="modal-close-btn" id="closeLoginModal" onclick="closeModal('loginModal')" type="button">&times;</button>
       <div class="modal-icon">🔐</div>
       <h3>LOGIN GOOGLE DIPERLUKAN</h3>
       <p>
@@ -4305,9 +4303,9 @@
   </div>
 
   <!-- MODAL: PAYWALL (After 5x member limit) -->
-  <div class="modal-overlay" id="paywallModal">
+  <div class="modal-overlay" id="paywallModal" onclick="if(event.target === this) closeModal('paywallModal')">
     <div class="metal-modal">
-      <button class="modal-close-btn" id="closePaywallModal">&times;</button>
+      <button class="modal-close-btn" id="closePaywallModal" onclick="closeModal('paywallModal')" type="button">&times;</button>
       <div class="modal-icon">🤘💥</div>
       <h3>KUOTA HABIS (5/5) — UPGRADE PRO</h3>
       <p>
@@ -4323,9 +4321,15 @@
         <li>Preset Rekomendasi Band Legendaris Lengkap</li>
       </div>
 
-      <button class="btn-upgrade-pay" id="btnPaywallUpgrade">
+      <button class="btn-upgrade-pay" id="btnPaywallUpgrade" onclick="handlePaywallUpgrade()" type="button" style="cursor:pointer; width:100%;">
         ⚡ BUKA AKSES UNLIMITED PRO SEKARANG
       </button>
+
+      <div style="margin-top:14px; display:flex; justify-content:center; gap:10px;">
+        <button type="button" onclick="handleResetQuotaForTesting()" style="background:#141419; border:1px solid #444; color:var(--steel-bright); padding:7px 14px; border-radius:6px; font-size:0.8rem; cursor:pointer;">
+          🔄 Reset Kuota (Mode Testing)
+        </button>
+      </div>
       <p style="font-size:0.75rem; color:var(--muted); margin-top:10px; margin-bottom:0;">
         Garansi aktivasi instan • Satu kali bayar untuk akses penuh
       </p>
