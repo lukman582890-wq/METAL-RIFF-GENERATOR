@@ -3198,12 +3198,12 @@
     }
 
     
-    function handleManualEmailLogin() {
-      const emailInput = $('inputUserEmail');
+    window.handleManualEmailLogin = function() {
+      const emailInput = document.getElementById('inputUserEmail');
       if (!emailInput) return;
       const email = emailInput.value.trim().toLowerCase();
       if (!email || !email.includes('@')) {
-        showToast('Masukkan alamat email yang valid');
+        alert('Masukkan alamat email Gmail yang valid (misal: nama@gmail.com)');
         return;
       }
 
@@ -3217,24 +3217,30 @@
         isPro: false
       });
 
-      closeModal('loginModal');
       emailInput.value = '';
+      window.closeModal('loginModal');
 
       if (ADMIN_EMAILS.includes(email)) {
         showToast('👑 Selamat datang Owner! Akses UNLIMITED aktif.');
       } else {
         showToast('🔥 Selamat datang, ' + displayName + '! Kuota 5x gratis aktif.');
       }
-    }
+    };
 
     window.openModal = function(id) {
       const el = document.getElementById(id);
-      if (el) el.classList.add('active');
+      if (el) {
+        el.style.display = 'flex';
+        el.classList.add('active');
+      }
     };
 
     window.closeModal = function(id) {
       const el = document.getElementById(id);
-      if (el) el.classList.remove('active');
+      if (el) {
+        el.classList.remove('active');
+        el.style.display = 'none';
+      }
     };
 
     window.handleLogout = function() {
