@@ -3450,66 +3450,53 @@
       'hihat-open': 'samples/drums/hihat-open.wav',
       'crash': 'samples/drums/crash-left.wav',
       'china': 'samples/drums/china-left.wav',
-      // Guitar open (fret 0-12 tersedia dari djen.co)
-      'guitar-open-0': 'samples/guitar/sixth-0-open.mp3',
-      'guitar-open-1': 'samples/guitar/sixth-1-open.mp3',
-      'guitar-open-2': 'samples/guitar/sixth-2-open.mp3',
-      'guitar-open-3': 'samples/guitar/sixth-3-open.mp3',
-      'guitar-open-4': 'samples/guitar/sixth-4-open.mp3',
-      'guitar-open-5': 'samples/guitar/sixth-5-open.mp3',
-      'guitar-open-6': 'samples/guitar/sixth-6-open.mp3',
-      'guitar-open-7': 'samples/guitar/sixth-7-open.mp3',
-      'guitar-open-8': 'samples/guitar/sixth-8-open.mp3',
-      'guitar-open-9': 'samples/guitar/sixth-9-open.mp3',
-      'guitar-open-10': 'samples/guitar/sixth-10-open.mp3',
-      'guitar-open-11': 'samples/guitar/sixth-11-open.mp3',
-      'guitar-open-12': 'samples/guitar/sixth-12-open.mp3',
-      // Guitar muted (fret 0,1,2,3,4,8 tersedia)
-      'guitar-muted-0': 'samples/guitar/sixth-0-muted.mp3',
-      'guitar-muted-1': 'samples/guitar/sixth-1-muted.mp3',
-      'guitar-muted-2': 'samples/guitar/sixth-2-muted.mp3',
-      'guitar-muted-3': 'samples/guitar/sixth-3-muted.mp3',
-      'guitar-muted-4': 'samples/guitar/sixth-4-muted.mp3',
-      'guitar-muted-8': 'samples/guitar/sixth-8-muted.mp3',
-      // Guitar chord (fret 0-12)
-      'guitar-chord-0': 'samples/guitar/sixth-0-chord.mp3',
-      'guitar-chord-1': 'samples/guitar/sixth-1-chord.mp3',
-      'guitar-chord-2': 'samples/guitar/sixth-2-chord.mp3',
-      'guitar-chord-3': 'samples/guitar/sixth-3-chord.mp3',
-      'guitar-chord-4': 'samples/guitar/sixth-4-chord.mp3',
-      'guitar-chord-5': 'samples/guitar/sixth-5-chord.mp3',
-      'guitar-chord-6': 'samples/guitar/sixth-6-chord.mp3',
-      'guitar-chord-7': 'samples/guitar/sixth-7-chord.mp3',
-      'guitar-chord-8': 'samples/guitar/sixth-8-chord.mp3',
-      'guitar-chord-9': 'samples/guitar/sixth-9-chord.mp3',
-      'guitar-chord-10': 'samples/guitar/sixth-10-chord.mp3',
-      'guitar-chord-11': 'samples/guitar/sixth-11-chord.mp3',
-      'guitar-chord-12': 'samples/guitar/sixth-12-chord.mp3',
+
+      // Custom High-Quality Metal Samples (from user DAW: Death Metal tone)
+      // Palm Mute (Chug)
+      'pm-38': 'samples/guitar_custom/01_PalmMute_fret0_D2.wav',
+      'pm-39': 'samples/guitar_custom/02_PalmMute_fret1_Ds2.wav',
+      'pm-41': 'samples/guitar_custom/03_PalmMute_fret3_F2.wav',
+      'pm-43': 'samples/guitar_custom/04_PalmMute_fret5_G2.wav',
+      'pm-46': 'samples/guitar_custom/05_PalmMute_fret8_As2.wav',
+
+      // Power Chords (Open Chug / Wall of Sound)
+      'chord-38': 'samples/guitar_custom/06_PowerChord_fret0_D2.wav',
+      'chord-39': 'samples/guitar_custom/07_PowerChord_fret1_Ds2.wav',
+      'chord-41': 'samples/guitar_custom/08_PowerChord_fret3_F2.wav',
+      'chord-43': 'samples/guitar_custom/09_PowerChord_fret5_G2.wav',
+      'chord-45': 'samples/guitar_custom/10_PowerChord_fret7_A2.wav',
+
+      // Lead / Solo / Shredding (Mid to High registers)
+      'lead-50': 'samples/guitar_custom/11_Lead_D3.wav',
+      'lead-57': 'samples/guitar_custom/12_Lead_A3.wav',
+      'lead-62': 'samples/guitar_custom/13_Lead_D4.wav',
+      'lead-69': 'samples/guitar_custom/14_Lead_A4.wav'
     };
 
-    // fret 0 = D2 (Drop D open string), MIDI 38
-    const GUITAR_FRET_MIDI_BASE = 38;
-
-    // Fret yang tersedia per tipe sampel
-    const GUITAR_FRETS = {
-      'open':  [0,1,2,3,4,5,6,7,8,9,10,11,12],
-      'muted': [0,1,2,3,4,8],
-      'chord': [0,1,2,3,4,5,6,7,8,9,10,11,12]
+    // Available reference MIDI notes for each articulation
+    const CUSTOM_SAMPLE_PITCHES = {
+      'pm': [38, 39, 41, 43, 46],
+      'chord': [38, 39, 41, 43, 45],
+      'lead': [50, 57, 62, 69]
     };
 
-    // Cari sampel gitar terdekat untuk MIDI note + hitung playbackRate minimal
+    // Find nearest sample & calculate clean pitch shifting
     function findNearestGuitarSample(midi, type) {
-      const frets = GUITAR_FRETS[type] || GUITAR_FRETS['open'];
-      const targetFret = midi - GUITAR_FRET_MIDI_BASE;
-      let nearest = frets[0];
-      let minDist = Math.abs(targetFret - frets[0]);
-      for (const f of frets) {
-        const dist = Math.abs(targetFret - f);
-        if (dist < minDist) { minDist = dist; nearest = f; }
+      let pool = CUSTOM_SAMPLE_PITCHES[type] || CUSTOM_SAMPLE_PITCHES['chord'];
+      let nearestPitch = pool[0];
+      let minDiff = Math.abs(midi - nearestPitch);
+
+      for (let p of pool) {
+        let diff = Math.abs(midi - p);
+        if (diff < minDiff) {
+          minDiff = diff;
+          nearestPitch = p;
+        }
       }
-      const key = 'guitar-' + type + '-' + nearest;
-      const semitoneDiff = targetFret - nearest;
-      const playbackRate = Math.pow(2, semitoneDiff / 12);
+
+      const key = ${type}-;
+      const semitoneShift = midi - nearestPitch;
+      const playbackRate = Math.pow(2, semitoneShift / 12);
       return { key, playbackRate };
     }
 
@@ -3562,54 +3549,45 @@
       const ctx = audioCtx;
       const t0 = startTime;
 
-      // Real guitar sample playback - multi-sample nearest lookup (djen.co style)
-      const sampleType = durationSec <= 0.25 ? 'muted' : (type === 'lead' ? 'open' : 'chord');
+      // Real Studio Metal Guitar playback (custom Death Metal samples)
+      // Articulation selection:
+      // - type === 'lead' -> lead articulation
+      // - durationSec <= 0.32 or short note -> palm mute (pm)
+      // - otherwise -> power chord (chord)
+      let sampleType = 'chord';
+      if (type === 'lead') {
+        sampleType = 'lead';
+      } else if (durationSec <= 0.32) {
+        sampleType = 'pm';
+      }
+
       const { key: sampleKey, playbackRate: sampleRate } = findNearestGuitarSample(midi, sampleType);
       if (SAMPLE_BUFFERS[sampleKey]) {
         try {
           const src = ctx.createBufferSource();
           src.buffer = SAMPLE_BUFFERS[sampleKey];
-          // Pitch shift minimal karena kita pakai sampel terdekat (max ~6 semitone)
           src.playbackRate.value = sampleRate;
 
-          // Amp sim ringan: pre-gain + cab lowpass
-          const preGain = ctx.createGain();
-          const cabFilter = ctx.createBiquadFilter();
-          const presenceFilter = ctx.createBiquadFilter();
-          const outputGain = ctx.createGain();
+          const outGain = ctx.createGain();
+          // Tone is already studio-finished with amp & cab, just set clean transparent volume
+          const vol = velocity * (sampleType === 'pm' ? 1.15 : sampleType === 'lead' ? 1.05 : 1.25);
+          
+          outGain.gain.setValueAtTime(0.001, t0);
+          outGain.gain.linearRampToValueAtTime(vol, t0 + 0.004);
+          
+          // Sustain until note duration ends, then clean quick fadeout to avoid clicks
+          const sustainEnd = t0 + Math.max(0.04, durationSec - 0.02);
+          outGain.gain.setValueAtTime(vol, sustainEnd);
+          outGain.gain.exponentialRampToValueAtTime(0.001, sustainEnd + 0.06);
 
-          // Pre-gain boost untuk karakter distorsi
-          preGain.gain.value = type === 'lead' ? 2.2 : 1.8;
-
-          // Cab simulator: lowpass seperti speaker 4x12
-          cabFilter.type = 'lowpass';
-          cabFilter.frequency.value = type === 'lead' ? 5000 : 4000;
-          cabFilter.Q.value = 0.7;
-
-          // Presence boost (djent character)
-          presenceFilter.type = 'peaking';
-          presenceFilter.frequency.value = 3200;
-          presenceFilter.gain.value = type === 'muted' ? 4 : 2;
-          presenceFilter.Q.value = 1.2;
-
-          // Output envelope
-          const vol = velocity * (type === 'lead' ? 1.4 : type === 'bass' ? 1.0 : 1.2);
-          outputGain.gain.setValueAtTime(0.001, t0);
-          outputGain.gain.linearRampToValueAtTime(vol, t0 + 0.003);
-          outputGain.gain.setValueAtTime(vol, t0 + Math.max(0.03, durationSec - 0.04));
-          outputGain.gain.exponentialRampToValueAtTime(0.001, t0 + durationSec + 0.08);
-
-          src.connect(preGain);
-          preGain.connect(cabFilter);
-          cabFilter.connect(presenceFilter);
-          presenceFilter.connect(outputGain);
-          outputGain.connect(ctx.destination);
+          src.connect(outGain);
+          outGain.connect(ctx.destination);
 
           src.start(t0);
-          src.stop(t0 + durationSec + 0.12);
+          src.stop(sustainEnd + 0.08);
           return;
         } catch(e) {
-          console.warn('Sample playback fallback:', e);
+          console.warn('Custom sample playback fallback:', e);
         }
       }
 
