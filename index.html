@@ -3711,8 +3711,8 @@
         const src = ctx.createBufferSource();
         src.buffer = SAMPLE_BUFFERS[sampleKey];
         const g = ctx.createGain();
-        // Balanced drum levels: kick punchy tapi bulat (0.65), snare rapat (0.55), cymbals rapi (0.35)
-        g.gain.setValueAtTime(velocity * (kind === 'K' ? 0.65 : kind === 'S' ? 0.55 : 0.35), t0);
+        // Balanced drum levels (+2dB boosted): kick 0.82, snare 0.69, cymbals 0.44
+        g.gain.setValueAtTime(velocity * (kind === 'K' ? 0.82 : kind === 'S' ? 0.69 : 0.44), t0);
         src.connect(g);
         g.connect(ctx.destination);
         src.start(t0);
