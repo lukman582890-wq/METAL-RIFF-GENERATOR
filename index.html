@@ -3465,42 +3465,106 @@
       osc.start(now); osc.stop(now + durationSec + 0.04);
     }
     function playNoteTone(midi, startTime, durationSec, velocity, type) {
-      if (midi == null) return;
+      if (midi == null || !audioCtx) return;
       const ctx = audioCtx;
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      const filter = ctx.createBiquadFilter();
-      const dist = ctx.createWaveShaper();
+      const t0 = startTime;
 
-      if (type === 'bass') {
-        osc.type = 'triangle';
-        filter.type = 'lowpass';
-        filter.frequency.value = 400;
-      } else if (type === 'lead') {
-        osc.type = 'sawtooth';
-        filter.type = 'lowpass';
-        filter.frequency.value = 2800;
-      } else {
-        osc.type = 'sawtooth';
-        filter.type = 'lowpass';
-        filter.frequency.value = 1600;
+      // Real guitar sample playback if available
+      const sampleKey = durationSec <= 0.25 ? 'guitar-muted' : (type === 'lead' ? 'guitar-open' : 'guitar-chord');
+      if (SAMPLE_BUFFERS[sampleKey]) {
+        try {
+          const src = ctx.createBufferSource();
+          src.buffer = SAMPLE_BUFFERS[sampleKey];
+          // Base pitch of sample is Drop D (MIDI 38)
+          const semitoneDiff = midi - 38;
+          src.playbackRate.value = Math.pow(2, semitoneDiff / 12);
+
+          const gain = ctx.createGain();
+          const cabFilter = ctx.createBiquadFilter();
+          cabFilter.type = 'lowpass';
+          cabFilter.frequency.value = type === 'lead' ? 4500 : 3200;
+
+          gain.gain.setValueAtTime(velocity * (type === 'lead' ? 1.3 : 1.1), t0);
+          gain.gain.setValueAtTime(velocity * (type === 'lead' ? 1.3 : 1.1), t0 + Math.max(0.04, durationSec - 0.03));
+          gain.gain.exponentialRampToValueAtTime(0.001, t0 + durationSec + 0.08);
+
+          src.connect(cabFilter);
+          cabFilter.connect(gain);
+          gain.connect(ctx.destination);
+
+          src.start(t0);
+          src.stop(t0 + durationSec + 0.1);
+          return;
+        } catch(e) {
+          console.warn('Sample pitch playback fallback:', e);
+        }
       }
 
-      osc.frequency.value = 440 * Math.pow(2, (midi - 69) / 12);
-      const curve = new Float32Array(256);
-      for (let i = 0; i < 256; i++) { const x = (i/128)-1; curve[i] = Math.tanh(x * (type === 'bass' ? 2 : 3.5)); }
-      dist.curve = curve; dist.oversample = '2x';
-      filter.Q.value = 1;
+      // High-Gain Custom Amp/Distortion DSP (Tube Saturation + 4x12 Cab simulation)
+      const osc = ctx.createOscillator();
+      const oscSub = ctx.createOscillator();
+      const preEq = ctx.createBiquadFilter();
+      const dist = ctx.createWaveShaper();
+      const cabSim = ctx.createBiquadFilter();
+      const postEq = ctx.createBiquadFilter();
+      const gain = ctx.createGain();
 
-      const now = startTime;
+      const freq = 440 * Math.pow(2, (midi - 69) / 12);
+      osc.frequency.value = freq;
+      oscSub.frequency.value = freq;
+
+      if (type === 'bass') {
+        osc.type = 'sawtooth';
+        oscSub.type = 'triangle';
+        oscSub.frequency.value = freq * 0.5;
+        preEq.type = 'lowshelf'; preEq.frequency.value = 250; preEq.gain.value = 6;
+        cabSim.type = 'lowpass'; cabSim.frequency.value = 1800;
+      } else if (type === 'lead') {
+        osc.type = 'sawtooth';
+        oscSub.type = 'square';
+        preEq.type = 'peaking'; preEq.frequency.value = 1400; preEq.gain.value = 7;
+        cabSim.type = 'lowpass'; cabSim.frequency.value = 4200;
+      } else {
+        osc.type = 'sawtooth';
+        oscSub.type = 'sawtooth';
+        oscSub.detune.value = 5;
+        preEq.type = 'peaking'; preEq.frequency.value = 950; preEq.gain.value = 9;
+        cabSim.type = 'lowpass'; cabSim.frequency.value = 3200;
+      }
+
+      const n_samples = 512;
+      const curve = new Float32Array(n_samples);
+      const k = type === 'bass' ? 12 : 28;
+      for (let i = 0; i < n_samples; i++) {
+        const x = (i * 2) / n_samples - 1;
+        curve[i] = ((1 + k) * x) / (1 + k * Math.abs(x));
+      }
+      dist.curve = curve;
+      dist.oversample = '4x';
+
+      postEq.type = 'peaking';
+      postEq.frequency.value = 2400;
+      postEq.gain.value = 3.5;
+
+      const now = t0;
       gain.gain.setValueAtTime(0, now);
-      gain.gain.linearRampToValueAtTime(velocity, now + 0.01);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + durationSec);
+      gain.gain.linearRampToValueAtTime(velocity * (type === 'bass' ? 0.9 : 0.7), now + 0.005);
+      gain.gain.setValueAtTime(velocity * (type === 'bass' ? 0.9 : 0.7), now + Math.max(0.02, durationSec * 0.75));
+      gain.gain.exponentialRampToValueAtTime(0.001, now + durationSec + 0.04);
 
-      osc.connect(dist); dist.connect(filter); filter.connect(gain); gain.connect(ctx.destination);
-      osc.start(now); osc.stop(now + durationSec + 0.04);
+      osc.connect(preEq);
+      oscSub.connect(preEq);
+      preEq.connect(dist);
+      dist.connect(cabSim);
+      cabSim.connect(postEq);
+      postEq.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.start(now);
+      oscSub.start(now);
+      osc.stop(now + durationSec + 0.05);
+      oscSub.stop(now + durationSec + 0.05);
     }
-
     function schedulePart(events, type, startAt, sixteenth) {
       let t = startAt;
       for (const ev of events) {
@@ -3534,19 +3598,39 @@
       if (!audioCtx) return;
       const ctx = audioCtx;
       const t0 = startTime;
+
+      // Real acoustic metal drum sample playback if loaded
+      let sampleKey = null;
+      if (kind === 'K') sampleKey = 'kick';
+      else if (kind === 'S') sampleKey = 'snare';
+      else if (kind === 'HH' || kind === 'HP') sampleKey = 'hihat-closed';
+      else if (kind === 'HO') sampleKey = 'hihat-open';
+      else if (kind === 'CL' || kind === 'CR') sampleKey = 'crash';
+      else if (kind === 'CH' || kind === 'BL' || kind === 'RD') sampleKey = 'china';
+
+      if (sampleKey && SAMPLE_BUFFERS[sampleKey]) {
+        const src = ctx.createBufferSource();
+        src.buffer = SAMPLE_BUFFERS[sampleKey];
+        const g = ctx.createGain();
+        g.gain.setValueAtTime(velocity * (kind === 'K' ? 1.25 : kind === 'S' ? 1.05 : 0.75), t0);
+        src.connect(g);
+        g.connect(ctx.destination);
+        src.start(t0);
+        return;
+      }
+
+      // High-grade fallback procedural synthesis if samples loading or for toms
       if (kind === 'K') {
-        // kick: short sine pitch drop
         const osc = ctx.createOscillator();
         const g = ctx.createGain();
-        osc.frequency.setValueAtTime(120, t0);
-        osc.frequency.exponentialRampToValueAtTime(40, t0 + 0.08);
-        g.gain.setValueAtTime(velocity * 0.9, t0);
-        g.gain.exponentialRampToValueAtTime(0.001, t0 + 0.2);
+        osc.frequency.setValueAtTime(140, t0);
+        osc.frequency.exponentialRampToValueAtTime(38, t0 + 0.08);
+        g.gain.setValueAtTime(velocity * 1.1, t0);
+        g.gain.exponentialRampToValueAtTime(0.001, t0 + 0.22);
         osc.connect(g); g.connect(ctx.destination);
-        osc.start(t0); osc.stop(t0 + 0.22);
+        osc.start(t0); osc.stop(t0 + 0.24);
       } else if (kind === 'S') {
-        // snare: noise burst + tone
-        const bufSize = Math.floor(ctx.sampleRate * 0.12);
+        const bufSize = Math.floor(ctx.sampleRate * 0.16);
         const buf = ctx.createBuffer(1, bufSize, ctx.sampleRate);
         const data = buf.getChannelData(0);
         for (let i = 0; i < bufSize; i++) data[i] = Math.random() * 2 - 1;
@@ -3554,16 +3638,17 @@
         noise.buffer = buf;
         const ng = ctx.createGain();
         const nf = ctx.createBiquadFilter();
-        nf.type = 'bandpass'; nf.frequency.value = 1800;
-        ng.gain.setValueAtTime(velocity * 0.55, t0);
-        ng.gain.exponentialRampToValueAtTime(0.001, t0 + 0.1);
+        nf.type = 'bandpass'; nf.frequency.value = 2200; nf.Q.value = 1.4;
+        ng.gain.setValueAtTime(velocity * 0.75, t0);
+        ng.gain.exponentialRampToValueAtTime(0.001, t0 + 0.14);
         noise.connect(nf); nf.connect(ng); ng.connect(ctx.destination);
-        noise.start(t0); noise.stop(t0 + 0.12);
+        noise.start(t0); noise.stop(t0 + 0.16);
+
         const osc = ctx.createOscillator();
         const og = ctx.createGain();
-        osc.frequency.value = 200;
-        og.gain.setValueAtTime(velocity * 0.35, t0);
-        og.gain.exponentialRampToValueAtTime(0.001, t0 + 0.08);
+        osc.frequency.value = 185;
+        og.gain.setValueAtTime(velocity * 0.5, t0);
+        og.gain.exponentialRampToValueAtTime(0.001, t0 + 0.09);
         osc.connect(og); og.connect(ctx.destination);
         osc.start(t0); osc.stop(t0 + 0.1);
       } else if (kind === 'T1' || kind === 'T2' || kind === 'F') {
@@ -3578,7 +3663,6 @@
         osc.connect(g); g.connect(ctx.destination);
         osc.start(t0); osc.stop(t0 + 0.2);
       } else {
-        // Cymbals: filtered noise (HH short, crash/china long, ride mid)
         const isHat = (kind === 'HH' || kind === 'HO' || kind === 'HP');
         const isCrash = (kind === 'CL' || kind === 'CR' || kind === 'CH');
         const dur = isHat ? (kind === 'HO' ? 0.25 : 0.06) : isCrash ? 0.8 : 0.35;
@@ -3602,7 +3686,6 @@
         noise.start(t0); noise.stop(t0 + dur + 0.02);
       }
     }
-
     function scheduleDrums(drumData, startAt, sixteenth) {
       const { grid, total16 } = drumData;
       for (let i = 0; i < total16; i++) {
