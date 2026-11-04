@@ -9,7 +9,7 @@ function getMidtransServerKey(env) {
 
 function getMidtransClientKey(env) {
   if (env && env.MIDTRANS_CLIENT_KEY) return env.MIDTRANS_CLIENT_KEY;
-  const p = ["Mid", "client", "F9nIWGTCWjX5ZC-y"];
+  const p = ["Mid", "client", "Fqjbnu6zXaJ5tevL"];
   return p.join("-");
 }
 
