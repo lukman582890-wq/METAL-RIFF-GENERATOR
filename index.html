@@ -3,450 +3,188 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>METAL RIFF GENERATOR 🤘 | Procedural Heavy Riff Engine</title>
+  <title>Metal Riff Generator | Procedural Heavy Riff Engine</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Fira+Code:wght@400;600;700&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Bungee&family=Barlow+Condensed:wght@500;600;700&family=Courier+Prime:wght@400;700&display=swap" rel="stylesheet">
   <style>
-    :root {
-      --bg: #07070a;
-      --bg-alt: #0d0d14;
-      --panel: #111118;
-      --border: #242434;
-      --border-bright: #38384f;
-      --accent: #ff1e27;
-      --accent-glow: rgba(255, 30, 39, 0.45);
-      --accent2: #ff7b00;
-      --accent2-glow: rgba(255, 123, 0, 0.35);
-      --steel: #7d849b;
-      --steel-bright: #d4daf0;
-      --text: #e8e8f2;
-      --muted: #82829a;
-      --green: #00e676;
-    }
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: 'Rajdhani', -apple-system, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      min-height: 100vh;
-      background-image:
-        radial-gradient(circle at 50% -10%, rgba(255, 30, 39, 0.22) 0%, transparent 60%),
-        linear-gradient(180deg, rgba(7, 7, 10, 0.65) 0%, rgba(10, 10, 16, 0.88) 60%, #050508 100%),
-        url('metal_riff_bg.jpg');
-      background-position: center top;
-      background-repeat: no-repeat;
-      background-size: cover;
-      background-attachment: fixed;
-      font-size: 16px;
-      letter-spacing: 0.5px;
-    }
-    .header-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 0.72rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 2px;
-      color: var(--accent2);
-      background: rgba(255, 123, 0, 0.1);
-      border: 1px solid rgba(255, 123, 0, 0.35);
-      padding: 4px 14px;
-      border-radius: 20px;
-      margin-bottom: 8px;
-    }
-    header h1 {
-      font-family: 'Cinzel', serif !important;
-      font-size: 2.7rem !important;
-      font-weight: 900 !important;
-      letter-spacing: 4px !important;
-      text-transform: uppercase;
-      background: linear-gradient(180deg, #ffffff 0%, #ff8a80 35%, #ff1e27 80%, #990000 100%) !important;
-      -webkit-background-clip: text !important;
-      -webkit-text-fill-color: transparent !important;
-      background-clip: text !important;
-      filter: drop-shadow(0 2px 14px var(--accent-glow));
-    }
-    header::after {
-      content: '';
-      display: block;
-      width: 180px;
-      height: 2px;
-      background: linear-gradient(90deg, transparent, var(--accent), var(--accent2), transparent);
-      margin: 14px auto 0;
-      box-shadow: 0 0 12px var(--accent);
-    }
-    header p {
-      color: var(--steel-bright) !important;
-      font-size: 1.02rem !important;
-      font-weight: 600 !important;
-      letter-spacing: 1px !important;
-    }
-    .panel {
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6), inset 0 1px 1px rgba(255, 255, 255, 0.05);
-      border-radius: 12px;
-      border: 1px solid var(--border);
-    }
-    .btn-gen {
-      background: linear-gradient(135deg, #ff1e27 0%, #b30006 100%) !important;
-      font-size: 1.05rem !important;
-      letter-spacing: 1.5px !important;
-      box-shadow: 0 4px 20px rgba(255, 30, 39, 0.5), inset 0 1px 1px rgba(255,255,255,0.3) !important;
-      border: 1px solid #ff4d52 !important;
-    }
-    .btn-gen:hover:not(:disabled) {
-      background: linear-gradient(135deg, #ff3840 0%, #cc0007 100%) !important;
-      box-shadow: 0 6px 26px rgba(255, 30, 39, 0.7) !important;
-    }
-    .tab-display {
-      font-family: 'Fira Code', 'Courier New', monospace !important;
-      font-size: 0.84rem !important;
-      background: #08080c !important;
-      border: 1px solid #1c1c28 !important;
-      border-left: 4px solid var(--accent) !important;
-      border-radius: 8px !important;
-      color: #99fadc !important;
-    }
-    .container { max-width: 1000px; margin: 0 auto; padding: 22px 14px 50px; }
-    header { text-align: center; margin-bottom: 22px; }
-    header h1 {
-      font-size: 2.1rem; letter-spacing: 2px;
-      background: linear-gradient(90deg, var(--accent), var(--accent2));
-      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
-    }
-    header p { color: var(--muted); margin-top: 6px; font-size: 0.92rem; }
-    .panel {
-      background: var(--panel); border: 1px solid var(--border);
-      border-radius: 12px; padding: 18px; margin-bottom: 16px;
-    }
-    .controls {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(145px, 1fr));
-      gap: 12px;
-    }
-    label {
-      display: block; font-size: 0.7rem; text-transform: uppercase;
-      letter-spacing: 1px; color: var(--muted); margin-bottom: 5px;
-    }
-    select, input[type="range"] {
-      width: 100%; background: var(--bg); border: 1px solid var(--border);
-      color: var(--text); padding: 9px 11px; border-radius: 8px; font-size: 0.9rem; outline: none;
-    }
-    select:focus { border-color: var(--accent); }
-    input[type="range"] {
-      padding: 0; height: 7px; -webkit-appearance: none;
-      background: var(--border); border-radius: 4px;
-    }
-    input[type="range"]::-webkit-slider-thumb {
-      -webkit-appearance: none; width: 16px; height: 16px;
-      background: var(--accent); border-radius: 50%; cursor: pointer;
-    }
-    .range-val { color: var(--accent2); font-weight: 600; }
-    .check-row {
-      display: flex; flex-wrap: wrap; gap: 14px; margin-top: 12px; align-items: center;
-    }
-    .check-row label {
-      display: flex; align-items: center; gap: 7px; text-transform: none;
-      font-size: 0.88rem; color: var(--text); cursor: pointer; letter-spacing: 0;
-    }
-    .check-row input[type="checkbox"] {
-      width: 16px; height: 16px; accent-color: var(--accent); cursor: pointer;
-    }
-    .btn-row { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 16px; }
-    button {
-      flex: 1; min-width: 100px; padding: 12px 14px; border: none; border-radius: 9px;
-      font-size: 0.9rem; font-weight: 700; cursor: pointer;
-      transition: transform 0.12s, opacity 0.15s; letter-spacing: 0.3px;
-    }
-    button:active { transform: scale(0.97); }
-    button:disabled { opacity: 0.4; cursor: not-allowed; }
-    .btn-gen { background: linear-gradient(135deg, var(--accent), #c01818); color: #fff; box-shadow: 0 3px 16px rgba(255,42,42,0.3); }
-    .btn-play { background: linear-gradient(135deg, #1a8a3a, #0d5c24); color: #fff; }
-    .btn-stop { background: #333; color: var(--text); border: 1px solid var(--border); }
-    .btn-copy { background: #252530; color: var(--text); border: 1px solid var(--border); }
-    .btn-midi { background: linear-gradient(135deg, #2a4a8a, #1a3060); color: #fff; }
-    .btn-apply { background: #2a2a38; color: var(--accent2); border: 1px solid var(--border); font-size: 0.82rem; padding: 8px 12px; flex: 0; min-width: auto; }
+    :root{--bg:#0b0a09;--surface:#131210;--raise:#1b1916;--line:#2b2824;--line2:#403b34;--ink:#0b0a09;--bone:#ebe5d8;--mute:#8c8579;--hot:#ff4a1c;--paper:#e9e3d3;
+      --display:'Big Shoulders Display','Arial Narrow',Impact,sans-serif;--mono:'IBM Plex Mono',ui-monospace,Consolas,monospace;--sans:'IBM Plex Sans',system-ui,sans-serif}
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font:15px/1.5 var(--sans);background:var(--bg);color:var(--bone);min-height:100vh}
+    .container{max-width:1280px;margin:0 auto;padding:28px 24px 64px}
 
-    .style-card {
-      background: #0e0e14; border: 1px solid var(--border); border-radius: 10px;
-      padding: 14px 16px; margin-top: 12px; display: none;
-    }
-    .style-card.visible { display: block; }
-    .style-card h3 {
-      font-size: 1rem; color: var(--accent2); margin-bottom: 6px;
-      display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
-    }
-    .style-card .badge {
-      font-size: 0.68rem; background: #2a1a10; color: var(--accent2);
-      padding: 2px 8px; border-radius: 20px; font-weight: 600; letter-spacing: 0.5px;
-    }
-    .style-card p { font-size: 0.84rem; color: #b0b0c0; line-height: 1.5; margin-bottom: 8px; }
-    .style-card .meta {
-      display: flex; flex-wrap: wrap; gap: 10px; font-size: 0.78rem; color: var(--muted);
-    }
-    .style-card .meta strong { color: var(--green); }
-    .style-card .bands { color: #9090a8; font-size: 0.78rem; margin-top: 6px; font-style: italic; }
+    header{display:flex;justify-content:space-between;align-items:flex-end;gap:16px 40px;flex-wrap:wrap;
+      border-bottom:1px solid var(--line);padding-bottom:22px;margin-bottom:20px}
+    .eyebrow{font:500 11px var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--mute);margin-bottom:12px}
+    header h1{font:800 clamp(2.8rem,7.5vw,5.4rem)/.88 var(--display);text-transform:uppercase;color:var(--bone)}
+    header h1 span{color:var(--hot)}
+    header>p{font:400 12px/1.6 var(--mono);color:var(--mute);max-width:30ch}
 
-    .tab-display {
-      font-family: 'Courier New', Courier, monospace; font-size: 0.8rem; line-height: 1.48;
-      white-space: pre; overflow-x: auto; background: #0d0d10; border: 1px solid var(--border);
-      border-radius: 8px; padding: 14px; color: #b8f0c0; min-height: 150px;
-    }
-    .fretboard { margin-top: 10px; overflow-x: auto; }
-    .fretboard table { border-collapse: collapse; width: 100%; min-width: 500px; }
-    .fretboard td, .fretboard th {
-      border: 1px solid #2a2a35; text-align: center; padding: 3px 1px; font-size: 0.66rem; height: 24px;
-    }
-    .fretboard th { background: #1a1a22; color: var(--muted); font-weight: 500; width: 24px; }
-    .fretboard .string-label { background: #12121a; color: #aaa; font-weight: 600; width: 36px; }
-    .fretboard .active {
-      background: var(--accent); color: #fff; font-weight: 700; border-radius: 3px;
-      box-shadow: 0 0 7px rgba(255,42,42,0.5);
-    }
-    .info-bar {
-      display: flex; flex-wrap: wrap; gap: 12px; margin-top: 10px;
-      font-size: 0.85rem; color: var(--muted);
-    }
-    .info-bar span strong { color: var(--accent2); }
+    .user-bar{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;
+      background:var(--surface);border:1px solid var(--line);border-radius:3px;padding:8px 12px;margin-bottom:20px}
+    .user-info-area{display:flex;align-items:center;gap:12px}
+    .user-avatar{width:28px;height:28px;border-radius:2px;background:var(--raise);border:1px solid var(--line2);
+      display:flex;align-items:center;justify-content:center;font:600 12px var(--mono);overflow:hidden}
+    .user-avatar img{width:100%;height:100%;object-fit:cover}
+    .user-details h5{font:600 13px var(--sans);color:var(--bone)}
+    .user-details p{font:400 11px var(--mono);color:var(--mute)}
+    .quota-badge{font:500 11px var(--mono);border:1px solid var(--line2);border-radius:2px;padding:3px 8px;color:var(--bone)}
+    .quota-badge.member{border-left:3px solid var(--hot)}
+    .quota-badge.exhausted{border-color:var(--hot);color:var(--hot)}
+    .btn-auth-action{font:500 11px var(--mono);letter-spacing:.06em;text-transform:uppercase;padding:7px 12px;border:1px solid var(--line2);
+      border-radius:2px;background:transparent;color:var(--bone);cursor:pointer;display:inline-flex;align-items:center;gap:6px;flex:0;min-width:0;transition:background .12s,color .12s}
+    .btn-auth-action:hover{background:var(--bone);color:var(--ink)}
+    #btnOpenLogin,.btn-auth-action[type=submit]{background:var(--hot)!important;border:0!important;color:var(--ink)!important;border-radius:2px!important;letter-spacing:.04em!important}
 
-    .wiki-grid {
-      display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px;
-    }
-    .wiki-item {
-      background: #0e0e14; border: 1px solid var(--border); border-radius: 10px;
-      padding: 12px 14px; cursor: pointer; transition: border-color 0.2s, background 0.2s;
-    }
-    .wiki-item:hover { border-color: var(--accent); background: #16161e; }
-    .wiki-item h4 { font-size: 0.92rem; color: var(--accent2); margin-bottom: 4px; }
-    .wiki-item p { font-size: 0.78rem; color: #9898b0; line-height: 1.4; }
-    .wiki-item .tag {
-      display: inline-block; margin-top: 6px; font-size: 0.68rem;
-      background: #1a1a28; color: var(--muted); padding: 2px 7px; border-radius: 4px;
-    }
+    .workspace{display:grid;grid-template-columns:minmax(300px,380px) minmax(0,1fr);gap:20px;align-items:start}
+    .rig{position:sticky;top:16px;max-height:calc(100vh - 32px);overflow:auto}
+    @media(max-width:960px){.workspace{grid-template-columns:1fr}.rig{position:static;max-height:none}}
 
-    .tips { font-size: 0.8rem; color: var(--muted); line-height: 1.55; }
-    .tips code { background: #1a1a22; padding: 1px 5px; border-radius: 3px; color: #c0c0d8; }
-    footer { text-align: center; margin-top: 24px; color: #555; font-size: 0.78rem; }
-    details.wiki-section summary {
-      cursor: pointer; font-weight: 700; color: var(--text); font-size: 0.95rem;
-      padding: 4px 0; list-style: none; display: flex; align-items: center; gap: 8px;
-    }
-    details.wiki-section summary::before { content: '▶'; font-size: 0.7rem; color: var(--accent); transition: transform 0.2s; }
-    details.wiki-section[open] summary::before { transform: rotate(90deg); }
-    details.wiki-section summary::-webkit-details-marker { display: none; }
+    .panel{background:var(--surface);border:1px solid var(--line);border-radius:3px;padding:16px;margin-bottom:12px}
+    .panel:has(>#infoBar[style*="none"]){display:none}
+    label{display:block;font:500 10.5px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--mute);margin-bottom:6px}
+    .stage>.panel>label{display:flex;align-items:center;gap:9px;color:var(--bone);font-size:11px;border-bottom:1px solid var(--line);padding-bottom:10px;margin-bottom:12px!important}
+    .stage>.panel>label::before{content:'';width:8px;height:8px;background:var(--hot)}
 
-    @media (max-width: 600px) {
-      header h1 { font-size: 1.5rem; }
-      .tab-display { font-size: 0.68rem; }
-    }
+    .controls{display:grid;grid-template-columns:1fr 1fr;gap:16px 12px}
+    .controls>div:nth-child(1){order:1}.controls>div:nth-child(5){order:2}
+    .controls>div:nth-child(2){order:3;grid-column:1/-1}.controls>div:nth-child(3){order:4;grid-column:1/-1}
+    .controls>div:nth-child(6){order:5;grid-column:1/-1}.controls>div:nth-child(4){order:6;grid-column:1/-1}
+    select{width:100%;appearance:none;-webkit-appearance:none;background:var(--raise) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%238c8579'/%3E%3C/svg%3E") no-repeat right 11px center;
+      border:1px solid var(--line2);border-radius:2px;color:var(--bone);padding:9px 30px 9px 10px;font:400 14px var(--sans);outline:none}
+    select:focus{border-color:var(--hot)}
+    select:focus-visible,button:focus-visible{outline:2px solid var(--hot);outline-offset:2px}
+    input[type=range]{width:100%;-webkit-appearance:none;appearance:none;height:20px;padding:0;border:0;outline:none;
+      background:linear-gradient(var(--line2),var(--line2)) center/100% 2px no-repeat}
+    input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:20px;background:var(--hot);border-radius:1px;cursor:pointer}
+    input[type=range]::-moz-range-thumb{width:12px;height:20px;background:var(--hot);border:0;border-radius:1px;cursor:pointer}
+    .range-val{color:var(--hot);font-weight:600}
+
+    .group-title{font:500 10.5px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--mute);margin-top:22px}
+    .check-row{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+    .check-row label{position:relative;display:inline-flex;margin:0;text-transform:none;letter-spacing:0;font:400 11.5px var(--mono);color:var(--mute);
+      border:1px solid var(--line2);border-radius:2px;padding:5px 9px;cursor:pointer;user-select:none;transition:background .1s,color .1s}
+    .check-row label:hover{color:var(--bone);border-color:var(--mute)}
+    .check-row input{position:absolute;opacity:0;width:1px;height:1px;pointer-events:none}
+    .check-row label:has(input:checked){background:var(--hot);border-color:var(--hot);color:var(--ink);font-weight:600}
+    .check-row label:has(input:focus-visible){outline:2px solid var(--hot);outline-offset:2px}
+
+    button{flex:none;min-width:0;border:0;border-radius:2px;cursor:pointer;font:500 11.5px var(--mono);letter-spacing:.06em;text-transform:uppercase;transition:background .12s,color .12s,opacity .12s}
+    button:active{transform:translateY(1px)}
+    button:disabled{opacity:.35;cursor:not-allowed}
+    .btn-row{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:20px}
+    .btn-gen{grid-column:1/-1;background:var(--hot);color:var(--ink);padding:15px;font:800 1.7rem/1 var(--display);letter-spacing:.08em}
+    .btn-gen:hover:not(:disabled){background:#ff6a40}
+    .btn-play,.btn-stop,.btn-copy,.btn-midi{background:transparent;color:var(--bone);border:1px solid var(--line2);padding:10px 4px}
+    .btn-play:hover:not(:disabled),.btn-stop:hover:not(:disabled),.btn-copy:hover:not(:disabled),.btn-midi:hover:not(:disabled){background:var(--bone);color:var(--ink)}
+    .btn-apply{background:transparent;color:var(--hot);border:1px solid var(--hot);padding:7px 10px;margin-top:2px;font-size:11px;text-align:left}
+    .btn-apply:hover{background:var(--hot);color:var(--ink)}
+
+    .style-card{display:none;background:var(--raise);border:1px solid var(--line);border-left:3px solid var(--hot);border-radius:2px;padding:12px 14px;margin-top:16px}
+    .style-card.visible{display:block}
+    .style-card h3{font:700 1.3rem/1.1 var(--display);text-transform:uppercase;letter-spacing:.02em;display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px}
+    .style-card .badge{font:500 10px var(--mono);border:1px solid var(--line2);color:var(--mute);padding:1px 6px;border-radius:2px;letter-spacing:.04em}
+    .style-card p{font-size:13px;color:#b8b2a4;margin-bottom:8px}
+    .style-card .meta{display:flex;flex-wrap:wrap;gap:4px 14px;font:400 11px var(--mono);color:var(--mute)}
+    .style-card .meta strong{color:var(--bone);font-weight:500}
+    .style-card .bands{color:var(--mute);font-size:12px;margin-top:6px;font-style:italic}
+
+    .tab-display{background:var(--paper);color:var(--ink);font:400 13px/1.5 var(--mono);white-space:pre;overflow-x:auto;border-radius:2px;padding:14px 16px;min-height:110px}
+    .info-bar{display:flex;flex-wrap:wrap;gap:4px 20px;font:400 12px var(--mono);color:var(--mute)}
+    .info-bar strong{color:var(--bone);font-weight:500}
+    .fretboard{overflow-x:auto}
+    .fretboard table{border-collapse:collapse;width:100%;min-width:500px}
+    .fretboard td,.fretboard th{border:1px solid var(--line);text-align:center;padding:2px 1px;font:400 10.5px var(--mono);height:24px;color:var(--mute)}
+    .fretboard th{background:var(--raise);width:24px}
+    .fretboard .string-label{background:var(--raise);color:var(--bone);width:36px;font-weight:500}
+    .fretboard .active{background:var(--hot);color:var(--ink);font-weight:600;border-radius:2px}
+
+    details.wiki-section summary{cursor:pointer;font:500 12px var(--mono);letter-spacing:.08em;text-transform:uppercase;list-style:none;display:flex;align-items:center;gap:10px}
+    details.wiki-section summary::before{content:'';width:0;height:0;border-left:7px solid var(--hot);border-top:4px solid transparent;border-bottom:4px solid transparent;transition:transform .15s}
+    details.wiki-section[open] summary::before{transform:rotate(90deg)}
+    details.wiki-section summary::-webkit-details-marker{display:none}
+    .wiki-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px}
+    .wiki-item{background:var(--raise);border:1px solid var(--line);border-radius:2px;padding:12px 14px;cursor:pointer;transition:border-color .12s}
+    .wiki-item:hover{border-color:var(--hot)}
+    .wiki-item h4{font:700 1.1rem/1.1 var(--display);text-transform:uppercase;letter-spacing:.02em;margin-bottom:5px}
+    .wiki-item p{font-size:12.5px;color:var(--mute);line-height:1.5}
+    .wiki-item .tag{display:inline-block;margin-top:8px;font:400 10px var(--mono);border:1px solid var(--line2);color:var(--mute);padding:1px 6px;border-radius:2px}
+    .tips{font-size:13px;color:var(--mute);line-height:1.7}
+    .tips code{font:400 12px var(--mono);background:var(--raise);padding:1px 5px;border-radius:2px;color:var(--bone)}
+    footer{margin-top:28px;border-top:1px solid var(--line);padding-top:16px;color:var(--mute);font:400 11px var(--mono)}
+    #toast{background:var(--bone)!important;color:var(--ink)!important;border-radius:2px!important;border-left:4px solid var(--hot);font:500 13px var(--mono)!important;box-shadow:none!important}
+
+    .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.8);display:flex;align-items:center;justify-content:center;z-index:99999;opacity:0;pointer-events:none;transition:opacity .2s;padding:16px}
+    .modal-overlay.active{opacity:1;pointer-events:all}
+    .metal-modal{background:var(--surface);border:1px solid var(--line2);border-radius:3px;max-width:440px;width:100%;padding:28px 24px;text-align:left;position:relative;transform:translateY(8px);transition:transform .2s}
+    .modal-overlay.active .metal-modal{transform:none}
+    .modal-close-btn{position:absolute;top:10px;right:12px;background:transparent;color:var(--mute);font-size:1.4rem;line-height:1;padding:4px;text-transform:none}
+    .modal-close-btn:hover{color:var(--bone)}
+    .modal-icon{display:none}
+    .metal-modal h3{font:800 1.9rem/1 var(--display);text-transform:uppercase;margin-bottom:12px;padding-right:24px}
+    .metal-modal p{font-size:14px;color:#b8b2a4;line-height:1.6;margin-bottom:20px}
+    #inputUserEmail{background:var(--raise)!important;border:1px solid var(--line2)!important;border-radius:2px!important;box-shadow:none!important;font:400 14px var(--sans)!important}
+    #inputUserEmail:focus{border-color:var(--hot)!important}
+    .pro-feature-list{background:var(--raise);border:1px solid var(--line);border-radius:2px;padding:12px 16px;margin-bottom:20px;font-size:13.5px;line-height:1.8}
+    .pro-feature-list li{list-style:none;display:flex;gap:10px}
+    .pro-feature-list li::before{content:'+';color:var(--hot);font:600 13px var(--mono)}
+    .btn-upgrade-pay{width:100%;background:var(--hot)!important;color:var(--ink)!important;padding:14px!important;font:800 1.3rem var(--display)!important;letter-spacing:.06em!important}
+    @media(prefers-reduced-motion:reduce){*{transition:none!important}}
   
-    /* USER AUTH & QUOTA BAR */
-    .user-bar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      background: #0d0d14;
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 10px 16px;
-      margin-bottom: 16px;
-      flex-wrap: wrap;
-      gap: 10px;
-    }
-    .user-info-area {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-    .user-avatar {
-      width: 34px;
-      height: 34px;
-      border-radius: 50%;
-      background: #252536;
-      border: 2px solid var(--accent);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: 700;
-      font-size: 0.9rem;
-      color: #fff;
-      overflow: hidden;
-    }
-    .user-avatar img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
-    .user-details h5 {
-      font-size: 0.92rem;
-      font-weight: 700;
-      color: #fff;
-      margin: 0;
-    }
-    .user-details p {
-      font-size: 0.78rem;
-      color: var(--steel);
-      margin: 0;
-    }
-    .quota-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 0.8rem;
-      font-weight: 700;
-      padding: 5px 12px;
-      border-radius: 20px;
-      background: rgba(255, 30, 39, 0.12);
-      border: 1px solid rgba(255, 30, 39, 0.35);
-      color: #ff8a80;
-    }
-    .quota-badge.member {
-      background: rgba(0, 230, 118, 0.12);
-      border-color: rgba(0, 230, 118, 0.35);
-      color: #b9f6ca;
-    }
-    .quota-badge.exhausted {
-      background: rgba(255, 123, 0, 0.15);
-      border-color: rgba(255, 123, 0, 0.45);
-      color: #ffab40;
-    }
-    .btn-auth-action {
-      padding: 8px 14px;
-      font-size: 0.82rem;
-      font-weight: 700;
-      border-radius: 6px;
-      border: 1px solid var(--border-bright);
-      background: #191924;
-      color: #fff;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      flex: 0;
-      min-width: auto;
-      transition: all 0.15s ease;
-    }
-    .btn-auth-action:hover {
-      background: var(--accent);
-      border-color: var(--accent);
-    }
-    .btn-google-login {
-      background: #ffffff;
-      color: #1f1f1f;
-      border: 1px solid #d2d2d2;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-    }
-    .btn-google-login:hover {
-      background: #f1f1f1;
-      border-color: #fff;
-      color: #000;
-    }
-
-    /* MODAL OVERLAY & POPUPS */
-    .modal-overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100vw;
-      height: 100vh;
-      background: rgba(0, 0, 0, 0.85);
-      backdrop-filter: blur(8px);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 99999;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.25s ease;
-      padding: 16px;
-    }
-    .modal-overlay.active {
-      opacity: 1;
-      pointer-events: all;
-    }
-    .metal-modal {
-      background: linear-gradient(160deg, #161622 0%, #0a0a10 100%);
-      border: 2px solid var(--accent);
-      border-radius: 14px;
-      max-width: 460px;
-      width: 100%;
-      padding: 26px 22px;
-      box-shadow: 0 0 35px rgba(255, 30, 39, 0.4), inset 0 1px 1px rgba(255,255,255,0.1);
-      text-align: center;
-      position: relative;
-      transform: scale(0.92);
-      transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    }
-    .modal-overlay.active .metal-modal {
-      transform: scale(1);
-    }
-    .modal-close-btn {
-      position: absolute;
-      top: 12px;
-      right: 14px;
-      background: transparent;
-      border: none;
-      color: var(--muted);
-      font-size: 1.4rem;
-      cursor: pointer;
-      line-height: 1;
-      min-width: auto;
-      padding: 4px;
-    }
-    .modal-close-btn:hover { color: #fff; }
-    .modal-icon {
-      font-size: 2.8rem;
-      margin-bottom: 12px;
-      filter: drop-shadow(0 0 12px var(--accent-glow));
-    }
-    .metal-modal h3 {
-      font-family: 'Cinzel', serif;
-      font-size: 1.45rem;
-      font-weight: 900;
-      color: #fff;
-      margin-bottom: 8px;
-      letter-spacing: 1.5px;
-    }
-    .metal-modal p {
-      font-size: 0.92rem;
-      color: var(--steel-bright);
-      line-height: 1.55;
-      margin-bottom: 20px;
-    }
-    .pro-feature-list {
-      text-align: left;
-      background: rgba(0,0,0,0.35);
-      border: 1px solid #232332;
-      border-radius: 8px;
-      padding: 12px 16px;
-      margin-bottom: 20px;
-      font-size: 0.88rem;
-      line-height: 1.7;
-      color: #e0e0f0;
-    }
-    .pro-feature-list li {
-      list-style: none;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .pro-feature-list li::before {
-      content: '✔';
-      color: var(--green);
-      font-weight: 700;
-    }
-    .btn-upgrade-pay {
-      background: linear-gradient(135deg, #ff1e27 0%, #ff7b00 100%) !important;
-      color: #fff !important;
-      font-size: 1.05rem !important;
-      letter-spacing: 1.5px !important;
-      padding: 14px 20px !important;
-      box-shadow: 0 4px 20px rgba(255, 30, 39, 0.6) !important;
-      border: 1px solid #ffa000 !important;
-      width: 100%;
-    }
-
+  
+    /* ---- Guitar Hero skin ---- */
+    :root{--bg:#0a0612;--surface:#130d1f;--raise:#1c1430;--line:#2e2447;--line2:#463a66;--ink:#0a0612;--bone:#f2eefc;--mute:#a79ec4;--hot:#ff8a00;--paper:#07040d;
+      --g:#2ecc40;--r:#ff3b3b;--y:#ffd400;--b:#2a7bff;--o:#ff8a00;
+      --display:'Bungee',Impact,sans-serif;--mono:'Barlow Condensed','Arial Narrow',sans-serif;--sans:'Barlow Condensed','Arial Narrow',sans-serif}
+    html[lang=ja] body,html[lang=ja] button,html[lang=ja] select{font-family:'Hiragino Kaku Gothic ProN','Yu Gothic','Noto Sans JP',sans-serif}
+    html[lang=zh] body,html[lang=zh] button,html[lang=zh] select{font-family:'PingFang SC','Microsoft YaHei','Noto Sans SC',sans-serif}
+    body{font-size:17px;background:#0a0612 repeating-linear-gradient(90deg,transparent 0 119px,rgba(255,255,255,.022) 119px 120px)}
+    header{border-bottom:0;padding-bottom:6px}
+    header h1,.btn-gen,.style-card h3,.wiki-item h4,.metal-modal h3,.btn-upgrade-pay{font-weight:400!important}
+    header h1{font-size:clamp(2.2rem,6vw,4.4rem);line-height:1}
+    header h1 span{color:var(--o)}
+    header h1::after{content:'';display:block;height:8px;margin-top:14px;width:min(460px,100%);background:linear-gradient(90deg,var(--g) 0 20%,var(--r) 20% 40%,var(--y) 40% 60%,var(--b) 60% 80%,var(--o) 80% 100%)}
+    .eyebrow{font-size:14px;font-weight:600;color:var(--mute)}
+    .hdr-side{display:flex;flex-direction:column;gap:12px;align-items:flex-start}
+    .hdr-side p{font:500 16px/1.4 var(--mono);color:var(--mute);max-width:32ch}
+    #lang{width:auto;font-weight:600}
+    .panel{border:2px solid var(--line);border-radius:8px}
+    select{border-radius:6px;font:600 16px var(--sans)}
+    label,.group-title{font-size:13px;font-weight:600;letter-spacing:.1em}
+    .user-details p,.quota-badge,.info-bar,.style-card .meta{font-size:14px}
+    .quota-badge.member{border-left-color:var(--g)}
+    .tab-display,.fretboard td,.fretboard th{font-family:'Courier Prime','Courier New',monospace}
+    .tab-display{background:#07040d;color:#c8f7d0;border:1px solid var(--line)}
+    #panelRhythm,#panelLead,#panelBass,#panelBreakdown,#panelDrums,.hw{border-top:4px solid var(--o)}
+    #panelRhythm{border-top-color:var(--g)}#panelLead{border-top-color:var(--r)}#panelBass{border-top-color:var(--y)}#panelBreakdown{border-top-color:var(--b)}
+    #panelRhythm>label::before{background:var(--g)}#panelLead>label::before{background:var(--r)}#panelBass>label::before{background:var(--y)}#panelBreakdown>label::before{background:var(--b)}#panelDrums>label::before{background:var(--o)}
+    .check-row label{--c:var(--g);font-size:14px;font-weight:600;border-radius:6px;color:var(--mute)}
+    .check-row label:nth-child(5n+2){--c:var(--r)}.check-row label:nth-child(5n+3){--c:var(--y)}.check-row label:nth-child(5n+4){--c:var(--b)}.check-row label:nth-child(5n+5){--c:var(--o)}
+    .check-row label:has(input:checked){background:var(--c);border-color:var(--c);color:#0a0612}
+    button{font:700 15px var(--mono);letter-spacing:.08em;border-radius:8px}
+    .btn-play,.btn-stop,.btn-copy,.btn-midi,.btn-gen{border:0;color:#0a0612;border-bottom:5px solid rgba(0,0,0,.35);padding:10px 4px 7px}
+    .btn-play,.btn-play:hover:not(:disabled){background:var(--g);color:#0a0612}
+    .btn-stop,.btn-stop:hover:not(:disabled){background:var(--r);color:#0a0612}
+    .btn-copy,.btn-copy:hover:not(:disabled){background:var(--y);color:#0a0612}
+    .btn-midi,.btn-midi:hover:not(:disabled){background:var(--b);color:#0a0612}
+    .btn-gen,.btn-gen:hover:not(:disabled){background:var(--o);color:#0a0612;font:400 1.3rem/1 var(--display);letter-spacing:.06em;padding:15px 4px 11px}
+    button:hover:not(:disabled){filter:brightness(1.1)}
+    button:active:not(:disabled){transform:translateY(3px);border-bottom-width:2px}
+    .btn-apply{border-radius:6px;font-size:14px}
+    .style-card{border-radius:6px;border-left:5px solid var(--o)}
+    .style-card h3{font-size:1.05rem}.wiki-item h4{font-size:.9rem}.wiki-item{border-radius:6px}.wiki-item:hover{border-color:var(--o)}
+    details.wiki-section summary{font-size:15px}
+    .metal-modal{border:2px solid var(--o);border-radius:10px;box-shadow:none}
+    .metal-modal h3{font-size:1.3rem}.btn-upgrade-pay{font-size:1.1rem!important}
+    .hud{display:flex;flex-wrap:wrap;gap:8px 24px;align-items:center;margin-bottom:12px}
+    .hud>div{display:flex;flex-direction:column;gap:3px}
+    .hl{font:600 12px var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--mute)}
+    .hud b{font:400 1.5rem/1 var(--display);color:var(--bone);font-variant-numeric:tabular-nums}
+    .hud .hud-right{margin-left:auto;flex-direction:row;align-items:center;gap:10px}
+    .hud select{width:auto;padding:6px 28px 6px 10px}
+    .auto{font:700 12px var(--mono);letter-spacing:.14em;border:1px solid var(--line2);color:var(--mute);padding:4px 8px;border-radius:4px}
+    #highway{display:block;width:100%;height:clamp(360px,52vw,520px);border-radius:6px}
   </style>
 <!-- Odin III map synced to supplied UI screenshot 2026-09-30 -->
   <script type="text/javascript" src="https://app.sandbox.midtrans.com/snap/snap.js" data-client-key="Mid-client-Fqjbnu6zXaJ5tevL"></script>
@@ -454,34 +192,38 @@
 <body>
   <div class="container">
     <header>
-      <div class="header-badge">⚡ Odin III DAW Sync • 22 Metal Subgenres • 6 & 7-String Supported</div>
-      <h1>🤘 METAL RIFF GENERATOR</h1>
-      <p>Procedural Metal Guitar Engine • Rhythm + Lead Shred + Bass Slap + Breakdown + Drums</p>
+      <div>
+        <div class="eyebrow">Odin III sync / 22 subgenre / 6 &amp; 7 string</div>
+        <h1>Metal Riff<br><span>Generator</span></h1>
+      </div>
+      <div class="hdr-side"><p>Mesin riff prosedural: rhythm, lead, bass, breakdown, dan drum.</p>
+        <select id="lang" aria-label="Language"><option value="id">Indonesia</option><option value="en">English</option><option value="es">Español</option><option value="pt">Português</option><option value="zh">中文</option><option value="ja">日本語</option></select></div>
     </header>
 
     
     <!-- USER AUTH & QUOTA BAR -->
     <div class="user-bar" id="userBar">
       <div class="user-info-area">
-        <div class="user-avatar" id="userAvatar">👤</div>
+        <div class="user-avatar" id="userAvatar"></div>
         <div class="user-details">
           <h5 id="userName">Tamu / Guest</h5>
           <p id="userEmail">Belum Login</p>
         </div>
         <div class="quota-badge" id="quotaBadge">
-          ⚡ Sisa: <strong id="quotaCount">1</strong>x Gratis
+          Sisa: <strong id="quotaCount">1</strong>x Gratis
         </div>
       </div>
       <div>
         <button class="btn-auth-action" id="btnOpenLogin" style="background:linear-gradient(135deg, var(--accent), #990000); border-color:#ff4d52; color:#fff;">
-          🔑 Masuk Akun Gmail
+          Masuk Akun Gmail
         </button>
         <button class="btn-auth-action" id="btnLogout" style="display:none;">Keluar</button>
       </div>
     </div>
 
+    <div class="workspace">
     <!-- CONTROLS -->
-    <div class="panel">
+    <div class="panel rig">
       <div class="controls">
         <div>
           <label>Key</label>
@@ -583,10 +325,11 @@
         </div>
         <div class="bands" id="scBands"></div>
         <div style="margin-top:10px">
-          <button class="btn-apply" id="btnApplyPreset" type="button">⚙ Terapkan Recommended + Teknik Genre</button>
+          <button class="btn-apply" id="btnApplyPreset" type="button">Terapkan Recommended + Teknik Genre</button>
         </div>
       </div>
 
+      <div class="group-title">Bagian</div>
       <div class="check-row">
         <label><input type="checkbox" id="genRhythm" checked /> Rhythm Guitar</label>
         <label><input type="checkbox" id="genLead" checked /> Lead Guitar</label>
@@ -594,6 +337,7 @@
         <label><input type="checkbox" id="genBreakdown" /> Breakdown</label>
         <label><input type="checkbox" id="genDrums" checked /> Drums</label>
       </div>
+      <div class="group-title">Teknik</div>
       <div class="check-row">
         <label><input type="checkbox" id="powerChord" checked /> Power Chords</label>
         <label><input type="checkbox" id="altPicking" checked /> Alternate Picking ↓↑</label>
@@ -612,33 +356,43 @@
       </div>
 
       <div class="btn-row">
-        <button class="btn-gen" id="btnGen">⚡ GENERATE</button>
+        <button class="btn-gen" id="btnGen">GENERATE</button>
         <button class="btn-play" id="btnPlay" disabled>▶ PLAY</button>
         <button class="btn-stop" id="btnStop" disabled>■ STOP</button>
-        <button class="btn-copy" id="btnCopy" disabled>📋 COPY TAB</button>
-        <button class="btn-midi" id="btnMidi" disabled>🎹 MIDI</button>
+        <button class="btn-copy" id="btnCopy" disabled>COPY TAB</button>
+        <button class="btn-midi" id="btnMidi" disabled>MIDI</button>
       </div>
     </div>
 
+    <div class="stage">
+    <div class="panel hw">
+      <div class="hud">
+        <div><span class="hl">Score</span><b id="hwScore">000000</b></div>
+        <div><span class="hl">Combo</span><b id="hwCombo">0</b></div>
+        <div><span class="hl">Mult</span><b id="hwMult">x1</b></div>
+        <div class="hud-right"><span class="hl">Track</span><select id="hwTrack" aria-label="Track"><option value="lead">Lead</option><option value="rhythm">Rhythm</option><option value="bass">Bass</option></select><span class="auto">AUTOPLAY</span></div>
+      </div>
+      <canvas id="highway" role="img" aria-label="Note highway"></canvas>
+    </div>
     <!-- TABS -->
     <div class="panel" id="panelRhythm">
-      <label style="margin-bottom:8px">🎸 Rhythm Guitar</label>
+      <label style="margin-bottom:8px">Rhythm Guitar</label>
       <div class="tab-display" id="tabRhythm">Generate untuk melihat tab rhythm...</div>
     </div>
     <div class="panel" id="panelLead">
-      <label style="margin-bottom:8px">🎸 Lead Guitar</label>
+      <label style="margin-bottom:8px">Lead Guitar</label>
       <div class="tab-display" id="tabLead">Generate untuk melihat tab lead...</div>
     </div>
     <div class="panel" id="panelBass">
-      <label style="margin-bottom:8px">🎸 Bass</label>
+      <label style="margin-bottom:8px">Bass</label>
       <div class="tab-display" id="tabBass">Generate untuk melihat tab bass...</div>
     </div>
     <div class="panel" id="panelBreakdown" style="display:none">
-      <label style="margin-bottom:8px">💥 Breakdown</label>
+      <label style="margin-bottom:8px">Breakdown</label>
       <div class="tab-display" id="tabBreakdown">Centang Breakdown + Generate...</div>
     </div>
     <div class="panel" id="panelDrums" style="display:none">
-      <label style="margin-bottom:8px">🥁 Drums (K S Toms + HH Crash China Ride Bell)</label>
+      <label style="margin-bottom:8px">Drums (K S Toms + HH Crash China Ride Bell)</label>
       <div class="tab-display" id="tabDrums">Centang Drums + Generate...</div>
     </div>
     <div class="panel">
@@ -657,10 +411,11 @@
       <div class="fretboard" id="fretboard"></div>
     </div>
 
+    </div></div>
     <!-- ENCYCLOPEDIA -->
     <div class="panel">
       <details class="wiki-section" open>
-        <summary>📚 Encyclopedia Subgenre Metal &amp; Karakter Riff</summary>
+        <summary>Encyclopedia Subgenre Metal &amp; Karakter Riff</summary>
         <p class="tips" style="margin:10px 0 14px">
           Klik kartu di bawah untuk langsung pilih style tersebut di generator.
           Setiap subgenre punya DNA riff yang berbeda — rhythm, interval, densitas, dan feel.
@@ -670,7 +425,7 @@
     </div>
 
     <div class="panel tips">
-      <strong style="color:var(--text)">Cara dapat riff bagus:</strong>
+      <strong style="color:var(--bone)">Cara dapat riff bagus:</strong>
       1) Pilih subgenre → klik “Terapkan Recommended + Teknik Genre” → preset + teknik genre otomatis tercentang → Generate.
       2) Thrash/Death suka palm-mute + alternate picking.
       3) Djent/Metalcore paling enak di Drop C / 7-string GCGC.
@@ -1446,7 +1201,7 @@
           : style.rhythms;
         let pat = randomChoice(rhythmSource).slice();
         if (id !== 'thrash_gallop' && Math.random() < dna.mut*.5)
-          pat = pat.slice(Math.floor(Math.random()*pat.length)).concat(pat.slice(0,Math.floor(Math.random()*pat.length)));
+          { const rot = Math.floor(Math.random()*pat.length); pat = pat.slice(rot).concat(pat.slice(0,rot)); }
         if (dna.d > .65 && Math.random() < dna.mut*.5) {
           const i = pat.findIndex(x => x >= 4);
           if (i >= 0) { const x=pat[i], a=Math.floor(x/2); pat.splice(i,1,a,x-a); }
@@ -1518,6 +1273,11 @@
         for (let f = 0; f <= maxF; f++) {
           if (mod12(open[s] + f) === mod12(pc)) hits.push(f);
         }
+        if (!hits.length) {
+          for (let f = maxF + 1; f <= 24; f++) {
+            if (mod12(open[s] + f) === mod12(pc)) { hits.push(f); break; }
+          }
+        }
         if (!hits.length) return 0;
         hits.sort((a, b) => Math.abs(a - anchor) - Math.abs(b - anchor));
         return hits[0];
@@ -1537,7 +1297,7 @@
 
       // Check if low string open note matches root
       const isOpenRoot = mod12(open[0]) === root;
-      const rootFret = fretForPC(0, root, 0, 8);
+      const rootFret = fretForPC(0, root, 0, 12);
 
       // Genre specific accents & intervals
       const genreAccents = {
@@ -1812,6 +1572,44 @@
           barStep += dur;
           globalStep += dur;
         }
+      }
+
+      // Sweep / String-skip post-pass (these checkboxes were ignored by the V31 engine)
+      const retarget = (ev, ts) => {
+        if (!ev || ev.rest || !ev.notes || !ev.notes.length || ts < 0 || ts >= nstr) return false;
+        const pc = mod12(ev.notes[0].midi);
+        const nf = fretForPC(ts, pc, 5, 14);
+        ev.notes = [{ string: ts, fret: nf, midi: open[ts] + nf }];
+        ev.power = false; ev.muted = false;
+        return true;
+      };
+      if ((useSweep || useSkip) && nstr >= 4) {
+        for (let i = 1; i < events.length; i++) {
+          const pe = events[i - 1], e = events[i];
+          if (e.rest || pe.rest || !e.notes.length || !pe.notes.length) continue;
+          if (useSweep && Math.random() < Math.max(.08, techProfile.sweep * 2) && i + 2 < events.length &&
+              !events[i + 1].rest && !events[i + 2].rest) {
+            const dir = Math.random() < .5 ? 1 : -1, base = pe.notes[0].string;
+            const ts = [base + dir, base + 2 * dir, base + 3 * dir];
+            if (ts.every(x => x >= 0 && x < nstr)) {
+              retarget(e, ts[0]); retarget(events[i + 1], ts[1]); retarget(events[i + 2], ts[2]);
+              [e, events[i + 1], events[i + 2]].forEach(x => { x.tech = 'sweep'; x.pick = 'D'; });
+              i += 2; continue;
+            }
+          }
+          if (useSkip && Math.random() < Math.max(.08, techProfile.skip * 2)) {
+            const base = pe.notes[0].string, dir = Math.random() < .5 ? -1 : 1;
+            if (retarget(e, base + dir * 2)) e.tech = 'skip';
+          }
+        }
+        const force = (name, on) => {
+          if (!on || events.some(e => e.tech === name)) return;
+          const cs = events.filter(e => !e.rest && e.notes && e.notes.length && !e.tech && e.dur <= 2);
+          if (!cs.length) return;
+          const e = randomChoice(cs);
+          if (retarget(e, Math.min(nstr - 1, (e.notes[0].string || 0) + 2))) e.tech = name;
+        };
+        force('skip', useSkip);
       }
 
       // Guarantee at least one killer pinch harmonic if user checked Pinch Harmonic
@@ -2548,7 +2346,8 @@
 
     // Bass: SLAP style – tightly locked to rhythm guitar roots (same pitch class)
     function generateBass(opts) {
-      const { key, scaleKey, tuningKey, durations, rhythmEvents, styleId, usePalm } = opts;
+      const { key, scaleKey, tuningKey, rhythmEvents, styleId, usePalm } = opts;
+      const durations = (rhythmEvents && rhythmEvents.length) ? rhythmEvents.map(e => e.dur) : opts.durations;
       const bassFlavor = {
         thrash:{slap:.10,pop:.08,ghost:.03,rest:.02},thrash_gallop:{slap:.08,pop:.06,ghost:.02,rest:.01},
         death:{slap:.04,pop:.04,ghost:.08,rest:.04},melodeath:{slap:.14,pop:.20,ghost:.02,rest:.02},black:{slap:.02,pop:.02,ghost:.05,rest:.01},
@@ -3345,6 +3144,7 @@
     }
 
     function attachModalHandlers() {
+function attachModalHandlers() {
       document.getElementById('btnOpenLogin')?.addEventListener('click', () => openModal('loginModal'));
       document.getElementById('closeLoginModal')?.addEventListener('click', () => closeModal('loginModal'));
       document.getElementById('closePaywallModal')?.addEventListener('click', () => closeModal('paywallModal'));
@@ -4343,6 +4143,986 @@
     buildWiki();
     updateStyleCard();
     renderFretboard([], 'standard6');
+  function generateRiff() {
+      // QUOTA & AUTH ENFORCEMENT
+      const currentUser = getCurrentUser();
+      if (!currentUser || !currentUser.isPro) {
+        if (!currentUser) {
+          // Guest mode check (Limit: 1x)
+          const used = getGuestUsage();
+          if (used >= GUEST_LIMIT) {
+            openModal('loginModal');
+            
+            return;
+          }
+        } else {
+          // Member mode check (Limit: 5x)
+          const used = getUserUsage(currentUser.email);
+          if (used >= MEMBER_LIMIT) {
+            openModal('paywallModal');
+            return;
+          }
+        }
+      }
+
+      const key = $('key').value;
+      const scaleKey = $('scale').value;
+      const styleId = $('style').value;
+      const style = STYLE_DB[styleId];
+      const bars = parseInt($('bars').value, 10);
+      const tuningKey = $('tuning').value;
+      const usePower = $('powerChord').checked;
+      const useAlt = $('altPicking').checked && !$('downstroke').checked;
+      const useDown = $('downstroke').checked;
+      const usePalm = $('palmMute').checked;
+      const usePinch = $('techPinch').checked;
+      const useHopo = $('techHopo').checked;
+      const useSlide = $('techSlide').checked;
+      const useEconomy = $('techEconomy').checked;
+      const useSlant = $('techSlant').checked;
+      const useSweep = $('techSweep').checked;
+      const useSkip = $('techSkip').checked;
+      const usePanic = $('techPanic').checked;
+      const useBouncy = $('techBouncy').checked;
+      const doRhythm = $('genRhythm').checked;
+      const doLead = $('genLead').checked;
+      const doBass = $('genBass').checked;
+      const doBreakdown = $('genBreakdown').checked;
+      const doDrums = $('genDrums').checked;
+
+      if (!doRhythm && !doLead && !doBass && !doBreakdown && !doDrums) {
+        showToast('Pilih minimal 1 part');
+        return;
+      }
+
+      const durations = buildDurations(style, bars);
+      const opts = { key, scaleKey, styleId, style, bars, tuningKey, usePower, useAlt, useDown, usePalm, usePinch, useHopo, useSlide, useEconomy, useSlant, useSweep, useSkip, usePanic, useBouncy, durations };
+
+      parts = { rhythm: null, lead: null, bass: null, breakdown: null, drums: null };
+
+      if (doRhythm) parts.rhythm = generateRhythm(opts);
+      if (doLead) parts.lead = generateLead(opts);
+      if (doBreakdown) parts.breakdown = generateBreakdown(opts);
+      if (doBass) {
+        opts.rhythmEvents = parts.rhythm || parts.breakdown;
+        parts.bass = generateBass(opts);
+      }
+      if (doDrums) {
+        opts.rhythmEvents = parts.rhythm || parts.breakdown;
+        parts.drums = generateDrums(opts);
+      }
+
+      // Render tabs
+      const meta = { key, scaleKey, styleId, useAlt, tuningKey, bars };
+      if (parts.rhythm) {
+        $('tabRhythm').textContent = formatTab(parts.rhythm, STRING_NAMES[tuningKey], meta, 'RHYTHM');
+        $('panelRhythm').style.display = '';
+        renderFretboard(parts.rhythm, tuningKey);
+      } else {
+        $('tabRhythm').textContent = '(Rhythm off)';
+        $('panelRhythm').style.display = 'none';
+      }
+      if (parts.lead) {
+        $('tabLead').textContent = formatTab(parts.lead, STRING_NAMES[tuningKey], meta, 'LEAD');
+        $('panelLead').style.display = '';
+      } else {
+        $('tabLead').textContent = '(Lead off)';
+        $('panelLead').style.display = 'none';
+      }
+      if (parts.bass) {
+        $('tabBass').textContent = formatTab(parts.bass, BASS_NAMES[tuningKey] || BASS_NAMES.standard6, meta, 'BASS');
+        $('panelBass').style.display = '';
+      } else {
+        $('tabBass').textContent = '(Bass off)';
+        $('panelBass').style.display = 'none';
+      }
+      if (!parts.rhythm && !parts.breakdown && parts.lead) renderFretboard(parts.lead, tuningKey);
+      if (parts.breakdown) {
+        $('tabBreakdown').textContent = formatTab(parts.breakdown, STRING_NAMES[tuningKey], meta, 'BREAKDOWN');
+        $('panelBreakdown').style.display = '';
+        if (!parts.rhythm) renderFretboard(parts.breakdown, tuningKey);
+      } else {
+        $('tabBreakdown').textContent = '(Breakdown off)';
+        $('panelBreakdown').style.display = 'none';
+      }
+      if (parts.drums) {
+        $('tabDrums').textContent = formatDrumTab(parts.drums, meta);
+        $('panelDrums').style.display = '';
+      } else {
+        $('tabDrums').textContent = '(Drums off)';
+        $('panelDrums').style.display = 'none';
+      }
+
+      $('btnPlay').disabled = false;
+      $('btnCopy').disabled = false;
+      $('btnMidi').disabled = false;
+      $('infoBar').style.display = 'flex';
+      $('infoKey').textContent = key;
+      $('infoScale').textContent = SCALE_NAMES[scaleKey];
+      $('infoStyle').textContent = style.name;
+      $('infoBpm').textContent = $('tempo').value;
+      const enabled = [doRhythm && 'Rhythm', doLead && 'Lead', doBass && 'Bass', doBreakdown && 'Breakdown', doDrums && 'Drums'].filter(Boolean);
+      $('infoParts').textContent = enabled.join(' + ');
+
+      // CONSUME GENERATE QUOTA
+      if (!currentUser || !currentUser.isPro) {
+        if (!currentUser) {
+          incrementGuestUsage();
+        } else {
+          incrementUserUsage(currentUser.email);
+        }
+        updateUserUI();
+      }
+    }
+
+    // ===================== RENDER TAB =====================
+    function formatTab(events, names, meta, label) {
+      const numStrings = names.length;
+      const lines = Array.from({length: numStrings}, () => []);
+      const pickLine = [];
+      let hasPickMarks = false;
+      let hasTech = false;
+
+      for (let ei = 0; ei < events.length; ei++) {
+        const ev = events[ei];
+        const cells = Array(numStrings).fill(null);
+        let width = Math.max(2, Math.ceil(ev.dur * 1.15));
+        if (!ev.rest) {
+          for (const n of ev.notes) {
+            const di = numStrings - 1 - n.string;
+            if (di >= 0 && di < numStrings) {
+              let fretStr;
+              if (ev.tech === 'ghost') fretStr = 'x';
+              else if (ev.tech === 'ph') { fretStr = n.fret + 'ph'; hasTech = true; }
+              else if (ev.tech === 'panic') { fretStr = n.fret + 'PC'; hasTech = true; }
+              else if (ev.tech === 'bounce') { fretStr = n.fret + 'B'; hasTech = true; }
+              else if (ev.tech === 'skip') { fretStr = n.fret + 'SK'; hasTech = true; }
+              else if (ev.tech === 'sweep') { fretStr = n.fret + 'SW'; hasTech = true; }
+              else if (ev.tech === 'h') { fretStr = 'h' + n.fret; hasTech = true; }
+              else if (ev.tech === 'p') { fretStr = 'p' + n.fret; hasTech = true; }
+              else if (ev.tech === '/') { fretStr = '/' + n.fret; hasTech = true; }
+              else if (ev.tech === '\\') { fretStr = '\\' + n.fret; hasTech = true; }
+              else fretStr = String(n.fret);
+              // palm mute underline style: mark with *
+              if (ev.muted && !['ghost','ph'].includes(ev.tech)) {
+                // keep fret number; PM shown via pick row tip
+              }
+              cells[di] = fretStr;
+              width = Math.max(width, fretStr.length + 1);
+            }
+          }
+        }
+        for (let s = 0; s < numStrings; s++) {
+          if (cells[s] == null) lines[s].push('-'.repeat(width));
+          else {
+            const pad = width - cells[s].length;
+            const left = Math.floor(pad / 2);
+            lines[s].push('-'.repeat(left) + cells[s] + '-'.repeat(pad - left));
+          }
+        }
+        let sym = null;
+        if (!ev.rest && ev.pick) {
+          if (ev.pick === 'D') sym = ev.slant === 'DS' ? '↘' : '↓';
+          else if (ev.pick === 'U') sym = ev.slant === 'US' ? '↗' : '↑';
+          else if (ev.pick === 'S') sym = '⇓';
+          else if (ev.pick === 'P') sym = 'P';
+        }
+        if (sym) {
+          hasPickMarks = true;
+          const pad = width - 1, left = Math.floor(pad / 2);
+          pickLine.push(' '.repeat(left) + sym + ' '.repeat(pad - left));
+        } else {
+          pickLine.push(' '.repeat(width));
+        }
+      }
+
+      let out = `// === ${label} ===\n`;
+      if (hasPickMarks) out += '  |' + pickLine.join('') + '|\n';
+      for (let s = 0; s < numStrings; s++) {
+        out += names[numStrings - 1 - s].padStart(2) + '|' + lines[s].join('') + '|\n';
+      }
+      const st = STYLE_DB[meta.styleId];
+      out += `\n// ${st.name}  |  Key: ${meta.key}  |  ${SCALE_NAMES[meta.scaleKey]}  |  ${$('tempo').value} BPM\n`;
+      out += `// Tuning: ${meta.tuningKey.replace(/_/g,' ').toUpperCase()}`;
+      if (label === 'LEAD') out += '  |  Shred/Sweep';
+      if (label === 'BASS') out += '  |  Slap/Pop (S=slap P=pop x=ghost)';
+      if (label === 'BREAKDOWN') out += '  |  Half-time chug / stomp';
+      if (label === 'RHYTHM' || label === 'BREAKDOWN') {
+        out += '\n// Tech: ↓↑ pick  |  h=hammer p=pull  |  /=slide up \\=slide down  |  ph=pinch  |  PM via mute';
+      }
+      return out;
+    }
+
+    function renderFretboard(events, tuningKey) {
+      const openMidi = TUNINGS[tuningKey];
+      const names = STRING_NAMES[tuningKey];
+      const numStrings = names.length;
+      const used = Array.from({length: numStrings}, () => new Set());
+      for (const ev of events) {
+        if (ev.rest) continue;
+        for (const n of ev.notes) used[n.string].add(n.fret);
+      }
+      let html = '<table><thead><tr><th></th>';
+      for (let f = 0; f <= 12; f++) html += `<th>${f}</th>`;
+      html += '</tr></thead><tbody>';
+      for (let s = numStrings - 1; s >= 0; s--) {
+        html += `<tr><td class="string-label">${names[s]}</td>`;
+        for (let f = 0; f <= 12; f++) {
+          const active = used[s].has(f);
+          html += `<td${active ? ' class="active"' : ''}>${active ? midiToNoteName(openMidi[s] + f) : ''}</td>`;
+        }
+        html += '</tr>';
+      }
+      html += '</tbody></table>';
+      $('fretboard').innerHTML = html;
+    }
+
+    // ===================== AUDIO =====================
+    function ensureAudio() {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+    }
+    function playNote(midi, startTime, durationSec, velocity = 0.2) {
+      if (midi == null) return;
+      const ctx = audioCtx;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      const filter = ctx.createBiquadFilter();
+      const dist = ctx.createWaveShaper();
+      osc.type = 'sawtooth';
+      osc.frequency.value = 440 * Math.pow(2, (midi - 69) / 12);
+      const curve = new Float32Array(256);
+      for (let i = 0; i < 256; i++) { const x = (i/128)-1; curve[i] = Math.tanh(x * 3.8); }
+      dist.curve = curve; dist.oversample = '2x';
+      filter.type = 'lowpass'; filter.frequency.value = 1500 + Math.random()*500; filter.Q.value = 1.1;
+      const now = startTime;
+      gain.gain.setValueAtTime(0, now);
+      gain.gain.linearRampToValueAtTime(velocity, now + 0.008);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + durationSec);
+      osc.connect(dist); dist.connect(filter); filter.connect(gain); gain.connect(ctx.destination);
+      osc.start(now); osc.stop(now + durationSec + 0.04);
+    }
+    function playNoteTone(midi, startTime, durationSec, velocity, type) {
+      if (midi == null) return;
+      const ctx = audioCtx;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      const filter = ctx.createBiquadFilter();
+      const dist = ctx.createWaveShaper();
+
+      if (type === 'bass') {
+        osc.type = 'triangle';
+        filter.type = 'lowpass';
+        filter.frequency.value = 400;
+      } else if (type === 'lead') {
+        osc.type = 'sawtooth';
+        filter.type = 'lowpass';
+        filter.frequency.value = 2800;
+      } else {
+        osc.type = 'sawtooth';
+        filter.type = 'lowpass';
+        filter.frequency.value = 1600;
+      }
+
+      osc.frequency.value = 440 * Math.pow(2, (midi - 69) / 12);
+      const curve = new Float32Array(256);
+      for (let i = 0; i < 256; i++) { const x = (i/128)-1; curve[i] = Math.tanh(x * (type === 'bass' ? 2 : 3.5)); }
+      dist.curve = curve; dist.oversample = '2x';
+      filter.Q.value = 1;
+
+      const now = startTime;
+      gain.gain.setValueAtTime(0, now);
+      gain.gain.linearRampToValueAtTime(velocity, now + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + durationSec);
+
+      osc.connect(dist); dist.connect(filter); filter.connect(gain); gain.connect(ctx.destination);
+      osc.start(now); osc.stop(now + durationSec + 0.04);
+    }
+
+    function schedulePart(events, type, startAt, sixteenth) {
+      let t = startAt;
+      for (const ev of events) {
+        const durSec = ev.dur * sixteenth;
+        if (!ev.rest && ev.notes) {
+          let baseVel = type === 'bass' ? 0.3 : type === 'lead' ? 0.13 : 0.18;
+          let hold = 0.9;
+          // Slap: short punchy; ghost: quieter & shorter; pop: brighter accent
+          if (type === 'bass') {
+            if (ev.tech === 'ghost') { baseVel = 0.12; hold = 0.25; }
+            else if (ev.tech === 'slap') { baseVel = 0.34; hold = 0.35; }
+            else if (ev.tech === 'pop') { baseVel = 0.26; hold = 0.45; }
+            else if (ev.tech === 'slap-pop') { baseVel = 0.28; hold = 0.4; }
+          }
+          if (type === 'lead') hold = 0.75; // faster decay for shred runs
+          const vel = ev.notes.length > 1 ? baseVel * 0.8 : baseVel;
+          for (const n of ev.notes) {
+            playNoteTone(n.midi, t, Math.max(0.03, durSec * hold), vel, type);
+          }
+        }
+        t += durSec;
+      }
+      return t;
+    }
+
+    function hasAnyPart() {
+      return !!(parts.rhythm || parts.lead || parts.bass || parts.breakdown || parts.drums);
+    }
+
+    function playDrumHit(kind, startTime, velocity) {
+      if (!audioCtx) return;
+      const ctx = audioCtx;
+      const t0 = startTime;
+      if (kind === 'K') {
+        // kick: short sine pitch drop
+        const osc = ctx.createOscillator();
+        const g = ctx.createGain();
+        osc.frequency.setValueAtTime(120, t0);
+        osc.frequency.exponentialRampToValueAtTime(40, t0 + 0.08);
+        g.gain.setValueAtTime(velocity * 0.9, t0);
+        g.gain.exponentialRampToValueAtTime(0.001, t0 + 0.2);
+        osc.connect(g); g.connect(ctx.destination);
+        osc.start(t0); osc.stop(t0 + 0.22);
+      } else if (kind === 'S') {
+        // snare: noise burst + tone
+        const bufSize = Math.floor(ctx.sampleRate * 0.12);
+        const buf = ctx.createBuffer(1, bufSize, ctx.sampleRate);
+        const data = buf.getChannelData(0);
+        for (let i = 0; i < bufSize; i++) data[i] = Math.random() * 2 - 1;
+        const noise = ctx.createBufferSource();
+        noise.buffer = buf;
+        const ng = ctx.createGain();
+        const nf = ctx.createBiquadFilter();
+        nf.type = 'bandpass'; nf.frequency.value = 1800;
+        ng.gain.setValueAtTime(velocity * 0.55, t0);
+        ng.gain.exponentialRampToValueAtTime(0.001, t0 + 0.1);
+        noise.connect(nf); nf.connect(ng); ng.connect(ctx.destination);
+        noise.start(t0); noise.stop(t0 + 0.12);
+        const osc = ctx.createOscillator();
+        const og = ctx.createGain();
+        osc.frequency.value = 200;
+        og.gain.setValueAtTime(velocity * 0.35, t0);
+        og.gain.exponentialRampToValueAtTime(0.001, t0 + 0.08);
+        osc.connect(og); og.connect(ctx.destination);
+        osc.start(t0); osc.stop(t0 + 0.1);
+      } else if (kind === 'T1' || kind === 'T2' || kind === 'F') {
+        const freqs = { T1: 220, T2: 160, F: 100 };
+        const osc = ctx.createOscillator();
+        const g = ctx.createGain();
+        const f0 = freqs[kind] || 150;
+        osc.frequency.setValueAtTime(f0, t0);
+        osc.frequency.exponentialRampToValueAtTime(f0 * 0.6, t0 + 0.12);
+        g.gain.setValueAtTime(velocity * 0.5, t0);
+        g.gain.exponentialRampToValueAtTime(0.001, t0 + 0.18);
+        osc.connect(g); g.connect(ctx.destination);
+        osc.start(t0); osc.stop(t0 + 0.2);
+      } else {
+        // Cymbals: filtered noise (HH short, crash/china long, ride mid)
+        const isHat = (kind === 'HH' || kind === 'HO' || kind === 'HP');
+        const isCrash = (kind === 'CL' || kind === 'CR' || kind === 'CH');
+        const dur = isHat ? (kind === 'HO' ? 0.25 : 0.06) : isCrash ? 0.8 : 0.35;
+        const freq = kind === 'BL' ? 4500 : kind === 'RD' ? 3500 : kind === 'CH' ? 2800
+          : kind === 'CL' ? 3200 : kind === 'CR' ? 3000 : kind === 'HO' ? 6000 : 7000;
+        const bufSize = Math.floor(ctx.sampleRate * Math.min(dur, 0.5));
+        const buf = ctx.createBuffer(1, bufSize, ctx.sampleRate);
+        const data = buf.getChannelData(0);
+        for (let i = 0; i < bufSize; i++) data[i] = Math.random() * 2 - 1;
+        const noise = ctx.createBufferSource();
+        noise.buffer = buf;
+        const nf = ctx.createBiquadFilter();
+        nf.type = isHat ? 'highpass' : 'bandpass';
+        nf.frequency.value = freq;
+        nf.Q.value = isHat ? 0.7 : 0.5;
+        const g = ctx.createGain();
+        const vol = isHat ? 0.25 : isCrash ? 0.4 : 0.3;
+        g.gain.setValueAtTime(velocity * vol, t0);
+        g.gain.exponentialRampToValueAtTime(0.001, t0 + dur);
+        noise.connect(nf); nf.connect(g); g.connect(ctx.destination);
+        noise.start(t0); noise.stop(t0 + dur + 0.02);
+      }
+    }
+
+    function scheduleDrums(drumData, startAt, sixteenth) {
+      const { grid, total16 } = drumData;
+      for (let i = 0; i < total16; i++) {
+        const t = startAt + i * sixteenth;
+        const hits = grid[i];
+        hits.forEach(k => playDrumHit(k, t, 0.7 + Math.random() * 0.25));
+      }
+      return startAt + total16 * sixteenth;
+    }
+
+    function playRiff() {
+      if (!hasAnyPart() || isPlaying) return;
+      ensureAudio(); isPlaying = true;
+      $('btnPlay').disabled = true; $('btnStop').disabled = false; $('btnGen').disabled = true;
+      const bpm = parseInt($('tempo').value, 10);
+      const sixteenth = 60 / bpm / 4;
+      const startAt = audioCtx.currentTime + 0.08;
+      let endT = startAt;
+      if (parts.rhythm) endT = Math.max(endT, schedulePart(parts.rhythm, 'rhythm', startAt, sixteenth));
+      if (parts.lead) endT = Math.max(endT, schedulePart(parts.lead, 'lead', startAt, sixteenth));
+      if (parts.bass) endT = Math.max(endT, schedulePart(parts.bass, 'bass', startAt, sixteenth));
+      if (parts.breakdown) endT = Math.max(endT, schedulePart(parts.breakdown, 'rhythm', startAt, sixteenth));
+      if (parts.drums) endT = Math.max(endT, scheduleDrums(parts.drums, startAt, sixteenth));
+      playTimeouts.push(setTimeout(() => stopRiff(), (endT - audioCtx.currentTime) * 1000 + 100));
+    }
+    function stopRiff() {
+      isPlaying = false;
+      playTimeouts.forEach(clearTimeout); playTimeouts = [];
+      if (audioCtx) { const oldCtx = audioCtx; audioCtx = null; oldCtx.close().catch(() => {}); }
+      $('btnPlay').disabled = !hasAnyPart();
+      $('btnStop').disabled = true; $('btnGen').disabled = false;
+    }
+
+    // ===================== MIDI (Odin III compatible) =====================
+    /*
+      THE ODIN III (Solemn Tones) – articulation via KEYSWITCH + VELOCITY
+
+      Keyswitches (latch until next KS):
+        C0=12  Alternate Picked     C#0=13 Down Picked      D0=14 Up Picked
+        C1=24  Down Open Palm Mute  D#1=27 Up Open Palm Mute
+        G#1=32 Tremolo Picked       G#2=44 *Auto Power Chord
+
+      Velocity is the main switch between picked vs muted:
+        35–126  → Alt / normal picking sound
+        25–34   → Palm Mutes
+        15–24   → Palm Mutes Closed
+        0–14    → Palm Mutes Dead
+        127     → Pinch Harmonics
+
+      Strategy:
+        1. Latch base articulation once (Alternate / Tremolo / Down)
+        2. Per-note: velocity selects mute vs pick (most reliable in Odin)
+        3. On mute notes also fire Open Palm Mute KS when entering mute region
+        4. Power chords: fire Auto Power Chord KS before the chord
+        5. Optional string-select KS when lowest string changes
+    */
+    /*
+      Solemn Tones Odin III — EXACT map from plugin UI (user screenshot)
+      C-2=MIDI0 … C0=24 … C1=36 … C4=60 … C7=96
+      Velocity: 127 Pinch | 35–126 Alt | 25–34 PM | 15–24 PM closed | 0–14 PM dead
+    */
+    const ODIN = {
+      // EXACT Odin III map from the supplied plugin screenshot.
+      // C-2…B-2: slides + Auto Power; C0…B0: picking + mutes;
+      // C1…B1: open PM / legato / harmonics; C2…B2: slides + plucks.
+      SLIDE_SLOW_FROM_UP: 0,
+      SLIDE_SLOW_FROM_DOWN: 1,
+      SLIDE_SLOW_TO_DOWN: 2,
+      SLIDE_SLOW_TO_UP: 3,
+      SLIDE_FAST_FROM_UP: 4,
+      SLIDE_FAST_FROM_DOWN: 5,
+      SLIDE_FAST_TO_DOWN: 6,
+      SLIDE_FAST_TO_UP: 7,
+      AUTO_POWER: 8,
+
+      ALT_PICKED: 24,
+      DOWN_PICKED: 25,
+      UP_PICKED: 26,
+      ALT_MUTE_SEMI: 27,
+      DOWN_MUTE_SEMI: 28,
+      UP_MUTE_SEMI: 29,
+      ALT_MUTE_CLOSED: 30,
+      DOWN_MUTE_CLOSED: 31,
+      UP_MUTE_CLOSED: 32,
+      ALT_MUTE_DEAD: 33,
+      DOWN_MUTE_DEAD: 34,
+      UP_MUTE_DEAD: 35,
+
+      DOWN_OPEN_PM: 36,
+      HAMMER_ON: 37,
+      PULL_OFF: 38,
+      UP_OPEN_PM: 39,
+      BEND_UP_FAST: 40,
+      BEND_UP_SLOW: 41,
+      AUTO_SLIDE: 42,
+      SCRAPES: 43,
+      TREMOLO: 44,
+      NATURAL_HARM: 45,
+      PINCH_HARM: 46,
+      NASTY_PINCH: 47,
+
+      SLIDE_SLOW_FROM_UP_C2: 48,
+      SLIDE_SLOW_FROM_DOWN_C2: 49,
+      SLIDE_SLOW_TO_DOWN_C2: 50,
+      SLIDE_SLOW_TO_UP_C2: 51,
+      SLIDE_FAST_FROM_UP_C2: 52,
+      SLIDE_FAST_FROM_DOWN_C2: 53,
+      SLIDE_FAST_TO_DOWN_C2: 54,
+      SLIDE_FAST_TO_UP_C2: 55,
+      AUTO_POWER_C2: 56,
+      FINGER_PLUCK_OPEN: 57,
+      FINGER_PLUCK_DEAD: 58,
+      THUMB_SLAP: 59,
+
+      STR8: 101,
+      STR7: 102,
+      STR6: 103,
+      STR5: 104,
+      STR4: 105,
+      STR3: 106,
+      STR2: 107,
+      STR1: 108
+    };
+    /*
+      Bass VST Keyswitch Map (from user plugin)
+      C-2=0  Finger Alternate   C#-2=1 Finger Index   D-2=2 Finger Middle
+      D#-2=3 Dead Note          E-2=4  Slap            F-2=5 Dead Slap
+      F#-2=6 Pop                G-2=7  Dead Pop        G#-2=8 Harmonic
+      A-2=9  Hammer/Pull        A#-2=10 Tapping        B-2=11 Slide Trigger
+      C-1=12 Dead Dbl Thumb     C#-1=13 Thump          D-1=14 Dbl Thumb
+      D#-1=15 Dbl Thumb Pop     E-1=16 Fret Hand Mute
+      Force String: B=127 E=126 A=125 D=124 G=123 C=122
+    */
+    const BASS_KS = {
+      FINGER_ALT: 0,
+      FINGER_INDEX: 1,
+      FINGER_MIDDLE: 2,
+      DEAD_NOTE: 3,
+      SLAP: 4,
+      DEAD_SLAP: 5,
+      POP: 6,
+      DEAD_POP: 7,
+      HARMONIC: 8,
+      HAMMER_PULL: 9,
+      TAPPING: 10,
+      SLIDE: 11,
+      DEAD_DBL_THUMB: 12,
+      THUMP: 13,
+      DBL_THUMB: 14,
+      DBL_THUMB_POP: 15,
+      FRET_MUTE: 16,
+      // Force string for 4-string E-A-D-G (index 0=lowest E)
+      FORCE_STR: [126, 125, 124, 123] // E A D G
+    };
+
+    function toVarLen(value) {
+      const buffer = []; buffer.push(value & 0x7F); value >>= 7;
+      while (value > 0) { buffer.push((value & 0x7F) | 0x80); value >>= 7; }
+      return buffer.reverse();
+    }
+    function downloadBlob(blob, filename) {
+      // Chrome/Edge: force a real user-initiated download from a Blob URL.
+      // Keep the anchor alive briefly because some browsers ignore an anchor
+      // that is removed immediately after click().
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      a.rel = 'noopener';
+      a.style.position = 'fixed';
+      a.style.left = '-9999px';
+      a.style.top = '0';
+      document.body.appendChild(a);
+      try {
+        a.click();
+        return true;
+      } catch (e) {
+        console.error('Blob download failed:', e);
+        try { window.open(url, '_blank', 'noopener'); } catch (_) {}
+        return false;
+      } finally {
+        setTimeout(() => {
+          try { a.remove(); } catch (_) {}
+          try { URL.revokeObjectURL(url); } catch (_) {}
+        }, 1500);
+      }
+    }
+    function showToast(msg) {
+      let t = document.getElementById('toast');
+      if (!t) {
+        t = document.createElement('div'); t.id = 'toast';
+        t.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a8a3a;color:#fff;padding:12px 22px;border-radius:10px;font-weight:700;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,0.4);transition:opacity 0.3s;opacity:0;';
+        document.body.appendChild(t);
+      }
+      t.textContent = msg; t.style.opacity = '1';
+      clearTimeout(t._timer);
+      t._timer = setTimeout(() => { t.style.opacity = '0'; }, 2200);
+    }
+
+    // ===================== ODIN III GENRE PERFORMANCE PROFILES =====================
+    const ODIN_GENRE_PROFILE = {
+      thrash:{pm:.52,tight:.18,tech:.08,stringMove:.14}, thrash_gallop:{pm:.58,tight:.20,tech:.07,stringMove:.12},
+      death:{pm:.62,tight:.38,tech:.10,stringMove:.10}, melodeath:{pm:.46,tight:.28,tech:.14,stringMove:.22},
+      black:{pm:.03,tight:.00,tech:.18,stringMove:.32}, doom:{pm:.38,tight:.62,tech:.08,stringMove:.08},
+      stoner:{pm:.28,tight:.72,tech:.10,stringMove:.12}, groove:{pm:.58,tight:.42,tech:.08,stringMove:.12},
+      nu:{pm:.64,tight:.36,tech:.05,stringMove:.06}, metalcore:{pm:.70,tight:.58,tech:.10,stringMove:.08},
+      djent:{pm:.78,tight:.72,tech:.13,stringMove:.05}, progressive:{pm:.34,tight:.28,tech:.18,stringMove:.24},
+      deadsquad:{pm:.54,tight:.36,tech:.22,stringMove:.28}, polyphia:{pm:.18,tight:.18,tech:.24,stringMove:.38},
+      deathcore:{pm:.82,tight:.78,tech:.14,stringMove:.06}, hardcore:{pm:.68,tight:.65,tech:.07,stringMove:.06},
+      melodic_hc:{pm:.62,tight:.48,tech:.11,stringMove:.12}, modern_hc:{pm:.72,tight:.62,tech:.10,stringMove:.06},
+      thall:{pm:.84,tight:.82,tech:.15,stringMove:.04}, power:{pm:.42,tight:.22,tech:.08,stringMove:.16},
+      brutal:{pm:.86,tight:.86,tech:.12,stringMove:.04}
+    };
+    const getOdinGenreProfile = id => ODIN_GENRE_PROFILE[id] || ODIN_GENRE_PROFILE.thrash;
+
+    function buildTrackEvents(partEvents, opts) {
+      // Returns array of {t, type, note, vel} for one instrument part
+      const { useOdin, useAlt, isTremoloStyle, isGuitar, isBass, styleId } = opts;
+      const tpq = 480, ticks16 = tpq / 4, KS_GAP = 12;
+      const events = [];
+      const pushKS = (t, note) => {
+        const tt = Math.max(0, t);
+        events.push({ t: tt, type: 'on', note, vel: 100 });
+        events.push({ t: tt + 4, type: 'off', note, vel: 0 });
+      };
+
+      let maxStr = 5;
+      for (const ev of partEvents) {
+        if (!ev.notes) continue;
+        for (const n of ev.notes) if (n.string > maxStr) maxStr = n.string;
+      }
+      const strMap = [ODIN.STR8, ODIN.STR7, ODIN.STR6, ODIN.STR5, ODIN.STR4, ODIN.STR3, ODIN.STR2, ODIN.STR1];
+
+      let tick = 0, lastArt = null, lastMuted = null, lastStr = null, lastPick = null;
+
+      // Guitar (Odin III) initial articulation
+      if (useOdin && isGuitar) {
+        if (isTremoloStyle) { pushKS(0, ODIN.TREMOLO); lastArt = ODIN.TREMOLO; }
+        else if (useAlt) { pushKS(0, ODIN.ALT_PICKED); lastArt = ODIN.ALT_PICKED; }
+        else { pushKS(0, ODIN.DOWN_PICKED); lastArt = ODIN.DOWN_PICKED; }
+        tick = KS_GAP;
+      }
+      if (useOdin && isBass) {
+        pushKS(0, BASS_KS.SLAP);
+        lastArt = BASS_KS.SLAP;
+        tick = KS_GAP;
+      }
+
+      for (const ev of partEvents) {
+        const dur = Math.max(1, Math.round(ev.dur * ticks16));
+        if (ev.rest || !ev.notes || !ev.notes.length) { tick += dur; continue; }
+
+        const muted = !!ev.muted;
+        const isPower = !!ev.power;
+        const pick = ev.pick;
+        const tech = ev.tech;
+        let vel;
+        let autoPower = false;
+
+        if (useOdin && isGuitar) {
+          /*
+            Clean Odin III workflow (avoids KS spam seen in piano roll):
+            - Latch ONE pick mode (Alt or Down) for the whole riff
+            - Palm mute = VELOCITY 25–34 only — NO PM keyswitch spam
+            - Special tech (pinch/h/p/slide) = KS for that note only
+            - Auto Power only on power chords without special tech
+            - String select only when string changes
+          */
+          const profile = getOdinGenreProfile(styleId);
+          const basePick = isTremoloStyle ? ODIN.TREMOLO
+            : (useAlt ? ODIN.ALT_PICKED : ODIN.DOWN_PICKED);
+
+          let art = basePick;
+          let special = false;
+          // Odin III has no dedicated "economy", "slant", "sweep" or
+          // "string-skip" keyswitch. Their realization is therefore mapped
+          // to Odin's real pick-direction + string-selection controls.
+          // Sweep is treated as a directional picked articulation so it does
+          // not fall back to an arbitrary latched articulation.
+          if (tech === 'sweep') {
+            art = pick === 'U' ? ODIN.UP_PICKED : ODIN.DOWN_PICKED;
+            special = true;
+          }
+          else if (tech === 'ph') { art = ODIN.PINCH_HARM; special = true; }
+          else if (tech === 'nph') { art = ODIN.NASTY_PINCH; special = true; }
+          else if (tech === 'nh') { art = ODIN.NATURAL_HARM; special = true; }
+          else if (tech === 'h') { art = ODIN.HAMMER_ON; special = true; }
+          else if (tech === 'p') { art = ODIN.PULL_OFF; special = true; }
+          else if (tech === 'bendFast') { art = ODIN.BEND_UP_FAST; special = true; }
+          else if (tech === 'bendSlow') { art = ODIN.BEND_UP_SLOW; special = true; }
+          else if (tech === 'scrape') { art = ODIN.SCRAPES; special = true; }
+          else if (tech === 'pluck') { art = ODIN.FINGER_PLUCK_OPEN; special = true; }
+          else if (tech === 'pluckDead') { art = ODIN.FINGER_PLUCK_DEAD; special = true; }
+          else if (tech === 'slap') { art = ODIN.THUMB_SLAP; special = true; }
+          else if (tech === 'slideSlowUp') { art = ODIN.SLIDE_SLOW_TO_UP_C2; special = true; }
+          else if (tech === 'slideSlowDown') { art = ODIN.SLIDE_SLOW_TO_DOWN_C2; special = true; }
+          else if (tech === 'slideFastUp') { art = ODIN.SLIDE_FAST_TO_UP_C2; special = true; }
+          else if (tech === 'slideFastDown') { art = ODIN.SLIDE_FAST_TO_DOWN_C2; special = true; }
+          else if (tech === '/') { art = ODIN.SLIDE_FAST_TO_UP_C2; special = true; }
+          else if (tech === '\\') { art = ODIN.SLIDE_FAST_TO_DOWN_C2; special = true; }
+
+          // Use Odin's mapped palm-mute families for genre-specific tightness.
+          if (!special && muted) {
+            const r = Math.random();
+            if (profile.tight < .30) {
+              art = r < .72 ? ODIN.ALT_MUTE_SEMI : ODIN.DOWN_MUTE_SEMI;
+            } else if (profile.tight < .65) {
+              art = r < .45 ? ODIN.ALT_MUTE_SEMI
+                : (r < .82 ? ODIN.DOWN_MUTE_CLOSED : ODIN.UP_MUTE_CLOSED);
+            } else {
+              art = r < .28 ? ODIN.DOWN_MUTE_SEMI
+                : (r < .68 ? ODIN.DOWN_MUTE_CLOSED : ODIN.DOWN_MUTE_DEAD);
+            }
+          }
+
+          if (art !== lastArt) {
+            pushKS(tick - KS_GAP, art);
+            lastArt = art;
+          }
+
+          // Native Odin velocity zones: 127 pinch | 35-126 picked |
+          // 25-34 semi-PM | 15-24 closed-PM | 0-14 dead-PM.
+          if (tech === 'ph') vel = 127;
+          else if (tech === 'panic') vel = 108 + Math.floor(Math.random() * 12);
+          else if (muted) {
+            if (art === ODIN.DOWN_MUTE_DEAD || art === ODIN.ALT_MUTE_DEAD || art === ODIN.UP_MUTE_DEAD)
+              vel = 8 + Math.floor(Math.random() * 7);
+            else if (art === ODIN.DOWN_MUTE_CLOSED || art === ODIN.ALT_MUTE_CLOSED || art === ODIN.UP_MUTE_CLOSED)
+              vel = 17 + Math.floor(Math.random() * 7);
+            else
+              vel = 27 + Math.floor(Math.random() * 7);
+          } else {
+            vel = 72 + Math.floor(Math.random() * 39);
+          }
+
+          if (isPower && !special && tech !== 'panic' && tech !== 'sweep') { pushKS(tick - KS_GAP, ODIN.AUTO_POWER); autoPower = true; }
+
+          const primary = ev.notes.reduce((a, b) => a.string <= b.string ? a : b);
+          const si = Math.min(primary.string, strMap.length - 1);
+          const strKS = strMap[si];
+          const stringChanged = strKS !== lastStr;
+          const lastSi = lastStr == null ? -99 : strMap.indexOf(lastStr);
+          const largeJump = lastStr != null && Math.abs(si - lastSi) >= 2;
+          const accent = (((tick - KS_GAP) % (tpq * 4)) === 0) || (ev.dur >= 4);
+          const barAccent = ((tick - KS_GAP) % (tpq * 4)) < KS_GAP;
+          const forceTechniqueString = tech === 'sweep' || tech === 'skip' || (tech === 'bounce' && stringChanged);
+          if (lastStr == null || (stringChanged && (forceTechniqueString || largeJump || accent || barAccent || Math.random() < profile.stringMove))) {
+            pushKS(tick - KS_GAP, strKS);
+            lastStr = strKS;
+          }
+          lastMuted = muted;
+          lastPick = pick;
+        } else if (useOdin && isBass) {
+          // --- Bass keyswitch map ---
+          let artKS = BASS_KS.SLAP;
+          if (tech === 'ghost') artKS = BASS_KS.DEAD_NOTE;
+          else if (tech === 'slap') artKS = BASS_KS.SLAP;
+          else if (tech === 'pop') artKS = BASS_KS.POP;
+          else if (tech === 'slap-pop') artKS = BASS_KS.DBL_THUMB_POP;
+          else if (pick === 'S') artKS = BASS_KS.SLAP;
+          else if (pick === 'P') artKS = BASS_KS.POP;
+          else artKS = BASS_KS.FINGER_ALT;
+
+          if (artKS !== lastArt) {
+            pushKS(tick - KS_GAP, artKS);
+            lastArt = artKS;
+          }
+
+          // Force string for primary note
+          const primary = ev.notes.reduce((a, b) => a.string <= b.string ? a : b);
+          const si = Math.min(primary.string, BASS_KS.FORCE_STR.length - 1);
+          const fks = BASS_KS.FORCE_STR[si];
+          if (fks !== lastStr) {
+            pushKS(tick - KS_GAP, fks);
+            lastStr = fks;
+          }
+
+          // Velocity: slap harder, ghost softer, pop medium-high
+          if (tech === 'ghost') vel = 40 + Math.floor(Math.random() * 20);
+          else if (tech === 'slap' || pick === 'S') vel = 95 + Math.floor(Math.random() * 25);
+          else if (tech === 'pop' || pick === 'P') vel = 85 + Math.floor(Math.random() * 30);
+          else vel = 80 + Math.floor(Math.random() * 30);
+        } else {
+          vel = isGuitar ? (muted ? 30 : 100) : 90;
+        }
+
+        // With Odin Auto Power Chord KS: send ROOT only (plugin builds the 5th)
+          // Without Odin / non-power: send all notes in the event
+          let notesToPlay = ev.notes;
+          if (useOdin && isGuitar && autoPower) {
+            const root = ev.notes.reduce((a, b) => a.midi <= b.midi ? a : b);
+            notesToPlay = [root];
+          }
+          for (const n of notesToPlay) {
+            let note = Math.max(0, Math.min(127, n.midi | 0));
+            // Odin III KS map occupies MIDI 0..59 (C-2..B2); notes must stay
+            // above it (C3 = MIDI 60) or they trigger keyswitches instead of sound.
+            if (useOdin && isGuitar) {
+              while (note < 60) note += 12;
+            }
+            if (useOdin && isBass && note < 20) note += 12;
+            events.push({ t: tick, type: 'on', note, vel });
+            events.push({ t: tick + Math.max(1, dur - 2), type: 'off', note, vel: 0 });
+          }
+        tick += dur;
+      }
+
+      events.sort((a, b) => {
+        if (a.t !== b.t) return a.t - b.t;
+        const rank = e => {
+          const isKS = e.note <= 59 || (e.note >= 101 && e.note <= 108);
+          if (e.type === 'off' && isKS) return 0;
+          if (e.type === 'on' && isKS) return 1;
+          if (e.type === 'off') return 2;
+          return 3;
+        };
+        return rank(a) - rank(b);
+      });
+      return events;
+    }
+
+    function eventsToTrackBytes(events, trackName, program) {
+      const track = [];
+      // track name
+      track.push(0x00, 0xFF, 0x03, trackName.length);
+      for (let i = 0; i < trackName.length; i++) track.push(trackName.charCodeAt(i));
+      // program change
+      if (program != null) track.push(0x00, 0xC0, program);
+
+      let prev = 0;
+      for (const e of events) {
+        const delta = Math.max(0, e.t - prev);
+        prev = e.t;
+        for (const b of toVarLen(delta)) track.push(b);
+        track.push(e.type === 'on' ? 0x90 : 0x80, e.note, e.vel);
+      }
+      track.push(0x00, 0xFF, 0x2F, 0x00);
+      return track;
+    }
+
+    // Drum track on MIDI channel 10 (0-based ch 9 → status 0x99 / 0x89)
+    function buildDrumTrackBytes(drumData, offsetTicks = 0) {
+      const tpq = 480, ticks16 = tpq / 4;
+      const { grid, total16 } = drumData;
+      const events = [];
+      for (let i = 0; i < total16; i++) {
+        const t = i * ticks16 + offsetTicks;
+        grid[i].forEach(k => {
+          const note = DRUM_MAP[k];
+          if (note == null) return;
+          const vel = k === 'K' ? 110 : k === 'S' ? 100
+            : (k === 'CL' || k === 'CR' || k === 'CH') ? 105
+            : (k === 'HH' || k === 'HO') ? 80
+            : (k === 'RD' || k === 'BL') ? 88 : 90;
+          events.push({ t, type: 'on', note, vel });
+          events.push({ t: t + Math.max(8, ticks16 - 4), type: 'off', note, vel: 0 });
+        });
+      }
+      events.sort((a, b) => a.t - b.t || (a.type === 'off' ? -1 : 1));
+
+      const track = [];
+      const tname = 'Drums';
+
+      track.push(0x00, 0xFF, 0x03, tname.length);
+      for (let i = 0; i < tname.length; i++) track.push(tname.charCodeAt(i));
+
+      let prev = 0;
+      for (const e of events) {
+        const delta = Math.max(0, e.t - prev);
+        prev = e.t;
+        for (const b of toVarLen(delta)) track.push(b);
+        // channel 10 = 0x9
+        track.push(e.type === 'on' ? 0x99 : 0x89, e.note, e.vel);
+      }
+      track.push(0x00, 0xFF, 0x2F, 0x00);
+      return track;
+    }
+
+    function exportMidi() {
+      if (!hasAnyPart()) { showToast('Generate riff dulu!'); return; }
+      try {
+        const bpm = parseInt($('tempo').value, 10);
+        const useOdin = $('odinKs') && $('odinKs').checked;
+        const useAlt = $('altPicking').checked && !($('downstroke') && $('downstroke').checked);
+        const styleId = $('style').value;
+        const isTremoloStyle = (styleId === 'black');
+        const tpq = 480;
+
+        const tracks = [];
+        // Tempo track (track 0 for format 1)
+        const tempoTrack = [];
+        const uspq = Math.round(60000000 / bpm);
+        tempoTrack.push(0x00, 0xFF, 0x51, 0x03, (uspq>>16)&0xFF, (uspq>>8)&0xFF, uspq&0xFF);
+        tempoTrack.push(0x00, 0xFF, 0x2F, 0x00);
+        tracks.push(tempoTrack);
+
+        const baseOpts = { useOdin, useAlt, isTremoloStyle, styleId };
+
+        if (parts.rhythm) {
+          const ev = buildTrackEvents(parts.rhythm, { ...baseOpts, isGuitar: true });
+          tracks.push(eventsToTrackBytes(ev, 'Rhythm Guitar', useOdin ? null : 30));
+        }
+        if (parts.lead) {
+          const ev = buildTrackEvents(parts.lead, { ...baseOpts, isGuitar: true, isTremoloStyle });
+          tracks.push(eventsToTrackBytes(ev, 'Lead Guitar', useOdin ? null : 29));
+        }
+        if (parts.bass) {
+          const ev = buildTrackEvents(parts.bass, {
+            useOdin, useAlt: false, isTremoloStyle: false, styleId, isGuitar: false, isBass: true
+          });
+          tracks.push(eventsToTrackBytes(ev, 'Bass', useOdin ? null : 36));
+        }
+        if (parts.breakdown) {
+          const ev = buildTrackEvents(parts.breakdown, { ...baseOpts, isGuitar: true });
+          tracks.push(eventsToTrackBytes(ev, 'Breakdown', useOdin ? null : 30));
+        }
+        if (parts.drums) {
+          tracks.push(buildDrumTrackBytes(parts.drums, useOdin ? 12 : 0)); // 12 = KS_GAP, sejajar dgn gitar/bass
+        }
+
+        // Format 1 header
+        const ntrks = tracks.length;
+        const header = [
+          0x4D,0x54,0x68,0x64, 0,0,0,6,
+          0,1, // format 1
+          (ntrks>>8)&0xFF, ntrks&0xFF,
+          (tpq>>8)&0xFF, tpq&0xFF
+        ];
+
+        let totalLen = header.length;
+        const packed = [];
+        for (const tr of tracks) {
+          const th = [0x4D,0x54,0x72,0x6B, (tr.length>>24)&0xFF,(tr.length>>16)&0xFF,(tr.length>>8)&0xFF,tr.length&0xFF];
+          packed.push(th, tr);
+          totalLen += th.length + tr.length;
+        }
+        const all = new Uint8Array(totalLen);
+        let off = 0;
+        all.set(header, 0); off = header.length;
+        for (const chunk of packed) { all.set(chunk, off); off += chunk.length; }
+
+        const blob = new Blob([all], { type: 'audio/midi' });
+        const tag = useOdin ? 'odin' : 'plain';
+        const partsTag = [parts.rhythm&&'r', parts.lead&&'l', parts.bass&&'b', parts.breakdown&&'bd', parts.drums&&'d'].filter(Boolean).join('');
+        const fname = `metal-${partsTag}-${$('key').value}-${$('style').value}-${bpm}bpm-${tag}.mid`;
+        const ok = downloadBlob(blob, fname);
+        showToast(ok ? `✓ MIDI (${ntrks - 1} parts) ready!` : 'MIDI dibuka di tab baru');
+      } catch (err) {
+        console.error(err);
+        showToast('Gagal: ' + err.message);
+      }
+    }
+
+    function copyTab() {
+      const chunks=[];
+      if(parts.rhythm)chunks.push($('tabRhythm').textContent);
+      if(parts.lead)chunks.push($('tabLead').textContent);
+      if(parts.bass)chunks.push($('tabBass').textContent);
+      if(parts.breakdown)chunks.push($('tabBreakdown').textContent);
+      if(parts.drums)chunks.push($('tabDrums').textContent);
+      const text=chunks.join('\n\n')||'No parts';
+      const done=()=>{const b=$('btnCopy'),old=b.textContent;b.textContent='✓ COPIED!';setTimeout(()=>b.textContent=old,1400);};
+      if(navigator.clipboard&&window.isSecureContext)navigator.clipboard.writeText(text).then(done).catch(()=>copyFallback(text,done));
+      else copyFallback(text,done);
+    }
+    function copyFallback(text,done){
+      const ta=document.createElement('textarea');ta.value=text;ta.style.position='fixed';ta.style.left='-9999px';
+      document.body.appendChild(ta);ta.focus();ta.select();
+      try{document.execCommand('copy');done();}catch(e){showToast('Clipboard gagal — copy manual dari TAB');}
+      finally{document.body.removeChild(ta);}
+    }
+
+    // ===================== INIT =====================
+    $('btnGen').addEventListener('click', () => { stopRiff(); generateRiff(); });
+    $('btnPlay').addEventListener('click', playRiff);
+    $('btnStop').addEventListener('click', stopRiff);
+    $('btnCopy').addEventListener('click', copyTab);
+    $('btnMidi').addEventListener('click', exportMidi);
+
+    buildWiki();
+    updateStyleCard();
+    renderFretboard([], 'standard6');
   </script>
 
   <!-- MODAL: LOGIN REQUIRED (After 1x guest limit) -->
@@ -4420,6 +5200,7 @@
       </p>
     </div>
   </div>
+
 
 </body>
 </html>
