@@ -3578,16 +3578,15 @@
           src.playbackRate.value = sampleRate;
 
           const outGain = ctx.createGain();
-          // Tone is already studio-finished with amp & cab, just set clean transparent volume
-          const vol = velocity * (sampleType === 'pm' ? 1.15 : sampleType === 'lead' ? 1.05 : 1.25);
+          // Boosted studio level for metal punch: Palm mute 1.7x, Lead 1.5x, Power Chord 1.8x
+          const vol = velocity * (sampleType === 'pm' ? 1.70 : sampleType === 'lead' ? 1.50 : 1.80);
           
           outGain.gain.setValueAtTime(0.001, t0);
-          outGain.gain.linearRampToValueAtTime(vol, t0 + 0.004);
+          outGain.gain.linearRampToValueAtTime(vol, t0 + 0.003);
           
-          // Sustain until note duration ends, then clean quick fadeout to avoid clicks
           const sustainEnd = t0 + Math.max(0.04, durationSec - 0.02);
           outGain.gain.setValueAtTime(vol, sustainEnd);
-          outGain.gain.exponentialRampToValueAtTime(0.001, sustainEnd + 0.06);
+          outGain.gain.exponentialRampToValueAtTime(0.001, sustainEnd + 0.05);
 
           src.connect(outGain);
           outGain.connect(ctx.destination);
@@ -3670,17 +3669,17 @@
       for (const ev of events) {
         const durSec = ev.dur * sixteenth;
         if (!ev.rest && ev.notes) {
-          let baseVel = type === 'bass' ? 0.3 : type === 'lead' ? 0.13 : 0.18;
-          let hold = 0.9;
-          // Slap: short punchy; ghost: quieter & shorter; pop: brighter accent
+          // Balanced mix: Rhythm 0.75, Lead 0.65, Bass 0.45 (gitar tebal di depan)
+          let baseVel = type === 'bass' ? 0.45 : type === 'lead' ? 0.65 : 0.75;
+          let hold = 0.92;
           if (type === 'bass') {
-            if (ev.tech === 'ghost') { baseVel = 0.12; hold = 0.25; }
-            else if (ev.tech === 'slap') { baseVel = 0.34; hold = 0.35; }
-            else if (ev.tech === 'pop') { baseVel = 0.26; hold = 0.45; }
-            else if (ev.tech === 'slap-pop') { baseVel = 0.28; hold = 0.4; }
+            if (ev.tech === 'ghost') { baseVel = 0.22; hold = 0.25; }
+            else if (ev.tech === 'slap') { baseVel = 0.50; hold = 0.35; }
+            else if (ev.tech === 'pop') { baseVel = 0.40; hold = 0.45; }
+            else if (ev.tech === 'slap-pop') { baseVel = 0.45; hold = 0.4; }
           }
-          if (type === 'lead') hold = 0.75; // faster decay for shred runs
-          const vel = ev.notes.length > 1 ? baseVel * 0.8 : baseVel;
+          if (type === 'lead') hold = 0.85;
+          const vel = ev.notes.length > 1 ? baseVel * 0.9 : baseVel;
           for (const n of ev.notes) {
             playNoteTone(n.midi, t, Math.max(0.03, durSec * hold), vel, type);
           }
@@ -3712,7 +3711,8 @@
         const src = ctx.createBufferSource();
         src.buffer = SAMPLE_BUFFERS[sampleKey];
         const g = ctx.createGain();
-        g.gain.setValueAtTime(velocity * (kind === 'K' ? 1.25 : kind === 'S' ? 1.05 : 0.75), t0);
+        // Balanced drum levels: kick punchy tapi bulat (0.65), snare rapat (0.55), cymbals rapi (0.35)
+        g.gain.setValueAtTime(velocity * (kind === 'K' ? 0.65 : kind === 'S' ? 0.55 : 0.35), t0);
         src.connect(g);
         g.connect(ctx.destination);
         src.start(t0);
@@ -3791,7 +3791,7 @@
       for (let i = 0; i < total16; i++) {
         const t = startAt + i * sixteenth;
         const hits = grid[i];
-        hits.forEach(k => playDrumHit(k, t, 0.7 + Math.random() * 0.25));
+        hits.forEach(k => playDrumHit(k, t, 0.55 + Math.random() * 0.15));
       }
       return startAt + total16 * sixteenth;
     }
