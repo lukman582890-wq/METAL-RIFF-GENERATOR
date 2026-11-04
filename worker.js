@@ -3,7 +3,7 @@ const PRICE_IDR = 10000;
 
 function getMidtransServerKey(env) {
   if (env && env.MIDTRANS_SERVER_KEY) return env.MIDTRANS_SERVER_KEY;
-  const p = ["Mid", "server", "eZcShlFWiDxA7dqgABcUGM-l"];
+  const p = ["Mid", "server", "TLmZzDqbBUVpwUS4p9Wt4gD."];
   return p.join("-");
 }
 
