@@ -3049,7 +3049,7 @@
     // ===================== AUTH & QUOTA SYSTEM =====================
     const GUEST_LIMIT = 1;
     const MEMBER_LIMIT = 5;
-    const GOOGLE_CLIENT_ID = "YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com"; // Replace with your Google Cloud OAuth Client ID
+    const GOOGLE_CLIENT_ID = "159968250091-9ho6ue16el5guukcgcq14fn84mkcdo9p.apps.googleusercontent.com"; // Replace with your Google Cloud OAuth Client ID
 
     function getCurrentUser() {
       try {
@@ -3213,7 +3213,7 @@
 
     // Direct Google Login fallback / simulation for immediate testing
     $('btnGoogleDirect')?.addEventListener('click', () => {
-      if (window.google && window.google.accounts && window.google.accounts.id && GOOGLE_CLIENT_ID !== "YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com") {
+      if (window.google && window.google.accounts && window.google.accounts.id && GOOGLE_CLIENT_ID !== "159968250091-9ho6ue16el5guukcgcq14fn84mkcdo9p.apps.googleusercontent.com") {
         window.google.accounts.id.prompt();
       } else {
         const email = prompt("Masukkan email Gmail Anda untuk login:", "metalhead@gmail.com");
