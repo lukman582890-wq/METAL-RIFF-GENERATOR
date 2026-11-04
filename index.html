@@ -3,27 +3,108 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>GUITAR RIFF GENERATOR 🤘</title>
+  <title>METAL RIFF GENERATOR 🤘 | Procedural Heavy Riff Engine</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Fira+Code:wght@400;600;700&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg: #0a0a0c;
-      --panel: #141418;
-      --border: #2a2a32;
-      --accent: #ff2a2a;
-      --accent2: #ff6b00;
-      --text: #e8e8ec;
-      --muted: #8888a0;
-      --green: #3dd68c;
+      --bg: #07070a;
+      --bg-alt: #0d0d14;
+      --panel: #111118;
+      --border: #242434;
+      --border-bright: #38384f;
+      --accent: #ff1e27;
+      --accent-glow: rgba(255, 30, 39, 0.45);
+      --accent2: #ff7b00;
+      --accent2-glow: rgba(255, 123, 0, 0.35);
+      --steel: #7d849b;
+      --steel-bright: #d4daf0;
+      --text: #e8e8f2;
+      --muted: #82829a;
+      --green: #00e676;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
-      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      font-family: 'Rajdhani', -apple-system, sans-serif;
       background: var(--bg);
       color: var(--text);
       min-height: 100vh;
       background-image:
-        radial-gradient(ellipse at 15% 0%, rgba(255,42,42,0.09) 0%, transparent 45%),
-        radial-gradient(ellipse at 85% 100%, rgba(255,107,0,0.07) 0%, transparent 45%);
+        radial-gradient(circle at 50% -10%, rgba(255, 30, 39, 0.22) 0%, transparent 60%),
+        radial-gradient(circle at 10% 30%, rgba(255, 123, 0, 0.08) 0%, transparent 40%),
+        radial-gradient(circle at 90% 70%, rgba(255, 30, 39, 0.07) 0%, transparent 45%),
+        linear-gradient(180deg, #07070a 0%, #0a0a10 50%, #050508 100%);
+      background-attachment: fixed;
+      font-size: 16px;
+      letter-spacing: 0.5px;
+    }
+    .header-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: var(--accent2);
+      background: rgba(255, 123, 0, 0.1);
+      border: 1px solid rgba(255, 123, 0, 0.35);
+      padding: 4px 14px;
+      border-radius: 20px;
+      margin-bottom: 8px;
+    }
+    header h1 {
+      font-family: 'Cinzel', serif !important;
+      font-size: 2.7rem !important;
+      font-weight: 900 !important;
+      letter-spacing: 4px !important;
+      text-transform: uppercase;
+      background: linear-gradient(180deg, #ffffff 0%, #ff8a80 35%, #ff1e27 80%, #990000 100%) !important;
+      -webkit-background-clip: text !important;
+      -webkit-text-fill-color: transparent !important;
+      background-clip: text !important;
+      filter: drop-shadow(0 2px 14px var(--accent-glow));
+    }
+    header::after {
+      content: '';
+      display: block;
+      width: 180px;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--accent), var(--accent2), transparent);
+      margin: 14px auto 0;
+      box-shadow: 0 0 12px var(--accent);
+    }
+    header p {
+      color: var(--steel-bright) !important;
+      font-size: 1.02rem !important;
+      font-weight: 600 !important;
+      letter-spacing: 1px !important;
+    }
+    .panel {
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6), inset 0 1px 1px rgba(255, 255, 255, 0.05);
+      border-radius: 12px;
+      border: 1px solid var(--border);
+    }
+    .btn-gen {
+      background: linear-gradient(135deg, #ff1e27 0%, #b30006 100%) !important;
+      font-size: 1.05rem !important;
+      letter-spacing: 1.5px !important;
+      box-shadow: 0 4px 20px rgba(255, 30, 39, 0.5), inset 0 1px 1px rgba(255,255,255,0.3) !important;
+      border: 1px solid #ff4d52 !important;
+    }
+    .btn-gen:hover:not(:disabled) {
+      background: linear-gradient(135deg, #ff3840 0%, #cc0007 100%) !important;
+      box-shadow: 0 6px 26px rgba(255, 30, 39, 0.7) !important;
+    }
+    .tab-display {
+      font-family: 'Fira Code', 'Courier New', monospace !important;
+      font-size: 0.84rem !important;
+      background: #08080c !important;
+      border: 1px solid #1c1c28 !important;
+      border-left: 4px solid var(--accent) !important;
+      border-radius: 8px !important;
+      color: #99fadc !important;
     }
     .container { max-width: 1000px; margin: 0 auto; padding: 22px 14px 50px; }
     header { text-align: center; margin-bottom: 22px; }
@@ -163,8 +244,9 @@
 <body>
   <div class="container">
     <header>
-      <h1>🤘 GUITAR RIFF GENERATOR</h1>
-      <p>Rhythm + Lead + Bass • 14 subgenre • Odin III • 7-string</p>
+      <div class="header-badge">⚡ Odin III DAW Sync • 22 Metal Subgenres • 6 & 7-String Supported</div>
+      <h1>🤘 METAL RIFF GENERATOR</h1>
+      <p>Procedural Metal Guitar Engine • Rhythm + Lead Shred + Bass Slap + Breakdown + Drums</p>
     </header>
 
     <!-- CONTROLS -->
@@ -1163,6 +1245,12 @@
     // which destroyed the motif contour. V28 keeps a small musical cell intact,
     // then applies controlled variation, cadence, pedal-point behavior and
     // playable fret/string motion.
+    // ===================== PRO METAL RIFF ENGINE V31 =====================
+    // Phrase-First, Hook & Variation Riff Architecture:
+    // 1. Establishes a memorable groove hook (Phrase A).
+    // 2. Uses classic metal form (A - A' - A - B turnaround).
+    // 3. Locks pedal chugs to open string (Fret 0) with tight palm mutes.
+    // 4. Applies genre-authentic interval accents and human guitar fretboard positioning.
     function generateRhythm(opts) {
       const {
         key, scaleKey, styleId, style, bars, tuningKey,
@@ -1179,17 +1267,11 @@
       const grammar = RIFF_INTERVALS_V25[styleId] || RIFF_INTERVALS_V25.thrash;
       const techProfile = riffTechProfile(styleId);
       const odinProfile = getOdinGenreProfile(styleId);
-      const pools = motifPoolsFor(styleId);
-      const indoLib = styleId === 'deadsquad' ? INDO_TECH_DEATH_LIBRARY : null;
-      const events = [];
-
-      const lowStyles = ['death','deathcore','brutal','hardcore','modern_hc','thall','nu','djent','groove','metalcore','moshcore','doom','stoner'];
-      const melodicStyles = ['black','melodeath','progressive','deadsquad','polyphia','power','melodic_hc'];
-      const pedalStyles = ['thrash','thrash_gallop','death','deathcore','brutal','hardcore','modern_hc','thall','nu','djent','groove','metalcore','moshcore'];
-      const ultraLow = ['deathcore','hardcore','modern_hc','thall','brutal','nu','moshcore'];
 
       const mod12 = n => ((n % 12) + 12) % 12;
-      const nearestScaleRel = rel => {
+
+      // Nearest in-scale degree
+      const snapToScale = rel => {
         if (scaleKey === 'chromatic' || scale.includes(mod12(rel))) return mod12(rel);
         let best = scale[0], bestD = 99;
         for (const x of scale) {
@@ -1198,331 +1280,319 @@
         }
         return best;
       };
-      const allowedGenreRel = () => {
-        const valid = grammar.filter(x => scaleKey === 'chromatic' || scale.includes(mod12(x)) || Math.random() < 0.22);
-        return valid.length ? valid : grammar;
-      };
 
-      function transformMotif(raw, count, variation) {
-        let src = raw.map(x => mod12(x));
-        if (!src.length) src = [0,0,3,0];
-        if (variation === 'reverse') src.reverse();
-        if (variation === 'fragment') src = src.slice(0, Math.max(2, Math.ceil(src.length * .65)));
-        if (variation === 'lift') src = src.map((x,i) => i % 3 === 0 ? mod12(x + 2) : x);
-        const out = [];
-        while (out.length < count) {
-          for (const x of src) {
-            if (out.length >= count) break;
-            out.push(x);
-          }
+      // Fret locator with hand position anchor (keeps guitar lines realistic and playable)
+      function fretForPC(s, pc, anchor = 0, maxF = 12) {
+        const hits = [];
+        for (let f = 0; f <= maxF; f++) {
+          if (mod12(open[s] + f) === mod12(pc)) hits.push(f);
         }
-        return out;
-      }
-
-      function makeMotif(count, bar) {
-        const pool = randomChoice(pools);
-        let raw = randomChoice(pool).slice();
-        // Favor compact motifs. Long random cells were a major source of "note soup".
-        if (raw.length > 8) raw = raw.slice(0, 8);
-        const variants = bar === 0 ? ['base'] : ['base','base','fragment','lift','reverse'];
-        const variant = randomChoice(variants);
-        let motif = transformMotif(raw, Math.min(8, Math.max(3, count)), variant);
-        motif[0] = 0;
-        // Cadence target: root/fifth/flat-seven depending on genre.
-        const cadence = styleId === 'black' || styleId === 'melodeath'
-          ? randomChoice([0,5,7])
-          : styleId === 'doom' || styleId === 'stoner'
-            ? randomChoice([0,7])
-            : randomChoice([0,0,7]);
-        motif[motif.length - 1] = cadence;
-        if (motif.length > 3 && Math.random() < .7) motif[motif.length - 2] = nearestScaleRel(motif[motif.length - 2]);
-        return motif.map(nearestScaleRel);
-      }
-
-      function fretForPC(s, pc, anchor=0, max=12) {
-        const hits=[];
-        for(let f=0; f<=max; f++) if(mod12(open[s]+f)===mod12(pc)) hits.push(f);
-        if(!hits.length) return 0;
-        hits.sort((a,b)=>Math.abs(a-anchor)-Math.abs(b-anchor));
+        if (!hits.length) return 0;
+        hits.sort((a, b) => Math.abs(a - anchor) - Math.abs(b - anchor));
         return hits[0];
       }
 
+      // 5th Power chord helper
       function fifthFor(s, f) {
-        if (s >= nstr-1) return null;
+        if (s >= nstr - 1) return null;
         const target = mod12(open[s] + f + 7);
-        for (let x=0; x<=10; x++) {
-          if (mod12(open[s+1] + x) === target)
-            return {string:s+1, fret:x, midi:open[s+1]+x};
+        for (let x = 0; x <= 10; x++) {
+          if (mod12(open[s + 1] + x) === target) {
+            return { string: s + 1, fret: x, midi: open[s + 1] + x };
+          }
         }
         return null;
       }
 
-      function chooseString(prevString, melodic) {
-        if (nstr <= 1) return 0;
-        if (ultraLow.includes(styleId)) {
-          if (Math.random() < .86) return 0;
-          return 1;
-        }
-        if (pedalStyles.includes(styleId) && !melodic) {
-          if (Math.random() < .76) return 0;
-          return Math.min(1, nstr-1);
-        }
-        if (styleId === 'deadsquad' && indoLib) {
-          const r = Math.random();
-          if (r < indoLib.stringBias.low) return 0;
-          if (r < indoLib.stringBias.low + indoLib.stringBias.adjacent) return Math.min(1,nstr-1);
-          return Math.min(nstr-1, Math.max(2, Math.floor(nstr/2)));
-        }
-        if (melodicStyles.includes(styleId)) {
-          const center = Math.min(nstr-1, Math.max(1, Math.floor(nstr/2)));
-          if (prevString != null && Math.random() < .62) {
-            const delta = Math.random() < .5 ? -1 : 1;
-            return Math.max(1, Math.min(nstr-1, prevString + delta));
+      // Check if low string open note matches root
+      const isOpenRoot = mod12(open[0]) === root;
+      const rootFret = fretForPC(0, root, 0, 8);
+
+      // Genre specific accents & intervals
+      const genreAccents = {
+        thrash: [1, 3, 5, 6, 7, 10],
+        thrash_gallop: [1, 3, 5, 7, 10],
+        death: [1, 2, 3, 6, 7],
+        melodeath: [2, 3, 5, 7, 8, 10, 11],
+        black: [1, 3, 5, 7, 8],
+        doom: [3, 5, 6, 7],
+        stoner: [3, 5, 6, 7, 10],
+        groove: [3, 5, 6, 7, 10],
+        moshcore: [1, 3, 6, 7],
+        nu: [1, 3, 6, 7],
+        metalcore: [1, 3, 5, 7, 8, 10],
+        djent: [1, 3, 6, 7, 10],
+        progressive: [2, 3, 5, 6, 7, 10, 11],
+        deadsquad: [1, 3, 4, 5, 6, 7, 10, 11],
+        polyphia: [2, 3, 5, 7, 9, 10, 11],
+        deathcore: [1, 3, 6, 7],
+        hardcore: [1, 3, 5, 7],
+        melodic_hc: [2, 3, 5, 7, 8, 10],
+        modern_hc: [1, 3, 6, 7, 10],
+        thall: [1, 6, 7, 11],
+        power: [2, 4, 5, 7, 9, 11],
+        brutal: [1, 2, 6, 7]
+      }[styleId] || [1, 3, 5, 6, 7, 10];
+
+      // Step 1: BUILD A COHERENT 1-BAR THEME (Hook)
+      function buildCorePhrase(len) {
+        const phrase = [];
+        let curRel = 0;
+        for (let i = 0; i < len; i++) {
+          const isAccentPos = (i === 0 || i === Math.floor(len / 2) || i === len - 1);
+          let noteRel = 0; // default to root pedal
+
+          if (isAccentPos) {
+            if (i === 0) {
+              noteRel = 0; // strong downbeat root
+            } else if (i === len - 1) {
+              // Phrase resolution
+              noteRel = randomChoice([0, 0, 7, 5, 3]);
+            } else {
+              // Mid-bar accent
+              noteRel = randomChoice(genreAccents);
+            }
+          } else {
+            // In-between notes: pedal chugs or melody connection
+            const r = Math.random();
+            if (r < (dna.m > 0.6 ? 0.35 : 0.75)) {
+              noteRel = 0; // tight pedal chug
+            } else {
+              noteRel = snapToScale(randomChoice(genreAccents));
+            }
           }
-          return Math.max(1, Math.min(nstr-1, center + (Math.random()<.5 ? 0 : 1)));
+          phrase.push(snapToScale(noteRel));
         }
-        if (prevString != null && Math.random() < .80) return prevString;
-        return Math.random() < .7 ? 0 : Math.min(1, nstr-1);
+        return phrase;
       }
 
-      function chooseRelative(baseRel, idx, count, pos, prevRel) {
-        let rel = mod12(baseRel);
-
-        // Strong beats are structural: root/fifth; weak positions carry the color.
-        if (pos === 0) rel = 0;
-        else if ((pos === 4 || pos === 8 || pos === 12) && Math.random() < .58) {
-          rel = styleId === 'doom' || styleId === 'stoner' ? 0 : randomChoice([0,5,7]);
-        }
-
-        // Keep the motif recognizable. Variation happens at phrase edges, not every note.
-        if (idx > 0 && idx < count-1) {
-          if (Math.random() < .78) {
-            rel = nearestScaleRel(rel);
-          } else if (Math.random() < .35) {
-            rel = nearestScaleRel(randomChoice([prevRel, 0, 3, 5, 7, 10]));
+      // Step 2: BUILD TURNAROUND / CLIMAX FILL (Phrase B for bar 4/end)
+      function buildTurnaround(len) {
+        const fill = [];
+        // Metal turnarounds: chromatic descending run, tritone punch, or power hits
+        const turnaroundType = randomChoice(['chromatic', 'arpeggio', 'powerStab', 'scaleRun']);
+        if (turnaroundType === 'chromatic') {
+          const startTone = randomChoice([6, 7, 5, 3]);
+          for (let i = 0; i < len; i++) {
+            fill.push(mod12(startTone - i));
+          }
+        } else if (turnaroundType === 'scaleRun') {
+          const run = [7, 5, 3, 2, 1, 0];
+          for (let i = 0; i < len; i++) {
+            fill.push(snapToScale(run[i % run.length]));
+          }
+        } else if (turnaroundType === 'powerStab') {
+          for (let i = 0; i < len; i++) {
+            fill.push(i % 2 === 0 ? randomChoice([3, 5, 6, 7]) : 0);
+          }
+        } else {
+          for (let i = 0; i < len; i++) {
+            fill.push(i >= len - 2 ? 0 : randomChoice(genreAccents));
           }
         }
-
-        // Genre-specific spice is sparse and resolves immediately.
-        if (idx > 0 && idx < count-1 && Math.random() < Math.min(.10, dna.c*.10)) {
-          const spicePool = indoLib
-            ? INDO_TECH_DEATH_LIBRARY.phraseGrammar.preferred
-            : allowedGenreRel();
-          rel = mod12(randomChoice(spicePool));
-        }
-        // Indo tech-death reference DNA: occasional chromatic neighbor or
-        // tritone/b5 color, but never on every note.
-        if (indoLib && idx > 0 && idx < count-1 &&
-            Math.random() < indoLib.articulation.chromaticNeighbor * .20) {
-          rel = mod12(randomChoice(indoLib.phraseGrammar.chromatic));
-        }
-        return rel;
+        return fill.map(snapToScale);
       }
 
-      let di=0, globalStep=0, previousPC=root, previousFret=0, previousString=0, down=true;
+      // Step 3: GENERATE NOTES ACROSS ALL BARS USING A-A'-A-B FORM
+      const events = [];
+      let di = 0;
+      let prevString = 0;
+      let prevFret = rootFret;
+      let down = true;
+      let globalStep = 0;
 
-      for (let bar=0; bar<bars; bar++) {
-        const start=di;
-        let sum=0;
-        while(di<durations.length && sum<16) { sum += durations[di++]; }
-        const ds=durations.slice(start,di);
-        if(!ds.length) continue;
+      // Estimate durations per bar
+      const barDurationSlices = [];
+      for (let b = 0; b < bars; b++) {
+        const start = di;
+        let sum = 0;
+        while (di < durations.length && sum < 16) {
+          sum += durations[di++];
+        }
+        barDurationSlices.push(durations.slice(start, di));
+      }
 
-        const motif=makeMotif(ds.length,bar);
-        const melodic = melodicStyles.includes(styleId) || styleId === 'black';
-        const barStart=globalStep;
-        let lastRel=0;
+      // Create Motif A and Motif B
+      const baseLen = Math.max(4, barDurationSlices[0]?.length || 6);
+      const motifA = buildCorePhrase(baseLen);
+      const motifA_prime = motifA.map((x, idx) => (idx >= motifA.length - 2 ? snapToScale(x + randomChoice([2, -1, 5])) : x));
+      const motifB = buildTurnaround(baseLen);
 
-        for(let j=0;j<ds.length;j++) {
-          const dur=ds[j];
-          const pos=(globalStep-barStart)%16;
-          const accent = pos===0 || pos===4 || pos===8 || pos===12;
-          const off = pos===2 || pos===6 || pos===10 || pos===14;
-          const hard = pos===3 || pos===7 || pos===11 || pos===15;
+      for (let bar = 0; bar < bars; bar++) {
+        const ds = barDurationSlices[bar] || [2,2,2,2,2,2,2,2];
+        let currentMotif;
 
-          // Silence is intentional punctuation, never random note deletion.
-          let restChance=dna.r;
-          if(accent) restChance*=.28;
-          if(styleId==='doom'||styleId==='stoner'||styleId==='black') restChance*=.45;
-          if(['djent','thall','deathcore','brutal','moshcore'].includes(styleId) && hard) restChance*=.55;
-          if(j>0 && j<ds.length-1 && Math.random()<restChance) {
-            events.push({notes:[],dur,rest:true,pick:null,muted:false,power:false,tech:null});
-            globalStep+=dur;
+        // Form: Bar 1 = A, Bar 2 = A', Bar 3 = A, Bar 4 = B (climax)
+        if (bars === 1) currentMotif = motifA;
+        else if (bars === 2) currentMotif = (bar === 0) ? motifA : motifA_prime;
+        else if (bars === 4) {
+          if (bar === 0 || bar === 2) currentMotif = motifA;
+          else if (bar === 1) currentMotif = motifA_prime;
+          else currentMotif = motifB;
+        } else {
+          // 8 bars
+          if (bar === 3 || bar === 7) currentMotif = motifB;
+          else if (bar % 2 === 0) currentMotif = motifA;
+          else currentMotif = motifA_prime;
+        }
+
+        let barStep = 0;
+        for (let j = 0; j < ds.length; j++) {
+          const dur = ds[j];
+          const pos = barStep % 16;
+          const isAccentBeat = (pos === 0 || pos === 4 || pos === 8 || pos === 12);
+          const isCadenceNote = (j === ds.length - 1);
+
+          // Rest handling (tight, purposeful gaps for djent/breakdown, never random chaos)
+          let restChance = dna.r * 0.7;
+          if (isAccentBeat || isCadenceNote) restChance = 0;
+          if (['djent', 'thall', 'modern_hc', 'deathcore'].includes(styleId) && pos === 2) restChance *= 1.3;
+          if (Math.random() < restChance && j > 0 && j < ds.length - 1) {
+            events.push({ notes: [], dur, rest: true, pick: null, muted: false, power: false, tech: null });
+            barStep += dur;
+            globalStep += dur;
             continue;
           }
 
-          let rel=chooseRelative(motif[j%motif.length],j,ds.length,pos,lastRel);
-          lastRel=rel;
+          // Pick pitch from current motif
+          let rel = currentMotif[j % currentMotif.length];
 
-          // Pedal-point architecture: return to the root frequently on the lowest string.
-          if (pedalStyles.includes(styleId) && !melodic && !off && Math.random() < .48) rel=0;
-          if (styleId==='nu' && !accent && Math.random()<.68) rel=0;
-          if (styleId==='hardcore' && !accent && Math.random()<.56) rel=0;
-          if (styleId==='groove' && off && Math.random()<.48) rel=randomChoice([0,3,7,10]);
-          if (styleId==='doom' && Math.random()<.30) rel=randomChoice([0,5,7,10]);
-          if (styleId==='thall' && Math.random()<.35) rel=randomChoice([0,1,6,11]);
-
-          // Chromatic approach is only used as a leading tone into a target.
-          let nextRel = j+1<ds.length ? motif[(j+1)%motif.length] : 0;
-          if (j>0 && j<ds.length-1 && Math.random()<dna.c*.05) {
-            const target=nearestScaleRel(nextRel);
-            rel=mod12(target+11);
+          // Final note of riff resolves cleanly to Root or 5th
+          if (bar === bars - 1 && isCadenceNote) {
+            rel = 0;
           }
 
-          const pc=mod12(root+rel);
-          let s=chooseString(previousString,melodic);
-          if (accent && pedalStyles.includes(styleId) && !melodic && Math.random()<.72) s=0;
-          if (melodic && Math.random()<.30) s=Math.min(nstr-1,Math.max(1,s));
+          const pc = mod12(root + rel);
+          const isRootPedal = (rel === 0);
 
-          // Keep the same string/fret neighborhood instead of teleporting around the neck.
-          let maxF = ultraLow.includes(styleId) || ['doom','deathcore','thall','brutal'].includes(styleId) ? 5 : 9;
-          if (melodicStyles.includes(styleId)) maxF=12;
-          if (styleId==='power') maxF=15;
+          // String & Fret positioning (keep it tight and playable)
+          let s = 0;
+          let f = 0;
 
-          let anchor = previousString===s ? previousFret : (s===0 ? 0 : 5);
-          let f=fretForPC(s,pc,anchor,maxF);
-
-          // Root pedal should actually be the open/lowest-root position when available.
-          if (s===0 && pc===root && pedalStyles.includes(styleId) && Math.random()<.82) {
-            const openPC=mod12(open[s]);
-            if(openPC===root) f=0;
-            else f=fretForPC(s,pc,0,maxF);
+          if (isRootPedal) {
+            s = 0;
+            f = isOpenRoot ? 0 : rootFret;
+          } else {
+            // Melodic / Accent tone
+            if (dna.up > 0.4 && Math.random() < 0.45 && nstr >= 3) {
+              s = Math.min(nstr - 1, randomChoice([1, 2]));
+            } else {
+              s = (Math.random() < 0.8) ? 0 : Math.min(1, nstr - 1);
+            }
+            f = fretForPC(s, pc, s === 0 ? (isOpenRoot ? 2 : rootFret) : 3, 10);
           }
 
-          // If a note is too far from the previous pitch, favor a nearby scale tone.
-          if (events.length && !events[events.length-1].rest && previousString===s) {
-            const semitoneMove=Math.abs((open[s]+f)-(open[s]+previousFret));
-            if (semitoneMove>7) {
-              const nearby=[0,3,5,7,10].map(x=>nearestScaleRel(x));
-              const candidates=nearby.map(r=>fretForPC(s,mod12(root+r),previousFret,maxF));
-              f=candidates.sort((a,b)=>Math.abs(a-previousFret)-Math.abs(b-previousFret))[0];
+          // Power Chord decision:
+          // In metal, power chords hit on downbeats, accents, or cadence resolutions
+          let isPower = false;
+          const powerWorthy = isAccentBeat || isCadenceNote || (dur >= 2 && !isRootPedal);
+          if (usePower && powerWorthy && Math.random() < Math.min(0.95, dna.p * 1.1)) {
+            isPower = true;
+          }
+          if (styleId === 'black' || styleId === 'polyphia') isPower = false;
+
+          let notes = [{ string: s, fret: f, midi: open[s] + f }];
+          if (isPower && s < nstr - 1) {
+            const fifth = fifthFor(s, f);
+            if (fifth) notes.push(fifth);
+          }
+
+          // Picking direction
+          let pick = styleId === 'black' ? 'T' : (useDown ? 'D' : (useAlt ? (down ? 'D' : 'U') : 'D'));
+          if (useEconomy && useAlt && prevString !== s) {
+            pick = s > prevString ? 'D' : 'U';
+          } else if (useAlt) {
+            down = !down;
+          }
+
+          // Palm Mute: tight pedal chugs are muted, big accents & chords ring open!
+          let muted = false;
+          if (usePalm) {
+            if (isRootPedal && dur <= 2) {
+              muted = true;
+            } else if (isPower || dur >= 4) {
+              muted = false; // let chords and long notes ring out heavy!
+            } else {
+              muted = Math.random() < dna.s * 0.4;
             }
           }
 
-          let notes=[{string:s,fret:f,midi:open[s]+f}];
-          const rootish=pc===root || pc===mod12(root+7) || pc===mod12(root+5);
-
-          // Power chords are structural accents, not random decoration.
-          let power = false;
-          if(usePower && rootish && (accent || j===ds.length-1) &&
-             Math.random() < Math.min(.94, dna.p*1.15)) {
-            const x=fifthFor(s,f);
-            if(x && s<nstr-1) { notes.push(x); power=true; }
+          // Guitar Articulations (Hammer-on, Slide, Pinch Harmonic, Panic)
+          let tech = null;
+          let slant = null;
+          if (useSlant && (useAlt || useDown) && Math.random() < techProfile.slant * 0.5) {
+            slant = pick === 'D' ? 'DS' : 'US';
           }
 
-          let pick = styleId==='black' ? 'T' : (useDown ? 'D' : (useAlt ? (down?'D':'U') : 'D'));
-          if(useEconomy && useAlt && previousString!==s) pick = s>previousString ? 'D' : 'U';
-          else if(useAlt) down=!down;
-
-          let muted=false;
-          if(usePalm && !['doom','stoner','black','polyphia','power'].includes(styleId)) {
-            const base=.18 + dna.s*.55;
-            muted = dur<=2 && Math.random()<Math.min(.86,base);
-            if(accent && Math.random()<.62) muted=false;
-            if(power && Math.random()<.45) muted=false;
+          if (useHopo && prevString === s && !muted && !isPower && !tech) {
+            const df = f - prevFret;
+            if (df >= 1 && df <= 3) tech = 'h';
+            else if (df <= -1 && df >= -3) tech = 'p';
           }
 
-          let tech=null, slant=null;
-          if(useSlant && (useAlt||useDown) && Math.random()<techProfile.slant*.55)
-            slant=pick==='D'?'DS':'US';
-
-          // Techniques are attached only where the underlying notes support them.
-          if(useHopo && previousString===s && !muted && !power && !tech) {
-            const df=f-previousFret;
-            if(df>=1&&df<=2&&Math.random()<Math.min(.34,odinProfile.tech*.95+.06)) tech='h';
-            else if(df<=-1&&df>=-2&&Math.random()<Math.min(.34,odinProfile.tech*.95+.06)) tech='p';
+          if (useSlide && prevString === s && !muted && !tech && Math.abs(f - prevFret) >= 3) {
+            tech = f > prevFret ? '/' : '\\';
           }
-          if(useSlide && previousString===s && !muted && !tech) {
-            const df=f-previousFret;
-            if(Math.abs(df)>=3&&Math.random()<(.05+odinProfile.tech*.45)) tech=df>0?'/':'\\';
-          }
-          if(usePinch && !muted && !tech && dur>=2 && (accent || j===ds.length-1) &&
-             Math.random()<(.035+odinProfile.tech*.10)) tech='ph';
 
-          if(usePanic && !muted && !tech && (hard || j===ds.length-1) &&
-             Math.random()<techProfile.panic*.65) {
-            const dis=randomChoice([1,6,10]);
-            const dsPC=mod12(root+dis);
-            const addS=Math.min(nstr-1,s+1);
-            const df=fretForPC(addS,dsPC,f,Math.min(8,maxF));
-            notes.push({string:addS,fret:df,midi:open[addS]+df});
-            if(addS+1<nstr && Math.random()<.35) {
-              const tf=fretForPC(addS+1,mod12(root+6),df,Math.min(8,maxF));
-              notes.push({string:addS+1,fret:tf,midi:open[addS+1]+tf});
+          // Pinch Harmonic: screaming squeals placed at turnaround accents or long notes
+          if (usePinch && !muted && !tech && (dur >= 2 || isCadenceNote) && (isAccentBeat || bar === bars - 1)) {
+            if (Math.random() < (odinProfile.tech * 0.18 + 0.08)) {
+              tech = 'ph';
             }
-            tech='panic';
-            power=false;
           }
 
-          if(useBouncy && !tech && ['groove','moshcore','nu','hardcore','modern_hc','metalcore','deathcore','thall','djent'].includes(styleId) &&
-             Math.random()<techProfile.bouncy*.65) {
-            if(dur<=2) muted=true;
-            if(notes.length>1 && Math.random()<.72) notes=notes.slice(0,1);
-            tech='bounce';
+          // Panic Chord / Dissonance (tritone / minor 2nd clash) for Deathcore / Beatdown / Thall
+          if (usePanic && !muted && (styleId === 'deathcore' || styleId === 'modern_hc' || styleId === 'thall' || styleId === 'djent') && isAccentBeat) {
+            if (Math.random() < techProfile.panic * 0.7) {
+              const clashPC = mod12(root + randomChoice([1, 6]));
+              const nextStr = Math.min(nstr - 1, s + 1);
+              const clashFret = fretForPC(nextStr, clashPC, f, 8);
+              notes = [
+                { string: s, fret: f, midi: open[s] + f },
+                { string: nextStr, fret: clashFret, midi: open[nextStr] + clashFret }
+              ];
+              tech = 'panic';
+              isPower = false;
+            }
+          }
+
+          // Bouncy groove staccato
+          if (useBouncy && !tech && ['groove', 'moshcore', 'nu', 'hardcore', 'metalcore', 'djent'].includes(styleId)) {
+            if (dur <= 2 && Math.random() < techProfile.bouncy * 0.6) {
+              muted = true;
+              tech = 'bounce';
+            }
           }
 
           events.push({
-            notes, dur, rest:false, pick, muted, power, tech, slant,
-            crossed: previousString!==s
+            notes,
+            dur,
+            rest: false,
+            pick,
+            muted,
+            power: isPower && notes.length > 1,
+            tech,
+            slant,
+            crossed: prevString !== s
           });
-          previousPC=pc;
-          previousFret=f;
-          previousString=s;
-          globalStep+=dur;
+
+          prevString = s;
+          prevFret = f;
+          barStep += dur;
+          globalStep += dur;
         }
       }
 
-      // Advanced string-geometry pass. These mutate only selected notes; the
-      // phrase pitches remain stable, so technique options cannot destroy the motif.
-      const retarget=(ev,targetString)=>{
-        if(!ev?.notes?.length || targetString<0 || targetString>=nstr) return false;
-        const pc=ev.notes[0].midi%12;
-        const nf=fretForPC(targetString,pc,ev.notes[0].fret,12);
-        ev.notes[0]={string:targetString,fret:nf,midi:open[targetString]+nf};
-        if(ev.power && ev.notes.length>1) {
-          const x=fifthFor(targetString,nf);
-          ev.notes=x?[ev.notes[0],x]:[ev.notes[0]];
-        }
-        return true;
-      };
-
-      if(useSweep||useSkip) {
-        for(let i=1;i<events.length-2;i++) {
-          const a=events[i-1], b=events[i], c=events[i+1], d=events[i+2];
-          if(a.rest||b.rest||c.rest||d.rest||!a.notes?.length||!b.notes?.length||!c.notes?.length||!d.notes?.length) continue;
-          if(useSweep && Math.random()<techProfile.sweep && Math.abs(b.notes[0].string-a.notes[0].string)<=1) {
-            const base=a.notes[0].string;
-            const dir=Math.random()<.5?1:-1;
-            const targets=[base+dir,base+2*dir,base+3*dir];
-            if(targets.every(x=>x>=0&&x<nstr) && retarget(b,targets[0]) && retarget(c,targets[1]) && retarget(d,targets[2])) {
-              b.tech='sweep'; c.tech='sweep'; d.tech='sweep';
-              b.pick='S'; c.pick='S'; d.pick='S';
-              b.slant=dir>0?'DS':'US'; c.slant=b.slant; d.slant=b.slant;
-              i+=2;
-            }
-          } else if(useSkip && Math.random()<techProfile.skip) {
-            const base=a.notes[0].string;
-            const dir=Math.random()<.5?-1:1;
-            const target=base+dir*2;
-            if(retarget(b,target)) { b.tech='skip'; b.pick=useAlt?(dir>0?'D':'U'):b.pick; }
-          }
+      // Guarantee at least one killer pinch harmonic if user checked Pinch Harmonic
+      if (usePinch && !events.some(e => e.tech === 'ph')) {
+        const candidates = events.filter(e => !e.rest && e.notes?.length && e.dur >= 2 && !e.muted);
+        if (candidates.length) {
+          randomChoice(candidates).tech = 'ph';
         }
       }
-
-      const forceTech=(name,enabled)=>{
-        if(!enabled||events.some(e=>e.tech===name)) return;
-        const candidates=events.filter(e=>!e.rest&&e.notes?.length&&e.dur<=2&&!e.muted);
-        if(!candidates.length) return;
-        const e=randomChoice(candidates);
-        e.tech=name;
-        if(name==='sweep') e.pick='S';
-      };
-      forceTech('sweep',useSweep);
-      forceTech('skip',useSkip);
 
       return events;
     }
-
     /*
       Motif library — relative semitone offsets from KEY ROOT on low string.
       Inspired by common metal vocabulary (chug shapes, gallops, djent cells,
